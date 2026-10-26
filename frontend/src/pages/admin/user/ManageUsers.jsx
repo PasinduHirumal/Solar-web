@@ -56,6 +56,7 @@ export default function ManageUsers() {
                     val === "" ||
                     (key === "sort_by" && val === "created_at") ||
                     (key === "sort" && val === "DESC") ||
+                    (key === "sort_order" && val === "DESC") ||
                     (key === "page" && Number(val) <= 1)
                 ) {
                     next.delete(key);
@@ -362,14 +363,11 @@ export default function ManageUsers() {
             >
                 <Filters
                     roleFilter={roleFilter}
-                    setRoleFilter={(val) => updateParams({ role: val, page: 1 })}
                     statusFilter={statusFilter}
-                    setStatusFilter={(val) => updateParams({ status: val, page: 1 })}
                     sortBy={sortBy}
-                    setSortBy={(val) => updateParams({ sort_by: val, page: 1 })}
                     sortOrder={sortOrder}
-                    setSortOrder={(val) => updateParams({ sort: val, page: 1 })}
-                    setPage={(val) => updateParams({ page: val })}
+                    onApply={(newFilters) => updateParams({ ...newFilters, page: 1 })}
+                    onReset={() => updateParams({ role: undefined, status: undefined, sort_by: undefined, sort: undefined, page: 1 })}
                     onClose={() => setIsFilterOpen(false)}
                 />
             </AdminFilterMenu>
