@@ -31,6 +31,11 @@ export default function ManageUsers() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const refetchUsers = useCallback(() => {
+        setRefreshTrigger((prev) => prev + 1);
+    }, []);
 
     const { user: currentUser } = useAuthStore();
 
@@ -112,7 +117,7 @@ export default function ManageUsers() {
         return () => {
             active = false;
         };
-    }, [page, searchTerm, roleFilter, statusFilter, sortBy, sortOrder]);
+    }, [page, searchTerm, roleFilter, statusFilter, sortBy, sortOrder, refreshTrigger]);
 
     const handleClearSearch = () => {
         setSearchInput("");
@@ -375,11 +380,10 @@ export default function ManageUsers() {
                 onClose={() => setIsRegisterModalOpen(false)}
                 onUserCreated={(newUser) => {
                     if (newUser && newUser.id) {
-                        setUsers((prev) => [newUser, ...prev]);
+                        setUsers((prev) => [newUser, ...prev.filter((u) => u.id !== newUser.id)]);
                         setTotalItems((prev) => prev + 1);
-                    } else {
-                        updateParams({ page: 1 });
                     }
+                    refetchUsers();
                 }}
             />
         </div>

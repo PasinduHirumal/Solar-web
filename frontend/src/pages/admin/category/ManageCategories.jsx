@@ -28,6 +28,11 @@ export default function ManageCategories() {
     const [totalItems, setTotalItems] = useState(0);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const refetchCategories = useCallback(() => {
+        setRefreshTrigger((prev) => prev + 1);
+    }, []);
 
     const { user: currentUser } = useAuthStore();
 
@@ -108,7 +113,7 @@ export default function ManageCategories() {
         return () => {
             active = false;
         };
-    }, [page, searchTerm, statusFilter, sortBy, sortOrder]);
+    }, [page, searchTerm, statusFilter, sortBy, sortOrder, refreshTrigger]);
 
     const handleClearSearch = () => {
         setSearchInput("");
@@ -321,11 +326,10 @@ export default function ManageCategories() {
                 onClose={() => setIsCreateModalOpen(false)}
                 onCategoryCreated={(newCat) => {
                     if (newCat && newCat.id) {
-                        setCategories((prev) => [newCat, ...prev]);
+                        setCategories((prev) => [newCat, ...prev.filter((c) => c.id !== newCat.id)]);
                         setTotalItems((prev) => prev + 1);
-                    } else {
-                        updateParams({ page: 1 });
                     }
+                    refetchCategories();
                 }}
             />
         </div>

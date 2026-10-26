@@ -45,8 +45,18 @@ export default function CreateCategoryModal({ isOpen, onClose, onCategoryCreated
       const message = response.data?.message || "Category created successfully";
       toast.success(message);
 
+      const rawCat = response.data?.data || response.data?.result || response.data;
+      const createdCat = rawCat && typeof rawCat === "object" ? {
+        id: rawCat.id,
+        title: rawCat.title || trimmedTitle,
+        description: rawCat.description || formData.description.trim() || undefined,
+        is_active: rawCat.is_active !== undefined ? rawCat.is_active : true,
+        created_at: rawCat.created_at || new Date().toISOString(),
+        ...rawCat,
+      } : null;
+
       if (onCategoryCreated) {
-        onCategoryCreated(response.data?.data || null);
+        onCategoryCreated(createdCat);
       }
       handleResetAndClose();
     } catch (error) {

@@ -66,8 +66,19 @@ export default function RegisterUserModal({ isOpen, onClose, onUserCreated }) {
       const message = response.data?.message || "User registered successfully";
       toast.success(message);
 
+      const rawUser = response.data?.result || response.data?.data || response.data?.user || response.data;
+      const createdUser = rawUser && typeof rawUser === "object" ? {
+        id: rawUser.id,
+        name: rawUser.name || formData.name.trim(),
+        email: rawUser.email || formData.email.trim().toLowerCase(),
+        role: rawUser.role || formData.role,
+        is_active: rawUser.is_active !== undefined ? rawUser.is_active : true,
+        created_at: rawUser.created_at || new Date().toISOString(),
+        ...rawUser,
+      } : null;
+
       if (onUserCreated) {
-        onUserCreated(response.data?.data || null);
+        onUserCreated(createdUser);
       }
       handleResetAndClose();
     } catch (error) {
