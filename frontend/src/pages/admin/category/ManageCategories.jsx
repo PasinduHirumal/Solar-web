@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Search, Filter, FolderTree, Plus, X } from 'lucide-react';
 import { axiosInstance } from '../../../lib/axiosInstance';
@@ -7,6 +7,7 @@ import { isAdmin, isSuperAdmin } from '../../../lib/roles';
 import useAuthStore from '../../../lib/authStore';
 import ActionButton from './components/ActionButton';
 import Filters from './components/Filters';
+import CreateCategoryModal from './components/CreateCategoryModal';
 import AdminFilterMenu from '../../../common/AdminFilterMenu';
 
 export default function ManageCategories() {
@@ -26,6 +27,7 @@ export default function ManageCategories() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const { user: currentUser } = useAuthStore();
 
@@ -177,13 +179,14 @@ export default function ManageCategories() {
 
                     {/* Create Category CTA Button */}
                     {canCreate && (
-                        <Link
-                            to="/admin/categories/create"
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm h-[38px] cursor-pointer shrink-0"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">Create Category</span>
-                        </Link>
+                        </button>
                     )}
                 </div>
             </div>
@@ -311,6 +314,20 @@ export default function ManageCategories() {
                     onClose={() => setIsFilterOpen(false)}
                 />
             </AdminFilterMenu>
+
+            {/* CREATE CATEGORY MODAL */}
+            <CreateCategoryModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onCategoryCreated={(newCat) => {
+                    if (newCat && newCat.id) {
+                        setCategories((prev) => [newCat, ...prev]);
+                        setTotalItems((prev) => prev + 1);
+                    } else {
+                        updateParams({ page: 1 });
+                    }
+                }}
+            />
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Shield, ShieldAlert, ShieldCheck, Search, Filter, CheckCircle, Ban, UserPlus, X } from 'lucide-react';
 import { axiosInstance } from '../../../lib/axiosInstance';
@@ -8,6 +8,7 @@ import { UserRole, isSuperAdmin } from '../../../lib/roles';
 import useAuthStore from '../../../lib/authStore';
 import ActionButton from './components/ActionButton';
 import Filters from './components/Filters';
+import RegisterUserModal from './components/RegisterUserModal';
 import AdminFilterMenu from '../../../common/AdminFilterMenu';
 
 export default function ManageUsers() {
@@ -28,6 +29,7 @@ export default function ManageUsers() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
 
     const { user: currentUser } = useAuthStore();
@@ -202,13 +204,14 @@ export default function ManageUsers() {
                     </button>
 
                     {isSuperAdmin(currentUser?.role) && (
-                        <Link
-                            to="/admin/users/create"
+                        <button
+                            type="button"
+                            onClick={() => setIsRegisterModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm h-[38px] cursor-pointer shrink-0"
                         >
                             <UserPlus className="w-4 h-4" />
                             <span className="hidden sm:inline">Register User</span>
-                        </Link>
+                        </button>
                     )}
                 </div>
             </div>
@@ -365,6 +368,20 @@ export default function ManageUsers() {
                     onClose={() => setIsFilterOpen(false)}
                 />
             </AdminFilterMenu>
+
+            {/* REGISTER USER MODAL */}
+            <RegisterUserModal
+                isOpen={isRegisterModalOpen}
+                onClose={() => setIsRegisterModalOpen(false)}
+                onUserCreated={(newUser) => {
+                    if (newUser && newUser.id) {
+                        setUsers((prev) => [newUser, ...prev]);
+                        setTotalItems((prev) => prev + 1);
+                    } else {
+                        updateParams({ page: 1 });
+                    }
+                }}
+            />
         </div>
     );
 }
