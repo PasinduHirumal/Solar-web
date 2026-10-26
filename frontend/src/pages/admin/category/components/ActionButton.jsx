@@ -108,15 +108,15 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
 
     return (
         <>
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex items-center justify-end gap-1">
                 {/* Edit Category Button */}
                 {canEdit && (
                     <button
                         onClick={handleOpenEdit}
-                        className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-lg ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                        className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-md ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
                         title="Edit Category"
                     >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-3.5 h-3.5" />
                     </button>
                 )}
 
@@ -125,7 +125,7 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                     <button
                         onClick={() => handleToggleStatus(category.id, category.is_active)}
                         disabled={statusLoading}
-                        className={`p-2 transition-colors rounded-lg ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${
+                        className={`p-1.5 transition-colors rounded-md ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${
                             category.is_active
                                 ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20'
                                 : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20'
@@ -133,11 +133,11 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                         title={category.is_active ? "Deactivate Category" : "Activate Category"}
                     >
                         {statusLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : category.is_active ? (
-                            <Ban className="w-4 h-4" />
+                            <Ban className="w-3.5 h-3.5" />
                         ) : (
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="w-3.5 h-3.5" />
                         )}
                     </button>
                 )}
@@ -147,13 +147,13 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                     <button
                         onClick={() => handleDeleteCategory(category.id, category.title)}
                         disabled={deleteLoading}
-                        className="p-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-lg ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                        className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-md ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
                         title="Delete Category"
                     >
                         {deleteLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                         )}
                     </button>
                 )}

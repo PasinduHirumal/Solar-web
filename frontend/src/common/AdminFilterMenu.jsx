@@ -34,27 +34,27 @@ export default function AdminFilterMenu({ isOpen, onClose, title = "Filter Users
 
             {/* SIDEBAR */}
             <div
-                className={`fixed top-0 right-0 h-full w-70 sm:w-[300px] bg-white dark:bg-gray-900 z-[9999] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+                className={`fixed top-0 right-0 h-full w-64 sm:w-[270px] bg-white dark:bg-gray-900 z-[9999] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
             >
                 {/* HEADER */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 shrink-0">
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 shrink-0">
                     <div className="flex items-center gap-2">
-                        <Filter className="w-5 h-5 text-blue-500" />
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                        <Filter className="w-4 h-4 text-blue-500" />
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                             {title}
                         </h2>
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition cursor-pointer flex items-center justify-center"
+                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition cursor-pointer flex items-center justify-center"
                     >
-                        <X size={18} />
+                        <X size={16} />
                     </button>
                 </div>
 
                 {/* CONTENT (fully rendered by children, including the layout and footer buttons) */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4">
                     {children}
                 </div>
             </div>
