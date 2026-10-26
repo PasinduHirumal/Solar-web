@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, CheckCircle2, ArrowDownUp, ChevronDown } from 'lucide-react';
+import { Shield, CheckCircle2, ArrowDownUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { UserRole } from '../../../../lib/roles';
 
 export default function Filters({
@@ -7,14 +7,17 @@ export default function Filters({
     setRoleFilter,
     statusFilter,
     setStatusFilter,
-    sortOrder,
+    sortBy = "created_at",
+    setSortBy,
+    sortOrder = "DESC",
     setSortOrder,
     setPage,
-    onClose
+    onClose,
 }) {
     const handleReset = () => {
         setRoleFilter("");
         setStatusFilter("");
+        if (setSortBy) setSortBy("created_at");
         setSortOrder("DESC");
         setPage(1);
     };
@@ -70,11 +73,36 @@ export default function Filters({
                     </div>
                 </div>
 
+                {/* SORT BY COLUMN */}
+                {setSortBy && (
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            <ArrowUpDown className="w-3.5 h-3.5 text-indigo-500" />
+                            Sort Field
+                        </label>
+                        <div className="relative">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => {
+                                    setSortBy(e.target.value);
+                                    setPage(1);
+                                }}
+                                className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-gray-100/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/70 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm appearance-none shadow-sm cursor-pointer transition-all"
+                            >
+                                <option value="created_at">Registration Date</option>
+                                <option value="name">Name</option>
+                                <option value="role">Role Hierarchy</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                        </div>
+                    </div>
+                )}
+
                 {/* SORT ORDER */}
                 <div className="space-y-2">
                     <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         <ArrowDownUp className="w-3.5 h-3.5 text-indigo-500" />
-                        Sort By Registration
+                        Sort Order
                     </label>
                     <div className="relative">
                         <select
@@ -85,8 +113,8 @@ export default function Filters({
                             }}
                             className="w-full pl-3 pr-10 py-2.5 bg-gray-50 hover:bg-gray-100/50 dark:bg-gray-800/40 dark:hover:bg-gray-800/70 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm appearance-none shadow-sm cursor-pointer transition-all"
                         >
-                            <option value="DESC">Newest First</option>
-                            <option value="ASC">Oldest First</option>
+                            <option value="DESC">Descending / Newest First</option>
+                            <option value="ASC">Ascending / Oldest First</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
                     </div>

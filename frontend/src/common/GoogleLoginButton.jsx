@@ -8,12 +8,13 @@ import { API_URL } from "../lib/axiosInstance";
 
 let isFetchingSession = false;
 
-export default function GoogleLoginButton({ tabIndex }) {
+export default function GoogleLoginButton({ tabIndex, rememberMe = false, text = "Sign in with Google" }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/auth/google`;
+    const rememberParam = rememberMe ? "true" : "false";
+    window.location.href = `${API_URL}/auth/google?remember_me=${rememberParam}`;
   };
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function GoogleLoginButton({ tabIndex }) {
             navigate("/login", { replace: true });
           }
         } catch (err) {
-          toast.error(err.message || "An error occurred during Google authentication.");
+          toast.error(err?.message || "An error occurred during Google authentication.");
           navigate("/login", { replace: true });
         } finally {
           isFetchingSession = false;
@@ -50,13 +51,13 @@ export default function GoogleLoginButton({ tabIndex }) {
   }, [location.search, navigate, location.pathname]);
 
   return (
-    <>
-      <div className="relative my-2">
+    <div className="w-full">
+      <div className="relative my-3">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-secondary"></div>
+          <div className="w-full border-t border-slate-200"></div>
         </div>
         <div className="relative flex justify-center text-[10px] uppercase">
-          <span className="bg-white px-2 text-soft-gray font-light">Or continue with</span>
+          <span className="bg-white px-2 text-slate-400 font-medium">Or continue with</span>
         </div>
       </div>
 
@@ -64,11 +65,11 @@ export default function GoogleLoginButton({ tabIndex }) {
         type="button"
         onClick={handleGoogleLogin}
         tabIndex={tabIndex}
-        className="w-full flex items-center justify-center gap-2 bg-white hover:bg-bg-soft border border-secondary text-charcoal py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-sm cursor-pointer hover:border-accent"
+        className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-[0.99]"
       >
-        <FcGoogle size={16} />
-        <span>Sign in with Google</span>
+        <FcGoogle size={18} />
+        <span>{text}</span>
       </button>
-    </>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BookOpen, Mail, Phone, MapPin } from "lucide-react";
+import { Sun, Mail, Phone, MapPin } from "lucide-react";
 import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 
 export default function Footer() {
@@ -22,14 +22,14 @@ export default function Footer() {
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-2 group w-max">
               <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg text-white shadow-lg">
-                <BookOpen size={24} strokeWidth={2.5} />
+                <Sun size={24} strokeWidth={2.5} className="text-amber-300" />
               </div>
               <span className="text-2xl font-black tracking-tight text-slate-900">
-                Organization<span className="text-blue-600">Web</span>
+                Solar<span className="text-blue-600">Web</span>
               </span>
             </Link>
             <p className="text-slate-600 leading-relaxed text-sm">
-              Welcome to <strong>Organization Web</strong>, your trusted platform for organization management and development. We guide you from a beginner level to becoming a confident freelancer with practical, structured lessons.
+              Welcome to <strong>Solar Web</strong>, your trusted provider of high-performance solar panels, battery energy storage systems, and renewable green energy solutions.
             </p>
             <div className="flex gap-4">
               <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-blue-600 hover:text-white transition-all duration-300">
@@ -86,7 +86,7 @@ export default function Footer() {
 
         <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-sm text-center md:text-left">
-            &copy; {currentYear} Organization Web. All rights reserved.
+            &copy; {currentYear} Solar Web. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="#" className="text-slate-500 hover:text-slate-900 transition-colors">Privacy Policy</Link>

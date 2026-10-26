@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import headerBg from "../../../assets/header-bg.jpg"
+import headerBg from "../../../assets/header-bg.jpg";
 
 export default function ContactHero() {
     return (
@@ -20,7 +20,7 @@ export default function ContactHero() {
                         Get in <span className="text-blue-600">Touch</span>
                     </h1>
                     <p className="text-xl text-slate-800 mx-auto">
-                        Have a question about our courses? Want to enroll via WhatsApp? We'd love to hear from you.
+                        Have questions about solar equipment, inverter sizing, or battery storage? We'd love to hear from you.
                     </p>
                 </motion.div>
             </div>

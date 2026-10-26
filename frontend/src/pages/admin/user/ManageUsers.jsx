@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Mail, Shield, ShieldAlert, ShieldCheck, Search, Filter, CheckCircle, Ban, UserPlus, X } from 'lucide-react';
@@ -13,113 +13,110 @@ import AdminFilterMenu from '../../../common/AdminFilterMenu';
 export default function ManageUsers() {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Read initial URL params
-    const urlSearch = searchParams.get("search") || "";
-    const urlRole = searchParams.get("role") || "";
-    const urlStatus = searchParams.get("status") || "";
-    const urlSort = searchParams.get("sort") || "DESC";
-    const urlPage = parseInt(searchParams.get("page") || "1", 10) || 1;
+    // Read direct params from URL
+    const searchTerm = searchParams.get("search") || "";
+    const roleFilter = searchParams.get("role") || "";
+    const statusFilter = searchParams.get("status") || "";
+    const sortBy = searchParams.get("sort_by") || "created_at";
+    const sortOrder = searchParams.get("sort") || "DESC";
+    const page = parseInt(searchParams.get("page") || "1", 10) || 1;
 
+    const [searchInput, setSearchInput] = useState(searchTerm);
+    const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(urlPage);
     const [totalPages, setTotalPages] = useState(1);
-    const [searchTerm, setSearchTerm] = useState(urlSearch);
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(urlSearch);
-
-    // Active filters
-    const [roleFilter, setRoleFilter] = useState(urlRole);
-    const [statusFilter, setStatusFilter] = useState(urlStatus);
-    const [sortOrder, setSortOrder] = useState(urlSort);
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-
     const [totalItems, setTotalItems] = useState(0);
-    const { user: currentUser } = useAuthStore();
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
 
-    // Debounce search input
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearchTerm(searchTerm);
-        }, 250);
+    const { user: currentUser } = useAuthStore();
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
+    // Adjust state during render when URL search param changes externally (React official pattern)
+    if (prevSearchTerm !== searchTerm) {
+        setPrevSearchTerm(searchTerm);
+        setSearchInput(searchTerm);
+    }
 
-    // Sync state changes -> URL Search Params
-    useEffect(() => {
-        const params = new URLSearchParams();
-        if (debouncedSearchTerm) params.set("search", debouncedSearchTerm);
-        if (roleFilter) params.set("role", roleFilter);
-        if (statusFilter) params.set("status", statusFilter);
-        if (sortOrder && sortOrder !== "DESC") params.set("sort", sortOrder);
-        if (page > 1) params.set("page", page.toString());
-
-        if (params.toString() !== searchParams.toString()) {
-            setSearchParams(params, { replace: true });
-        }
-    }, [debouncedSearchTerm, roleFilter, statusFilter, sortOrder, page, searchParams, setSearchParams]);
-
-    // Sync URL Search Params -> State (e.g. browser back/forward)
-    useEffect(() => {
-        const s = searchParams.get("search") || "";
-        const r = searchParams.get("role") || "";
-        const st = searchParams.get("status") || "";
-        const so = searchParams.get("sort") || "DESC";
-        const p = parseInt(searchParams.get("page") || "1", 10) || 1;
-
-        if (s !== searchTerm) {
-            setSearchTerm(s);
-            setDebouncedSearchTerm(s);
-        }
-        if (r !== roleFilter) setRoleFilter(r);
-        if (st !== statusFilter) setStatusFilter(st);
-        if (so !== sortOrder) setSortOrder(so);
-        if (p !== page) setPage(p);
-    }, [searchParams]);
-
-    const fetchUsers = async (currentPage = page, search = debouncedSearchTerm, role = roleFilter, status = statusFilter, sort = sortOrder) => {
-        setLoading(true);
-        try {
-            const response = await axiosInstance.get('/users', {
-                params: {
-                    page: currentPage,
-                    limit: 10,
-                    search_term: search || undefined,
-                    role: role || undefined,
-                    is_active: status === "" ? undefined : status === "true",
-                    sort_order: sort || undefined
+    // Helper to update search params cleanly
+    const updateParams = useCallback((updates) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            Object.entries(updates).forEach(([key, val]) => {
+                if (
+                    val === undefined ||
+                    val === null ||
+                    val === "" ||
+                    (key === "sort_by" && val === "created_at") ||
+                    (key === "sort" && val === "DESC") ||
+                    (key === "page" && Number(val) <= 1)
+                ) {
+                    next.delete(key);
+                } else {
+                    next.set(key, String(val));
                 }
             });
-            const data = response.data?.data || response.data;
-            setUsers(data.items || []);
-            setTotalPages(data.meta?.totalPages || 1);
-            setTotalItems(data.meta?.totalItems || 0);
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to fetch users");
-        } finally {
-            setLoading(false);
-        }
-    };
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
 
+    // Debounce search typing
     useEffect(() => {
-        fetchUsers(page, debouncedSearchTerm, roleFilter, statusFilter, sortOrder);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, debouncedSearchTerm, roleFilter, statusFilter, sortOrder]);
+        const timer = setTimeout(() => {
+            if (searchInput !== searchTerm) {
+                updateParams({ search: searchInput || undefined, page: 1 });
+            }
+        }, 350);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        setDebouncedSearchTerm(searchTerm);
-        setPage(1);
-    };
+        return () => clearTimeout(timer);
+    }, [searchInput, searchTerm, updateParams]);
+
+    // Data fetching
+    useEffect(() => {
+        let active = true;
+
+        const loadData = async () => {
+            try {
+                const response = await axiosInstance.get('/users', {
+                    params: {
+                        page,
+                        limit: 10,
+                        search_term: searchTerm.trim() || undefined,
+                        role: roleFilter || undefined,
+                        is_active: statusFilter === "" ? undefined : statusFilter === "true",
+                        sort_by: sortBy || "created_at",
+                        sort_order: sortOrder || "DESC",
+                    }
+                });
+
+                if (active) {
+                    const data = response.data?.data || response.data;
+                    setUsers(data.items || []);
+                    setTotalPages(data.meta?.totalPages || 1);
+                    setTotalItems(data.meta?.totalItems || 0);
+                    setLoading(false);
+                }
+            } catch (error) {
+                if (active) {
+                    const msg = error.response?.data?.message;
+                    toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to fetch users"));
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadData();
+
+        return () => {
+            active = false;
+        };
+    }, [page, searchTerm, roleFilter, statusFilter, sortBy, sortOrder]);
 
     const handleClearSearch = () => {
-        setSearchTerm("");
-        setDebouncedSearchTerm("");
-        setPage(1);
+        setSearchInput("");
+        updateParams({ search: undefined, page: 1 });
     };
 
-    // Update single user row in place without full table re-fetch
     const handleUpdateUserRow = (updatedUser) => {
         if (!updatedUser || !updatedUser.id) return;
         setUsers((prevUsers) =>
@@ -127,10 +124,15 @@ export default function ManageUsers() {
         );
     };
 
+    const handleDeleteUserRow = (deletedUserId) => {
+        setUsers((prevUsers) => prevUsers.filter((u) => u.id !== deletedUserId));
+        setTotalItems((prev) => Math.max(0, prev - 1));
+    };
+
     const handleRoleChange = async (userId, newRole) => {
         const confirmed = await confirmAction({
             title: "Change User Role?",
-            text: `Are you sure you want to change this user's role to ${newRole}?`,
+            text: `Are you sure you want to change this account's role to ${newRole.replace('_', ' ')}?`,
             confirmButtonText: "Yes, change it",
         });
 
@@ -142,16 +144,18 @@ export default function ManageUsers() {
             const updatedUser = response.data?.data || response.data;
             toast.success("User role updated successfully");
             
-            // Row-level update without full table reload
             setUsers((prevUsers) =>
                 prevUsers.map((u) => (u.id === userId ? { ...u, ...updatedUser, role: newRole } : u))
             );
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to update role");
+            const msg = error.response?.data?.message;
+            toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to update role"));
         } finally {
             setActionLoading(null);
         }
     };
+
+    const hasActiveFilters = Boolean(roleFilter || statusFilter || sortBy !== "created_at" || sortOrder !== "DESC");
 
     return (
         <div className="p-4 max-w-7xl mx-auto w-full animate-fade-in">
@@ -162,19 +166,16 @@ export default function ManageUsers() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <form onSubmit={handleSearch} className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
+                    <div className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search by name or email..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setPage(1);
-                            }}
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
                             className="w-full pl-10 pr-9 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-shadow shadow-sm text-sm h-[38px]"
                         />
-                        {searchTerm && (
+                        {searchInput && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
@@ -184,31 +185,31 @@ export default function ManageUsers() {
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         )}
-                    </form>
+                    </div>
 
                     <button
                         onClick={() => setIsFilterOpen(true)}
                         type="button"
-                        className={`flex items-center justify-center p-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition shadow-sm h-[38px] w-[38px] cursor-pointer relative ${roleFilter || statusFilter || sortOrder !== "DESC"
-                            ? "ring-2 ring-blue-500/50 border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400"
-                            : ""
-                            }`}
+                        className={`flex items-center justify-center p-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition shadow-sm h-[38px] w-[38px] cursor-pointer relative ${
+                            hasActiveFilters ? "ring-2 ring-blue-500/50 border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400" : ""
+                        }`}
                         title="Filter Users"
                     >
                         <Filter className="w-4 h-4" />
-                        {/* Dot indicator if active filters are present */}
-                        {(roleFilter || statusFilter || sortOrder !== "DESC") && (
+                        {hasActiveFilters && (
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
                         )}
                     </button>
 
-                    <Link
-                        to="/admin/users/create"
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm h-[38px] cursor-pointer shrink-0"
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        <span className="hidden sm:inline">Register User</span>
-                    </Link>
+                    {isSuperAdmin(currentUser?.role) && (
+                        <Link
+                            to="/admin/users/create"
+                            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm h-[38px] cursor-pointer shrink-0"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Register User</span>
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -239,7 +240,7 @@ export default function ManageUsers() {
                                         <div className="flex flex-col items-center gap-2">
                                             <Search className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
                                             <p className="text-base font-medium text-gray-900 dark:text-gray-100">No users found</p>
-                                            <p className="text-sm">Try adjusting your search terms.</p>
+                                            <p className="text-sm">Try adjusting your search terms or filters.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -268,7 +269,8 @@ export default function ManageUsers() {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            {isSuperAdmin(currentUser?.role) && u.id !== currentUser?.id ? (
+                                            {/* Backend restricts changing USER role to another role. Only ADMIN <-> SUPER_ADMIN can be changed. */}
+                                            {isSuperAdmin(currentUser?.role) && u.id !== currentUser?.id && u.role !== UserRole.USER ? (
                                                 <select
                                                     value={u.role}
                                                     onChange={(e) => handleRoleChange(u.id, e.target.value)}
@@ -276,17 +278,17 @@ export default function ManageUsers() {
                                                     className="bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block py-1.5 pl-3 pr-8 transition-colors cursor-pointer appearance-none disabled:opacity-50"
                                                     style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
                                                 >
-                                                    <option value={UserRole.USER}>User</option>
                                                     <option value={UserRole.ADMIN}>Admin</option>
                                                     <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
                                                 </select>
                                             ) : (
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${u.role === UserRole.SUPER_ADMIN
-                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 ring-1 ring-purple-600/10 dark:ring-purple-500/20'
-                                                    : u.role === UserRole.ADMIN
-                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 ring-1 ring-blue-600/10 dark:ring-blue-500/20'
-                                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-300 ring-1 ring-gray-600/10 dark:ring-gray-500/20'
-                                                    }`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                    u.role === UserRole.SUPER_ADMIN
+                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 ring-1 ring-purple-600/10 dark:ring-purple-500/20'
+                                                        : u.role === UserRole.ADMIN
+                                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 ring-1 ring-blue-600/10 dark:ring-blue-500/20'
+                                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-300 ring-1 ring-gray-600/10 dark:ring-gray-500/20'
+                                                }`}>
                                                     {u.role === UserRole.SUPER_ADMIN && <ShieldAlert className="w-3.5 h-3.5" />}
                                                     {u.role === UserRole.ADMIN && <ShieldCheck className="w-3.5 h-3.5" />}
                                                     {u.role === UserRole.USER && <Shield className="w-3.5 h-3.5" />}
@@ -295,10 +297,11 @@ export default function ManageUsers() {
                                             )}
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${u.is_active
-                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-1 ring-emerald-600/10 dark:ring-emerald-500/20'
-                                                : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 ring-1 ring-red-600/10 dark:ring-red-500/20'
-                                                }`}>
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                u.is_active
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-1 ring-emerald-600/10 dark:ring-emerald-500/20'
+                                                    : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 ring-1 ring-red-600/10 dark:ring-red-500/20'
+                                            }`}>
                                                 {u.is_active ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
                                                 {u.is_active ? "Active" : "Inactive"}
                                             </span>
@@ -308,6 +311,7 @@ export default function ManageUsers() {
                                                 user={u}
                                                 currentUser={currentUser}
                                                 onUpdateUser={handleUpdateUserRow}
+                                                onDeleteUser={handleDeleteUserRow}
                                             />
                                         </td>
                                     </tr>
@@ -326,15 +330,15 @@ export default function ManageUsers() {
                         <div className="flex items-center gap-2">
                             <button
                                 disabled={page === 1}
-                                onClick={() => setPage(p => p - 1)}
-                                className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98]"
+                                onClick={() => updateParams({ page: page - 1 })}
+                                className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
                             >
                                 Previous
                             </button>
                             <button
                                 disabled={page === totalPages}
-                                onClick={() => setPage(p => p + 1)}
-                                className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98]"
+                                onClick={() => updateParams({ page: page + 1 })}
+                                className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
                             >
                                 Next
                             </button>
@@ -350,12 +354,14 @@ export default function ManageUsers() {
             >
                 <Filters
                     roleFilter={roleFilter}
-                    setRoleFilter={setRoleFilter}
+                    setRoleFilter={(val) => updateParams({ role: val, page: 1 })}
                     statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
+                    setStatusFilter={(val) => updateParams({ status: val, page: 1 })}
+                    sortBy={sortBy}
+                    setSortBy={(val) => updateParams({ sort_by: val, page: 1 })}
                     sortOrder={sortOrder}
-                    setSortOrder={setSortOrder}
-                    setPage={setPage}
+                    setSortOrder={(val) => updateParams({ sort: val, page: 1 })}
+                    setPage={(val) => updateParams({ page: val })}
                     onClose={() => setIsFilterOpen(false)}
                 />
             </AdminFilterMenu>

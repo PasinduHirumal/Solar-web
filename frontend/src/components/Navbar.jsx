@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Menu, X, LogOut, User, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { Sun, Menu, X, LogOut, User, LayoutDashboard, ShoppingBag } from "lucide-react";
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
 import { useState, useEffect } from "react";
@@ -64,20 +64,21 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${scrolled
-        ? "bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm py-2"
-        : "bg-white/95 backdrop-blur-sm border-b border-transparent py-3"
-        }`}
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm py-2"
+          : "bg-white/95 backdrop-blur-sm border-b border-transparent py-3"
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg text-white shadow-lg group-hover:shadow-blue-500/50 transition-all duration-300">
-              <BookOpen size={24} strokeWidth={2.5} />
+              <Sun size={24} strokeWidth={2.5} className="text-amber-300" />
             </div>
             <span className="text-2xl font-black tracking-tight text-slate-900 transition-colors duration-300">
-              Organization<span className="text-blue-600">Web</span>
+              Solar<span className="text-blue-600">Web</span>
             </span>
           </Link>
 
@@ -89,10 +90,11 @@ export default function Navbar() {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center justify-center ${isActive
-                    ? "text-blue-700 font-bold bg-blue-50 backdrop-blur-md border border-blue-100 shadow-sm"
-                    : "text-slate-700 hover:text-blue-600 hover:bg-slate-100/50"
-                    }`}
+                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center justify-center ${
+                    isActive
+                      ? "text-blue-700 font-bold bg-blue-50 backdrop-blur-md border border-blue-100 shadow-sm"
+                      : "text-slate-700 hover:text-blue-600 hover:bg-slate-100/50"
+                  }`}
                 >
                   {link.name}
                   {isActive && (
@@ -119,13 +121,14 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Actions */}
-          <div className="flex md:hidden items-center gap-3">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center gap-2">
             <button
-              className="p-2 focus:outline-none bg-slate-100 border border-slate-200 rounded-full text-slate-800 transition-colors duration-300"
               onClick={() => setIsOpen(!isOpen)}
+              className="p-2 text-slate-700 hover:text-blue-600 transition-colors"
+              aria-label="Toggle Menu"
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
           </div>
         </div>
@@ -149,10 +152,11 @@ export default function Navbar() {
                     key={link.name}
                     to={link.path}
                     onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all ${isActive
-                      ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-sm"
-                      : "text-slate-700 hover:bg-slate-50"
-                      }`}
+                    className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-sm"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
                   >
                     {link.name}
                   </Link>
@@ -182,26 +186,6 @@ export default function Navbar() {
                       <LayoutDashboard size={18} />
                       Dashboard
                     </Link>
-                  )}
-                  {!isAdmin(user?.role) && !isSuperAdmin(user?.role) && (
-                    <>
-                      <Link
-                        to="/my-receipts"
-                        onClick={() => setIsOpen(false)}
-                        className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 text-sm font-bold border border-slate-200 hover:bg-slate-50 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 17V7" /></svg>
-                        My Receipts
-                      </Link>
-                      <Link
-                        to="/my-purchases"
-                        onClick={() => setIsOpen(false)}
-                        className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 text-sm font-bold border border-slate-200 hover:bg-slate-50 transition-colors"
-                      >
-                        <ShoppingBag size={18} />
-                        My Purchases
-                      </Link>
-                    </>
                   )}
                   <button
                     onClick={() => {

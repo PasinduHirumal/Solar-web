@@ -3,8 +3,17 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuthStore from "../../lib/authStore";
 import { getHomePathByRole } from "../../lib/roles";
-import { Eye, EyeOff, Mail, Lock, User, Sparkles, ShieldCheck, ArrowLeft, BookOpen } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Sparkles, ShieldCheck, ArrowLeft, Sun, Check, AlertCircle } from "lucide-react";
 import GoogleLoginButton from "../../common/GoogleLoginButton";
+
+const validatePasswordRules = (pwd) => ({
+  length: pwd.length >= 8 && pwd.length <= 128,
+  lower: /[a-z]/.test(pwd),
+  upper: /[A-Z]/.test(pwd),
+  number: /[0-9]/.test(pwd),
+  special: /[^A-Za-z0-9]/.test(pwd),
+  noSpace: !/\s/.test(pwd) && pwd.length > 0,
+});
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -18,6 +27,7 @@ export default function Auth() {
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginRememberMe, setLoginRememberMe] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register form state
@@ -30,9 +40,16 @@ export default function Auth() {
   const register = useAuthStore((state) => state.register);
   const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
 
+  const passwordRules = validatePasswordRules(registerPassword);
+  const isPasswordValid = Object.values(passwordRules).every(Boolean);
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    const res = await login({ email: loginEmail, password: loginPassword });
+    const res = await login({
+      email: loginEmail,
+      password: loginPassword,
+      remember_me: loginRememberMe,
+    });
     if (res.success) {
       navigate(getHomePathByRole(res.user?.role));
     }
@@ -74,7 +91,8 @@ export default function Auth() {
       <div className="absolute top-[-10%] left-[-10%] w-[35%] h-[35%] rounded-full bg-blue-500/5 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[35%] h-[35%] rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none" />
 
-      <div className="relative w-full max-w-3xl h-[490px] bg-white border border-slate-200 shadow-2xl rounded-3xl overflow-hidden hidden md:flex">
+      {/* DESKTOP LAYOUT */}
+      <div className="relative w-full max-w-3xl min-h-[530px] bg-white border border-slate-200 shadow-2xl rounded-3xl overflow-hidden hidden md:flex">
 
         {/* Left Side Container (Sign Up Form) */}
         <motion.div
@@ -87,12 +105,12 @@ export default function Auth() {
           className="w-1/2 h-full flex flex-col justify-center px-10 py-6 text-left"
         >
           <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="text-cyan-600" size={16} />
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Organization Web</span>
+            <Sun className="text-amber-500" size={18} />
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Solar Web</span>
           </div>
           <h2 className="text-2xl font-display font-bold text-slate-800 uppercase mb-1">Create Account</h2>
-          <p className="text-xs text-slate-500 mb-4 font-light">
-            Fill in your details to start your learning journey
+          <p className="text-xs text-slate-500 mb-3 font-light">
+            Fill in your details to create your account
           </p>
 
           <form onSubmit={handleRegisterSubmit} className="space-y-3" tabIndex={isSignUp ? 0 : -1}>
@@ -107,6 +125,8 @@ export default function Auth() {
                 value={registerName}
                 onChange={(e) => setRegisterName(e.target.value)}
                 required={isSignUp}
+                minLength={3}
+                maxLength={255}
               />
             </div>
 
@@ -146,18 +166,38 @@ export default function Auth() {
               </button>
             </div>
 
+            {/* Password guidance */}
+            {registerPassword.length > 0 && (
+              <div className="text-[10px] space-y-1 bg-slate-50 p-2 rounded-lg border border-slate-100 text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  {passwordRules.length ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                  <span>8-128 characters</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {passwordRules.upper && passwordRules.lower ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                  <span>Uppercase & lowercase letters</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {passwordRules.number && passwordRules.special ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                  <span>Number & special character</span>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isAuthLoading}
+              disabled={isAuthLoading || (registerPassword.length > 0 && !isPasswordValid)}
               tabIndex={isSignUp ? 0 : -1}
               className="w-full mt-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-md hover:shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
             >
               {isAuthLoading ? "Creating account..." : "Create Account"}
             </button>
+
+            <GoogleLoginButton tabIndex={isSignUp ? 0 : -1} text="Sign up with Google" />
           </form>
 
-          <p className="text-[9px] text-center text-slate-400 mt-4 font-light">
-            By continuing, you agree to Organization Web Terms & Privacy Policy
+          <p className="text-[9px] text-center text-slate-400 mt-2 font-light">
+            By continuing, you agree to Solar Web Terms & Privacy Policy
           </p>
         </motion.div>
 
@@ -172,8 +212,8 @@ export default function Auth() {
           className="w-1/2 h-full flex flex-col justify-center px-10 py-6 ml-auto text-left"
         >
           <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="text-cyan-600" size={16} />
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Organization Web</span>
+            <Sun className="text-amber-500" size={18} />
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Solar Web</span>
           </div>
           <h2 className="text-2xl font-display font-bold text-slate-800 uppercase mb-1">Sign In</h2>
           <p className="text-xs text-slate-500 mb-4 font-light">
@@ -217,7 +257,18 @@ export default function Auth() {
               </button>
             </div>
 
-            <div className="flex justify-end text-xs">
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between text-xs py-0.5">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 hover:text-slate-900">
+                <input
+                  type="checkbox"
+                  checked={loginRememberMe}
+                  onChange={(e) => setLoginRememberMe(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                />
+                <span className="text-xs">Remember me</span>
+              </label>
+
               <Link to="/forgot-password" className="text-xs text-cyan-600 hover:text-blue-600 transition font-semibold">
                 Forgot password?
               </Link>
@@ -232,15 +283,15 @@ export default function Auth() {
               {isAuthLoading ? "Signing in..." : "Sign In"}
             </button>
 
-            <GoogleLoginButton tabIndex={!isSignUp ? 0 : -1} />
+            <GoogleLoginButton tabIndex={!isSignUp ? 0 : -1} rememberMe={loginRememberMe} />
           </form>
 
-          <p className="text-[9px] text-center text-slate-400 mt-4 font-light">
-            By continuing, you agree to Organization Web Terms & Privacy Policy
+          <p className="text-[9px] text-center text-slate-400 mt-3 font-light">
+            By continuing, you agree to Solar Web Terms & Privacy Policy
           </p>
         </motion.div>
 
-        {/* Sliding Sliding Overlay Panel */}
+        {/* Sliding Overlay Panel */}
         <motion.div
           className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-br from-blue-600 to-cyan-500 text-white p-8 flex flex-col justify-center overflow-hidden z-20 shadow-2xl"
           animate={{
@@ -270,22 +321,21 @@ export default function Auth() {
                   Welcome Back!
                 </h2>
                 <p className="text-xs text-white/95 leading-relaxed font-light">
-                  Log in to access your dashboard, courses, and account settings.
+                  Log in to access your dashboard, orders, and account settings.
                 </p>
 
-                {/* Feature cards inside Promo */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <Sparkles size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Interactive Lessons & Guides</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Premium Solar Solutions</span>
                   </div>
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <ShieldCheck size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Freelancing Development Path</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Reliable & Clean Energy</span>
                   </div>
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <User size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Confidence & Structured Growth</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Dedicated Customer Support</span>
                   </div>
                 </div>
 
@@ -310,30 +360,29 @@ export default function Auth() {
                 className="flex flex-col justify-center h-full relative z-10 text-left space-y-4"
               >
                 <h2 className="text-2xl font-display font-bold uppercase tracking-wide">
-                  Join the Community
+                  Join Solar Web
                 </h2>
                 <p className="text-xs text-white/95 leading-relaxed font-light">
-                  Register your account to securely save your progress, track your lessons, and join other learners.
+                  Register your account to manage solar equipment orders, track deliveries, and access support.
                 </p>
 
-                {/* Feature cards inside Promo */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <Sparkles size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Free & Premium Courses</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Certified Solar Hardware</span>
                   </div>
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <ShieldCheck size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Trackable Learning Path</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Warranty & Energy Guarantees</span>
                   </div>
                   <div className="flex items-center gap-2.5 bg-white/10 p-2 rounded-xl backdrop-blur-md">
                     <User size={14} className="text-cyan-200" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Dedicated Student Support</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Expert Energy Consultation</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center pt-2">
-                  <p className="text-xs text-white/70 mb-2">New to Organization Web?</p>
+                  <p className="text-xs text-white/70 mb-2">New to Solar Web?</p>
                   <button
                     type="button"
                     onClick={() => toggleMode(true)}
@@ -348,174 +397,205 @@ export default function Auth() {
         </motion.div>
       </div>
 
-        {/* MOBILE LAYOUT */}
-        {/* ========================================================================= */}
-        <div className="relative w-full max-w-sm bg-white border border-slate-200 shadow-2xl rounded-3xl p-6 md:hidden overflow-hidden">
-          <div className="absolute top-[-40px] right-[-40px] w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+      {/* MOBILE LAYOUT */}
+      <div className="relative w-full max-w-sm bg-white border border-slate-200 shadow-2xl rounded-3xl p-6 md:hidden overflow-hidden">
+        <div className="absolute top-[-40px] right-[-40px] w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          <AnimatePresence mode="wait">
-            {isSignUp ? (
-              <motion.div
-                key="mobile-signup"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="text-left"
-              >
-                <h2 className="text-xl font-display font-bold text-slate-800 uppercase mb-1">Create Account</h2>
-                <p className="text-xs text-slate-500 mb-4 font-light">
-                  Fill details to begin your learning journey
-                </p>
+        <AnimatePresence mode="wait">
+          {isSignUp ? (
+            <motion.div
+              key="mobile-signup"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+              className="text-left"
+            >
+              <h2 className="text-xl font-display font-bold text-slate-800 uppercase mb-1">Create Account</h2>
+              <p className="text-xs text-slate-500 mb-4 font-light">
+                Fill details to register your account
+              </p>
 
-                <form onSubmit={handleRegisterSubmit} className="space-y-3">
-                  {/* Name */}
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Full name"
-                      className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      required
-                    />
-                  </div>
+              <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                {/* Name */}
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Full name"
+                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    required
+                    minLength={3}
+                    maxLength={255}
+                  />
+                </div>
 
-                  {/* Email */}
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      required
-                    />
-                  </div>
+                {/* Email */}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    required
+                  />
+                </div>
 
-                  {/* Password */}
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input
-                      type={showRegisterPassword ? "text" : "password"}
-                      placeholder="Password"
-                      className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-9 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-650 transition"
-                    >
-                      {showRegisterPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-
+                {/* Password */}
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    type={showRegisterPassword ? "text" : "password"}
+                    placeholder="Password"
+                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-9 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    required
+                  />
                   <button
-                    type="submit"
-                    disabled={isAuthLoading}
-                    className="w-full mt-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer"
+                    type="button"
+                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition"
                   >
-                    {isAuthLoading ? "Creating account..." : "Create Account"}
-                  </button>
-                </form>
-
-                <div className="text-xs text-center mt-4">
-                  <span className="text-slate-500 font-light">Already have an account? </span>
-                  <button
-                    onClick={() => toggleMode(false)}
-                    className="text-blue-600 font-bold hover:underline"
-                  >
-                    Sign In
+                    {showRegisterPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="mobile-signin"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.25 }}
-                className="text-left"
-              >
-                <h2 className="text-xl font-display font-bold text-slate-800 uppercase mb-1">Sign In</h2>
-                <p className="text-xs text-slate-500 mb-4 font-light">
-                  Enter credentials to access your account
-                </p>
 
-                <form onSubmit={handleLoginSubmit} className="space-y-3">
-                  {/* Email */}
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
+                {/* Password rule guidance */}
+                {registerPassword.length > 0 && (
+                  <div className="text-[10px] space-y-1 bg-slate-50 p-2 rounded-lg border border-slate-100 text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      {passwordRules.length ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                      <span>8-128 characters</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {passwordRules.upper && passwordRules.lower ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                      <span>Upper & lower case</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {passwordRules.number && passwordRules.special ? <Check size={12} className="text-emerald-500" /> : <AlertCircle size={12} className="text-slate-400" />}
+                      <span>Number & special char</span>
+                    </div>
                   </div>
+                )}
 
-                  {/* Password */}
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      placeholder="Password"
-                      className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-9 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-650 transition"
-                    >
-                      {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                <button
+                  type="submit"
+                  disabled={isAuthLoading || (registerPassword.length > 0 && !isPasswordValid)}
+                  className="w-full mt-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                >
+                  {isAuthLoading ? "Creating account..." : "Create Account"}
+                </button>
 
-                  <div className="flex justify-end text-xs">
-                    <Link to="/forgot-password" className="text-xs text-cyan-600 hover:text-blue-600 transition font-semibold">
-                      Forgot password?
-                    </Link>
-                  </div>
+                <GoogleLoginButton text="Sign up with Google" />
+              </form>
 
+              <div className="text-xs text-center mt-4">
+                <span className="text-slate-500 font-light">Already have an account? </span>
+                <button
+                  onClick={() => toggleMode(false)}
+                  className="text-blue-600 font-bold hover:underline cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="mobile-signin"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+              className="text-left"
+            >
+              <h2 className="text-xl font-display font-bold text-slate-800 uppercase mb-1">Sign In</h2>
+              <p className="text-xs text-slate-500 mb-4 font-light">
+                Enter credentials to access your account
+              </p>
+
+              <form onSubmit={handleLoginSubmit} className="space-y-3">
+                {/* Email */}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    type={showLoginPassword ? "text" : "password"}
+                    placeholder="Password"
+                    className="w-full bg-slate-50/50 border border-slate-200 text-slate-900 placeholder-slate-400 pl-9 pr-9 py-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm font-light transition"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
                   <button
-                    type="submit"
-                    disabled={isAuthLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer"
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition"
                   >
-                    {isAuthLoading ? "Signing in..." : "Sign In"}
-                  </button>
-
-                  <GoogleLoginButton />
-                </form>
-
-                <div className="text-xs text-center mt-4">
-                  <span className="text-slate-500 font-light">Don't have an account yet? </span>
-                  <button
-                    onClick={() => toggleMode(true)}
-                    className="text-blue-600 font-bold hover:underline"
-                  >
-                    Sign Up
+                    {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          <p className="text-[9px] text-center text-slate-400 mt-4 relative z-10 font-light">
-            By continuing, you agree to Organization Web Terms & Privacy Policy
-          </p>
-        </div>
+                <div className="flex items-center justify-between text-xs py-0.5">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={loginRememberMe}
+                      onChange={(e) => setLoginRememberMe(e.target.checked)}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                    />
+                    <span className="text-xs">Remember me</span>
+                  </label>
+
+                  <Link to="/forgot-password" className="text-xs text-cyan-600 hover:text-blue-600 transition font-semibold">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAuthLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                >
+                  {isAuthLoading ? "Signing in..." : "Sign In"}
+                </button>
+
+                <GoogleLoginButton rememberMe={loginRememberMe} />
+              </form>
+
+              <div className="text-xs text-center mt-4">
+                <span className="text-slate-500 font-light">Don't have an account yet? </span>
+                <button
+                  onClick={() => toggleMode(true)}
+                  className="text-blue-600 font-bold hover:underline cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="text-[9px] text-center text-slate-400 mt-4 relative z-10 font-light">
+          By continuing, you agree to Solar Web Terms & Privacy Policy
+        </p>
+      </div>
     </div>
   );
 }

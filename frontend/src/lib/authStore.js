@@ -1,7 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { axiosInstance } from "./axiosInstance";
+import axios from "axios";
+import { axiosInstance, API_URL } from "./axiosInstance";
 import toast from "react-hot-toast";
+
+const extractErrorMessage = (error, fallback = "Operation failed") => {
+    const errorMsg = error?.response?.data?.message;
+    if (Array.isArray(errorMsg)) {
+        return errorMsg.join(", ");
+    }
+    return errorMsg || error?.message || fallback;
+};
 
 const useAuthStore = create(
     persist(
@@ -14,10 +23,15 @@ const useAuthStore = create(
             setHydrated: () => set({ isHydrated: true }),
 
             setAuth: (accessToken, user) =>
-                set({ accessToken, user }),
+                set((state) => ({
+                    accessToken,
+                    user: user || state.user,
+                })),
 
-            logoutLocal: () =>
-                set({ accessToken: null, user: null }),
+            logoutLocal: () => {
+                set({ accessToken: null, user: null });
+                localStorage.removeItem("auth-storage");
+            },
 
             login: async (credentials) => {
                 try {
@@ -28,14 +42,15 @@ const useAuthStore = create(
                     const accessToken = responseData?.accessToken;
                     const user = responseData?.user;
 
-                    if (!accessToken || !user) throw new Error("Invalid response format");
+                    if (!accessToken || !user) {
+                        throw new Error("Invalid response format received from server");
+                    }
 
                     set({ accessToken, user });
                     toast.success(response.data?.message || "Logged in successfully!");
                     return { success: true, user };
                 } catch (error) {
-                    const errorMsg = error.response?.data?.message;
-                    const message = Array.isArray(errorMsg) ? errorMsg[0] : (errorMsg || "Login failed");
+                    const message = extractErrorMessage(error, "Login failed");
                     toast.error(message);
                     return { success: false, error: message };
                 } finally {
@@ -47,15 +62,91 @@ const useAuthStore = create(
                 try {
                     set({ isAuthLoading: true });
                     const response = await axiosInstance.post("/auth/register", credentials);
+                    const responseData = response.data?.data || response.data;
                     toast.success(response.data?.message || "User registered successfully!");
-                    return { success: true };
+                    return { success: true, data: responseData?.result || responseData };
                 } catch (error) {
-                    const errorMsg = error.response?.data?.message;
-                    const message = Array.isArray(errorMsg) ? errorMsg[0] : (errorMsg || "Registration failed");
+                    const message = extractErrorMessage(error, "Registration failed");
                     toast.error(message);
                     return { success: false, error: message };
                 } finally {
                     set({ isAuthLoading: false });
+                }
+            },
+
+            checkAuth: async () => {
+                try {
+                    set({ isAuthLoading: true });
+                    const response = await axiosInstance.get("/auth/check-auth");
+                    const responseData = response.data?.data || response.data;
+                    const user = responseData?.user || responseData;
+
+                    if (user && user.id) {
+                        set({ user });
+                        return user;
+                    }
+                    return null;
+                } catch {
+                    // If check-auth fails after token refresh retry, clear state
+                    if (get().accessToken) {
+                        set({ accessToken: null, user: null });
+                        localStorage.removeItem("auth-storage");
+                    }
+                    return null;
+                } finally {
+                    set({ isAuthLoading: false });
+                }
+            },
+
+            refresh: async () => {
+                try {
+                    set({ isAuthLoading: true });
+                    const response = await axios.post(
+                        `${API_URL}/auth/refresh`,
+                        {},
+                        { withCredentials: true }
+                    );
+
+                    const responseData = response.data?.data || response.data;
+                    const accessToken = responseData?.accessToken;
+                    const user = responseData?.user;
+
+                    if (!accessToken || !user) {
+                        throw new Error("Invalid refresh response format");
+                    }
+
+                    set({ accessToken, user });
+                    return { accessToken, user, message: response.data?.message };
+                } catch (error) {
+                    set({ accessToken: null, user: null });
+                    localStorage.removeItem("auth-storage");
+                    const message = extractErrorMessage(error, "Session refresh failed");
+                    throw new Error(message, { cause: error });
+                } finally {
+                    set({ isAuthLoading: false });
+                }
+            },
+
+            initAuth: async () => {
+                const currentToken = get().accessToken;
+                if (currentToken) {
+                    await get().checkAuth();
+                } else {
+                    // Attempt silent refresh using httpOnly cookie
+                    try {
+                        const response = await axios.post(
+                            `${API_URL}/auth/refresh`,
+                            {},
+                            { withCredentials: true }
+                        );
+                        const responseData = response.data?.data || response.data;
+                        if (responseData?.accessToken && responseData?.user) {
+                            set({ accessToken: responseData.accessToken, user: responseData.user });
+                        }
+                    } catch {
+                        // Guest user, silently keep unauthenticated state
+                        set({ accessToken: null, user: null });
+                    }
                 }
             },
 
@@ -68,29 +159,6 @@ const useAuthStore = create(
                 } finally {
                     set({ accessToken: null, user: null });
                     localStorage.removeItem("auth-storage");
-                }
-            },
-
-            refresh: async () => {
-                try {
-                    set({ isAuthLoading: true });
-                    const response = await axiosInstance.post("/auth/refresh");
-
-                    const responseData = response.data?.data || response.data;
-                    const accessToken = responseData?.accessToken;
-                    const user = responseData?.user;
-
-                    if (!accessToken || !user) throw new Error("Invalid refresh response");
-
-                    set({ accessToken, user });
-                    return { accessToken, user, message: response.data?.message };
-                } catch (error) {
-                    set({ accessToken: null, user: null });
-                    const errorMsg = error.response?.data?.message;
-                    const message = Array.isArray(errorMsg) ? errorMsg[0] : (errorMsg || "Session refresh failed");
-                    throw new Error(message, { cause: error });
-                } finally {
-                    set({ isAuthLoading: false });
                 }
             },
 

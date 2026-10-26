@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Loader2, ArrowLeft, Sparkles } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, Sun } from "lucide-react";
 import { axiosInstance } from "../../lib/axiosInstance";
 import toast from "react-hot-toast";
 
@@ -15,14 +15,14 @@ export default function ForgotPassword() {
 
     try {
       const response = await axiosInstance.post("/users/reset-password-link", { email });
-      toast.success(response.data?.message || "Reset link sent successfully!");
+      toast.success(response.data?.message || "If an account exists with that email, a reset link has been sent!");
       setEmail("");
       setTimeout(() => {
         navigate("/login");
       }, 3000);
     } catch (error) {
       const msg = error.response?.data?.message;
-      toast.error(Array.isArray(msg) ? msg[0] : (msg || "Failed to send reset link"));
+      toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to send reset link"));
     } finally {
       setIsLoading(false);
     }
@@ -38,11 +38,11 @@ export default function ForgotPassword() {
 
         <div className="text-center mb-6 relative z-10">
           <div className="inline-flex p-3 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-2xl text-white shadow-md mb-4">
-            <Sparkles size={24} />
+            <Sun size={24} className="text-amber-300" />
           </div>
           <h2 className="text-2xl font-bold text-slate-800">Forgot Password</h2>
           <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-            Enter your email and we'll send you a link to reset your password.
+            Enter your registered email and we'll send you a link to reset your password.
           </p>
         </div>
 

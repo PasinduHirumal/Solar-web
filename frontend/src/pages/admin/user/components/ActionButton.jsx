@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Ban, CheckCircle, KeyRound, Loader2 } from 'lucide-react';
+import { Ban, CheckCircle, KeyRound, Loader2, Trash2 } from 'lucide-react';
 import { axiosInstance } from '../../../../lib/axiosInstance';
 import { confirmAction } from '../../../../lib/confirmAction';
-import { isSuperAdmin } from '../../../../lib/roles';
+import { isSuperAdmin, isAdmin } from '../../../../lib/roles';
 
-export default function ActionButton({ user, currentUser, onUpdateUser }) {
+export default function ActionButton({ user, currentUser, onUpdateUser, onDeleteUser }) {
     const [statusLoading, setStatusLoading] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const handleSendResetLink = async (email) => {
         const confirmed = await confirmAction({
@@ -23,7 +24,8 @@ export default function ActionButton({ user, currentUser, onUpdateUser }) {
             const response = await axiosInstance.post('/users/reset-password-link', { email });
             toast.success(response.data?.message || "Reset link sent successfully");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to send reset link");
+            const msg = error.response?.data?.message;
+            toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to send reset link"));
         } finally {
             setResetLoading(false);
         }
@@ -48,15 +50,41 @@ export default function ActionButton({ user, currentUser, onUpdateUser }) {
                 onUpdateUser(updatedUser || { id: userId, is_active: !currentStatus });
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to toggle status");
+            const msg = error.response?.data?.message;
+            toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to toggle status"));
         } finally {
             setStatusLoading(false);
         }
     };
 
+    const handleDeleteUser = async (userId, userName) => {
+        const confirmed = await confirmAction({
+            title: "Delete User?",
+            text: `Are you sure you want to permanently delete "${userName}"? This action cannot be undone.`,
+            confirmButtonText: "Yes, delete",
+        });
+
+        if (!confirmed) return;
+
+        setDeleteLoading(true);
+        try {
+            await axiosInstance.delete(`/users/${userId}`);
+            toast.success("User deleted successfully");
+            if (onDeleteUser) {
+                onDeleteUser(userId);
+            }
+        } catch (error) {
+            const msg = error.response?.data?.message;
+            toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to delete user"));
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
     return (
-        <div className="flex items-center justify-end gap-2">
-            {user.id === currentUser?.id && (
+        <div className="flex items-center justify-end gap-1.5">
+            {/* Send Reset Password Link (Available to SuperAdmin/Admin for any user, or self) */}
+            {(isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role) || user.id === currentUser?.id) && (
                 <button
                     onClick={() => handleSendResetLink(user.email)}
                     disabled={resetLoading}
@@ -67,17 +95,30 @@ export default function ActionButton({ user, currentUser, onUpdateUser }) {
                 </button>
             )}
 
+            {/* Toggle Active / Inactive (Super Admin only, cannot toggle self) */}
             {isSuperAdmin(currentUser?.role) && user.id !== currentUser?.id && (
                 <button
                     onClick={() => handleToggleStatus(user.id, user.is_active)}
                     disabled={statusLoading}
                     className={`p-2 transition-colors rounded-lg ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${user.is_active
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 ring-red-600/10 dark:ring-red-500/20'
+                        ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20'
                         : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20'
                         }`}
                     title={user.is_active ? "Deactivate User" : "Activate User"}
                 >
                     {statusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : user.is_active ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                </button>
+            )}
+
+            {/* Delete User (Super Admin only, cannot delete self) */}
+            {isSuperAdmin(currentUser?.role) && user.id !== currentUser?.id && (
+                <button
+                    onClick={() => handleDeleteUser(user.id, user.name)}
+                    disabled={deleteLoading}
+                    className="p-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-lg ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                    title="Delete User"
+                >
+                    {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
             )}
         </div>

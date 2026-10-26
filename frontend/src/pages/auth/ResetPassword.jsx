@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Sun, Eye, EyeOff, Loader2, AlertCircle, Check } from "lucide-react";
 import { axiosInstance } from "../../lib/axiosInstance";
 import toast from "react-hot-toast";
 import useAuthStore from "../../lib/authStore";
 import { getHomePathByRole } from "../../lib/roles";
+
+const validatePasswordRules = (pwd) => ({
+  length: pwd.length >= 8 && pwd.length <= 128,
+  lower: /[a-z]/.test(pwd),
+  upper: /[A-Z]/.test(pwd),
+  number: /[0-9]/.test(pwd),
+  special: /[^A-Za-z0-9]/.test(pwd),
+  noSpace: !/\s/.test(pwd) && pwd.length > 0,
+});
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -21,6 +30,9 @@ export default function ResetPassword() {
 
   const navigate = useNavigate();
 
+  const passwordRules = validatePasswordRules(formData.newPassword);
+  const isPasswordValid = Object.values(passwordRules).every(Boolean);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -28,26 +40,32 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
 
     if (formData.newPassword !== formData.confirmPassword) {
       toast.error("Passwords do not match");
-      setIsLoading(false);
+      return;
+    }
+
+    if (!isPasswordValid) {
+      toast.error("Password must meet all complexity requirements");
       return;
     }
 
     if (!token) {
       toast.error("Reset token is missing or invalid");
-      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      await axiosInstance.post("/users/reset-password", {
+      const response = await axiosInstance.post("/users/reset-password", {
         token,
-        new_password: formData.newPassword
+        new_password: formData.newPassword,
       });
-      toast.success("Password has been reset successfully. Redirecting...");
+
+      toast.success(response.data?.message || "Password has been reset successfully. Redirecting...");
+
       setTimeout(() => {
         if (user) {
           navigate(getHomePathByRole(user.role));
@@ -57,7 +75,7 @@ export default function ResetPassword() {
       }, 2000);
     } catch (error) {
       const msg = error.response?.data?.message;
-      toast.error(Array.isArray(msg) ? msg[0] : (msg || "Failed to reset password"));
+      toast.error(Array.isArray(msg) ? msg.join(", ") : (msg || error.message || "Failed to reset password"));
     } finally {
       setIsLoading(false);
     }
@@ -66,11 +84,14 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-slate-50">
-        <div className="max-w-md w-full text-center space-y-6 bg-white p-8 rounded-3xl shadow-xl">
+        <div className="max-w-md w-full text-center space-y-6 bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
           <AlertCircle className="mx-auto h-16 w-16 text-red-500" />
           <h2 className="text-2xl font-bold text-slate-900">Invalid Link</h2>
-          <p className="text-slate-600">The password reset link is missing or invalid.</p>
-          <Link to="/login" className="block w-full py-3 px-4 border border-transparent rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+          <p className="text-slate-600 text-sm">The password reset link is missing or invalid.</p>
+          <Link
+            to="/login"
+            className="block w-full py-3 px-4 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          >
             Back to Login
           </Link>
         </div>
@@ -86,14 +107,14 @@ export default function ResetPassword() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[100px]" />
       </div>
 
-      <div className="max-w-md w-full space-y-8 z-10 bg-white/80 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-slate-200/50">
+      <div className="max-w-md w-full space-y-8 z-10 bg-white/90 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-slate-200">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center gap-2 group mb-6">
             <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg text-white shadow-lg group-hover:shadow-blue-500/50 transition-all duration-300">
-              <BookOpen size={28} strokeWidth={2.5} />
+              <Sun size={28} strokeWidth={2.5} className="text-amber-300" />
             </div>
             <span className="text-3xl font-black tracking-tight text-slate-900">
-              Organization<span className="text-blue-600">Web</span>
+              Solar<span className="text-blue-600">Web</span>
             </span>
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">Set new password</h2>
@@ -122,14 +143,29 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              <p className="mt-1.5 text-xs text-slate-500">
-                Must be at least 8 characters and include a number, a special character, and uppercase & lowercase letters.
-              </p>
+
+              {/* Password complexity indicators */}
+              {formData.newPassword.length > 0 && (
+                <div className="mt-2 text-xs space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-slate-600">
+                  <div className="flex items-center gap-1.5">
+                    {passwordRules.length ? <Check size={14} className="text-emerald-500" /> : <AlertCircle size={14} className="text-slate-400" />}
+                    <span>Between 8 and 128 characters</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {passwordRules.upper && passwordRules.lower ? <Check size={14} className="text-emerald-500" /> : <AlertCircle size={14} className="text-slate-400" />}
+                    <span>At least one uppercase and one lowercase letter</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {passwordRules.number && passwordRules.special ? <Check size={14} className="text-emerald-500" /> : <AlertCircle size={14} className="text-slate-400" />}
+                    <span>At least one number and one special character</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -150,7 +186,7 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -160,8 +196,8 @@ export default function ResetPassword() {
 
           <button
             type="submit"
-            disabled={isLoading || !formData.newPassword || !formData.confirmPassword}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5"
+            disabled={isLoading || !formData.newPassword || !formData.confirmPassword || !isPasswordValid}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5 cursor-pointer"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Reset password"}
           </button>

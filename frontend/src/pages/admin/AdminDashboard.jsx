@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import useAuthStore from "../../lib/authStore";
 import { axiosInstance } from "../../lib/axiosInstance";
 import {
-  Users, Activity, BarChart3, Sparkles
+  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -10,14 +10,18 @@ export default function AdminDashboard() {
   const user = useAuthStore((s) => s.user);
   const [stats, setStats] = useState({
     totalUsers: 0,
+    totalCategories: 0,
+    activeCategories: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [totalRes] = await Promise.all([
+        const [usersRes, categoriesRes, activeCatsRes] = await Promise.all([
           axiosInstance.get("/users", { params: { limit: 1 } }),
+          axiosInstance.get("/categories", { params: { limit: 1 } }),
+          axiosInstance.get("/categories", { params: { limit: 1, is_active: true } }),
         ]);
 
         const extractTotal = (res) => {
@@ -25,7 +29,9 @@ export default function AdminDashboard() {
         };
 
         setStats({
-          totalUsers: extractTotal(totalRes),
+          totalUsers: extractTotal(usersRes),
+          totalCategories: extractTotal(categoriesRes),
+          activeCategories: extractTotal(activeCatsRes),
         });
       } catch (error) {
         console.error("Failed to fetch analytics", error);
@@ -49,6 +55,26 @@ export default function AdminDashboard() {
       iconColor: "text-blue-600",
       delay: "0",
     },
+    {
+      title: "Hardware Categories",
+      value: stats.totalCategories,
+      icon: FolderTree,
+      gradient: "from-amber-500 to-orange-600",
+      lightBg: "bg-amber-50",
+      darkBg: "",
+      iconColor: "text-amber-600",
+      delay: "100",
+    },
+    {
+      title: "Active Categories",
+      value: stats.activeCategories,
+      icon: CheckCircle2,
+      gradient: "from-emerald-500 to-teal-600",
+      lightBg: "bg-emerald-50",
+      darkBg: "",
+      iconColor: "text-emerald-600",
+      delay: "200",
+    },
   ];
 
   return (
@@ -62,11 +88,14 @@ export default function AdminDashboard() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-sm font-medium mb-4 backdrop-blur-sm transition-colors duration-300">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Admin Overview</span>
+              <span>Solar Web System Overview</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2 tracking-tight transition-colors duration-300">
               Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
             </h1>
+            <p className="text-sm text-slate-500">
+              Role: <span className="font-semibold text-slate-700">{(user?.role || '').replace('_', ' ')}</span> • Email: <span className="text-slate-700">{user?.email}</span>
+            </p>
           </div>
           <div className="hidden md:flex p-4 bg-slate-50 rounded-2xl border border-slate-100 backdrop-blur-sm shadow-inner relative group cursor-default transition-colors duration-300">
             <Activity className="w-16 h-16 text-blue-600 opacity-80 group-hover:scale-110 group-hover:text-blue-500 transition-all duration-500" strokeWidth={1.5} />
@@ -84,8 +113,8 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm animate-pulse h-40">
               <div className="flex justify-between items-start">
                 <div className="space-y-4 w-full">
@@ -98,14 +127,13 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {statCards.map((stat, i) => (
             <div
               key={i}
               className="group bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden cursor-default"
               style={{ animationDelay: `${stat.delay}ms` }}
             >
-              {/* Decorative gradient blur */}
               <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${stat.gradient} opacity-10 group-hover:opacity-20 blur-2xl rounded-full transition-opacity duration-300 pointer-events-none`}></div>
 
               <div className="flex justify-between items-start relative z-10">
@@ -124,7 +152,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Bottom decorative line */}
               <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}></div>
             </div>
           ))}

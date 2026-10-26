@@ -1,25 +1,31 @@
 import axios from "axios";
 import useAuthStore from "./authStore";
 
-export const API_URL = import.meta.env.VITE_APP_NODE_ENV === "production"
+const rawApiUrl = import.meta.env.VITE_APP_NODE_ENV === "production"
     ? import.meta.env.VITE_APP_PRODUCTION_API_URL
     : import.meta.env.VITE_APP_DEVELOPMENT_API_URL;
 
+export const API_URL = (rawApiUrl || "http://localhost:5000").replace(/\/+$/, "");
+
 export const axiosInstance = axios.create({
-    baseURL: `${API_URL}/`,
+    baseURL: API_URL,
     withCredentials: true,
     headers: { "Content-Type": "application/json" },
 });
 
-
-// Attach access token
+// Attach access token to outgoing requests
 axiosInstance.interceptors.request.use((config) => {
     try {
-        const authStorage = localStorage.getItem('auth-storage');
-        if (authStorage) {
-            const { state } = JSON.parse(authStorage);
-            if (state?.accessToken) {
-                config.headers.Authorization = `Bearer ${state.accessToken}`;
+        const token = useAuthStore.getState().accessToken;
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        } else {
+            const authStorage = localStorage.getItem("auth-storage");
+            if (authStorage) {
+                const { state } = JSON.parse(authStorage);
+                if (state?.accessToken) {
+                    config.headers.Authorization = `Bearer ${state.accessToken}`;
+                }
             }
         }
     } catch {
@@ -28,15 +34,17 @@ axiosInstance.interceptors.request.use((config) => {
     return config;
 });
 
-
 // ===== REFRESH CONTROL =====
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
     failedQueue.forEach((prom) => {
-        if (error) prom.reject(error);
-        else prom.resolve(token);
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
     });
 
     failedQueue = [];
@@ -77,14 +85,26 @@ axiosInstance.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            const response = await axiosInstance.post("/auth/refresh");
+            // Call refresh endpoint directly using raw axios without Bearer token
+            const response = await axios.post(
+                `${API_URL}/auth/refresh`,
+                {},
+                { withCredentials: true }
+            );
+
             const refreshData = response.data?.data || response.data;
+            const newAccessToken = refreshData?.accessToken;
+            const user = refreshData?.user;
 
-            useAuthStore.getState().setAuth(refreshData.accessToken, refreshData.user);
+            if (!newAccessToken) {
+                throw new Error("Invalid refresh response format");
+            }
 
-            processQueue(null, refreshData.accessToken);
+            useAuthStore.getState().setAuth(newAccessToken, user);
 
-            originalRequest.headers.Authorization = `Bearer ${refreshData.accessToken}`;
+            processQueue(null, newAccessToken);
+
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return axiosInstance(originalRequest);
         } catch (err) {
             processQueue(err, null);
