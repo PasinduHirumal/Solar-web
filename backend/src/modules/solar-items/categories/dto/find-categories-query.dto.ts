@@ -1,9 +1,9 @@
 import { IntersectionType } from "@nestjs/swagger";
-import { PaginationQueryDto } from "../pagination-query.dto";
-import { SearchQueryDto } from "../search-query.dto";
-import { WithSort } from "../mixins/with-sort.dto";
+import { PaginationQueryDto } from "../../../../common/dto/pagination-query.dto";
+import { SearchQueryDto } from "../../../../common/dto/search-query.dto";
+import { WithSort } from "../../../../common/dto/mixins/with-sort.dto";
 import { IsBoolean, IsOptional } from "class-validator";
-import { TransformBoolean } from "../../transformers/boolean.transformer";
+import { TransformBoolean } from "../../../../common/transformers/boolean.transformer";
 
 export class FindCategoriesQueryDto extends IntersectionType(
     PaginationQueryDto,
