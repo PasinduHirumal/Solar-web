@@ -30,6 +30,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const ManageUsers = lazy(() => import("./pages/admin/user/ManageUsers"));
 const CreateUser = lazy(() => import("./pages/admin/user/CreateUser"));
 const ManageCategories = lazy(() => import("./pages/admin/category/ManageCategories"));
+const CreateCategory = lazy(() => import("./pages/admin/category/CreateCategory"));
 
 export default function App() {
   const user = useAuthStore((s) => s.user);
@@ -108,6 +109,16 @@ export default function App() {
             }
           />
           <Route path="/admin/categories" element={<ManageCategories />} />
+          <Route
+            path="/admin/categories/create"
+            element={
+              isAdmin(user?.role) || isSuperAdmin(user?.role) ? (
+                <CreateCategory />
+              ) : (
+                <Navigate to="/admin/categories" replace />
+              )
+            }
+          />
           <Route path="/admin/*" element={<NotFound />} />
         </Route>
       </AnimatedRoutes>
