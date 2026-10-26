@@ -98,50 +98,50 @@ export class AuthController {
 
 
     //-----------Google OAuth routes-----------------------------------
-    // @Get('google')
-    // @HttpCode(HttpStatus.OK)
-    // async googleOAuth(
-    //     @Query('remember_me') remember_me: string | undefined,
-    //     @Res() res: Response,
-    // ): Promise<any> {
-    //     const state = remember_me === 'true' ? 'remember_me=true' : 'remember_me=false';
-    //     const url = await this.authService.googleOAuthStart(state);
-    //     return res.redirect(url);
-    // }
+    @Get('google')
+    @HttpCode(HttpStatus.OK)
+    async googleOAuth(
+        @Query('remember_me') remember_me: string | undefined,
+        @Res() res: Response,
+    ): Promise<any> {
+        const state = remember_me === 'true' ? 'remember_me=true' : 'remember_me=false';
+        const url = await this.authService.googleOAuthStart(state);
+        return res.redirect(url);
+    }
 
-    // @Get('google/callback')
-    // @HttpCode(HttpStatus.OK)
-    // async googleAuthCallback(
-    //     @Query('code') code: string,
-    //     @Query('state') state: string | undefined,
-    //     @Res() res: Response,
-    // ): Promise<any> {
-    //     const urls = this.originUrlService.getPanelUrls();
+    @Get('google/callback')
+    @HttpCode(HttpStatus.OK)
+    async googleAuthCallback(
+        @Query('code') code: string,
+        @Query('state') state: string | undefined,
+        @Res() res: Response,
+    ): Promise<any> {
+        const urls = this.originUrlService.getPanelUrls();
 
-    //     if (!code) {
-    //         return res.redirect(`${urls.fallbackUrl}/login?google_auth=error&message=No authorization code provided`);
-    //     }
+        const rememberMe = state === 'remember_me=true';
+        const loginPath = this.configService.get<string>('LOGIN_PATH');
 
-    //     const rememberMe = state === 'remember_me=true';
-    //     const loginPath = this.configService.get<string>('LOGIN_PATH');
+        if (!code) {
+            return res.redirect(`${urls.fallbackUrl}/${loginPath}?google_auth=error&message=No authorization code provided`);
+        }
 
-    //     try {
-    //         const result = await this.authService.googleAuthCallback(code, rememberMe);
-    //         const targetUrl = this.originUrlService.resolveTargetUrl(result.user.role, urls);
+        try {
+            const result = await this.authService.googleAuthCallback(code, rememberMe);
+            const targetUrl = this.originUrlService.resolveTargetUrl(result.user.role, urls);
 
-    //         res.cookie('refreshToken', result.refreshToken, this.cookieService.getRefreshTokenCookieOptions(result.user.remember_me));
+            res.cookie('refreshToken', result.refreshToken, this.cookieService.getRefreshTokenCookieOptions(result.user.remember_me));
 
-    //         return res.redirect(`${targetUrl}${loginPath}?google_auth=success`);
-    //     } catch (error) {
-    //         const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-    //         const encodedMessage = encodeURIComponent(errorMessage);
+            return res.redirect(`${targetUrl}${loginPath}?google_auth=success`);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+            const encodedMessage = encodeURIComponent(errorMessage);
 
-    //         const userRole = (error as any)?.userRole;
-    //         const errorRedirectUrl = userRole
-    //             ? this.originUrlService.resolveTargetUrl(userRole, urls)
-    //             : urls.fallbackUrl;
+            const userRole = (error as any)?.userRole;
+            const errorRedirectUrl = userRole
+                ? this.originUrlService.resolveTargetUrl(userRole, urls)
+                : urls.fallbackUrl;
 
-    //         return res.redirect(`${errorRedirectUrl}${loginPath}?google_auth=error&message=${encodedMessage}`);
-    //     }
-    // }
+            return res.redirect(`${errorRedirectUrl}${loginPath}?google_auth=error&message=${encodedMessage}`);
+        }
+    }
 }
