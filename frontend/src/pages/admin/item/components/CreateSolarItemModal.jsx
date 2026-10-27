@@ -1,19 +1,10 @@
 import React, { useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Package,
-  Plus,
-  X,
-  Loader2,
-  UploadCloud,
-  DollarSign,
-  Layers,
-  Image as ImageIcon,
-  Check,
-  AlertCircle,
+  Package, X, Loader2, UploadCloud, Layers, Check, AlertCircle,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
-import { formatPrice,currencyType } from "../../../../lib/formatPrice";
+import { currencyType } from "../../../../lib/formatPrice";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -318,11 +309,10 @@ export default function CreateSolarItemModal({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${
-                isDragging
-                  ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
-                  : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50/50 dark:bg-gray-800/30"
-              }`}
+              className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${isDragging
+                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+                : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50/50 dark:bg-gray-800/30"
+                }`}
             >
               <input
                 type="file"
