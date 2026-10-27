@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import * as LucideIcons from "lucide-react";
 import {
-  icons, Search, ChevronDown, Check, X, Sparkles, SearchX, CircleHelp, CircleQuestionMark, HelpCircle,
+  icons, Search, ChevronDown, Check, X, Sparkles, SearchX, CircleHelp, HelpCircle,
 } from "lucide-react";
 
 /**
@@ -24,7 +24,7 @@ function resolveLucideIcon(iconName) {
 
 // Fallback icon component for missing/invalid icon names
 const FallbackIcon =
-  CircleHelp || CircleQuestionMark || HelpCircle || Sparkles;
+  CircleHelp || HelpCircle || Sparkles;
 
 /**
  * Reusable static component for rendering Lucide icons safely by name.
