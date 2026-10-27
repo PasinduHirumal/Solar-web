@@ -1,4 +1,4 @@
-import { Body, Controller, ParseFilePipeBuilder, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseFilePipeBuilder, ParseUUIDPipe, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ItemsService } from './items.service';
 import { Roles } from '../../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../../identity/enums/user.enum';
@@ -10,12 +10,21 @@ import { MAX_FILE_SIZE } from '../../../common/constants/file-size.constant';
 import { CustomFileTypeValidator } from '../../../common/validators/custom-file-type.validator';
 import { IMAGE_MIME_TYPES } from '../../../common/constants/file-types.constant';
 import { SolarItemEntity } from './entities/solar-items.entity';
+import { FindSolarItemsQueryDto } from './dto/find-solar-items-query.dto';
+import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 
 @Controller('items')
 export class ItemsController {
     constructor(
         private readonly itemsService: ItemsService,
     ) {}
+
+    @Get()
+    async getAllSolarItems(
+        @Query() query: FindSolarItemsQueryDto,
+    ): Promise<PaginatedResponse<SolarItemEntity>> {
+        return this.itemsService.findAll(query);
+    }
 
     @Post()
     @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
@@ -31,5 +40,12 @@ export class ItemsController {
         ) picture: Express.Multer.File,
     ): Promise<SolarItemEntity> {
         return this.itemsService.create(dto, picture);
+    }
+
+    @Get(':item_id')
+    async getSolarItemById(
+        @Param('item_id', new ParseUUIDPipe({ version: '4' })) item_id: string,
+    ): Promise<SolarItemEntity> {
+        return this.itemsService.findById(item_id);
     }
 }
