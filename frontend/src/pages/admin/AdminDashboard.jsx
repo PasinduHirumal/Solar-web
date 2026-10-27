@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import useAuthStore from "../../lib/authStore";
 import { axiosInstance } from "../../lib/axiosInstance";
 import {
-  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2
+  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2, Package
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -12,16 +12,18 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalCategories: 0,
     activeCategories: 0,
+    totalItems: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [usersRes, categoriesRes, activeCatsRes] = await Promise.all([
+        const [usersRes, categoriesRes, activeCatsRes, itemsRes] = await Promise.all([
           axiosInstance.get("/users", { params: { limit: 1 } }),
           axiosInstance.get("/categories", { params: { limit: 1 } }),
           axiosInstance.get("/categories", { params: { limit: 1, is_active: true } }),
+          axiosInstance.get("/items", { params: { limit: 1 } }),
         ]);
 
         const extractTotal = (res) => {
@@ -32,6 +34,7 @@ export default function AdminDashboard() {
           totalUsers: extractTotal(usersRes),
           totalCategories: extractTotal(categoriesRes),
           activeCategories: extractTotal(activeCatsRes),
+          totalItems: extractTotal(itemsRes),
         });
       } catch (error) {
         console.error("Failed to fetch analytics", error);
@@ -75,6 +78,16 @@ export default function AdminDashboard() {
       iconColor: "text-emerald-600",
       delay: "200",
     },
+    {
+      title: "Solar Items",
+      value: stats.totalItems,
+      icon: Package,
+      gradient: "from-cyan-500 to-blue-600",
+      lightBg: "bg-cyan-50",
+      darkBg: "",
+      iconColor: "text-cyan-600",
+      delay: "300",
+    },
   ];
 
   return (
@@ -113,8 +126,8 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm animate-pulse h-32">
               <div className="flex justify-between items-start">
                 <div className="space-y-3 w-full">
@@ -127,7 +140,7 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat, i) => (
             <div
               key={i}
