@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SolarItemEntity } from './entities/solar-items.entity';
-import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
+import { DeleteResult, EntityManager, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { FilesService } from '../../files/files.service';
 import { CreateSolarItemDto } from './dto/create-solar-item.dto';
 import { randomUUID } from 'crypto';
@@ -13,6 +13,8 @@ import { PaginatedResponse } from '../../../common/interfaces/paginated-response
 import { pick } from '../../../utils/pick-fields.util';
 import { FILE_FIELDS } from '../../files/constants/file-fields.constants';
 import { CATEGORY_FIELDS } from '../categories/constants/item-category-fields.constants';
+import { UpdateSolarItemDto } from './dto/update-solar-item.dto';
+import { UpdatePriceDto } from '../../../common/dto/inventory/update-price.dto';
 
 const SOLAR_ITEMS_ALIAS = 'solar_items';
 
@@ -36,6 +38,9 @@ export class ItemsService {
     async create(dto: CreateSolarItemDto, picture: Express.Multer.File): Promise<SolarItemEntity> {
         const category = await this.categoryService.findById(dto.category_id);
         if (!category.is_active) throw new BadRequestException(`Category not in active`);
+
+        const exists = await this.solarItemRepo.existsBy({ category_id: category.id, title: dto.title });
+        if (exists) throw new ConflictException(`Solar-Item already exists with category: ${category.title} & title: ${dto.title}`);
 
         const safariCode = await this.generateItemCode(dto.title);
 
@@ -153,6 +158,133 @@ export class ItemsService {
         if (!solarItem) throw new NotFoundException(`Solar-Item not found`);
 
         return solarItem;
+    }
+
+    async updateData(item: SolarItemEntity, dto: UpdateSolarItemDto): Promise<SolarItemEntity> {
+        let code = item.code;
+        if (dto.title) {
+            code = await this.generateItemCode(dto.title);
+        }
+
+        if (dto.category_id) {
+            const category = await this.categoryService.findById(dto.category_id);
+            if (!category.is_active) throw new BadRequestException(`Category not in active`);
+        }
+
+        if (dto.title || dto.category_id) {
+            const exists = await this.solarItemRepo.existsBy({ 
+                category_id: dto.category_id ?? item.category_id, 
+                title: dto.title ?? item.title,
+                id: Not(item.id),
+            });
+
+            if (exists) throw new ConflictException(`Cannot update, Solar-Item already exists with these data`);
+        }
+
+        return await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
+            await manager.update(SolarItemEntity, item.id, { ...dto, code });
+            return manager.findOneOrFail(SolarItemEntity, { where: { id: item.id } });
+        });
+    }
+
+    async updatePrice(item: SolarItemEntity, dto: UpdatePriceDto): Promise<SolarItemEntity> {
+        return await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(SolarItemEntity)
+                .createQueryBuilder(SOLAR_ITEMS_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${SOLAR_ITEMS_ALIAS}.id = :id`, { id: item.id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Solar-Item with ID ${item.id} not found`);
+
+            await manager.update(SolarItemEntity, locked.id, {
+                marked_price: dto.price,
+                selling_price: dto.price,
+            });
+
+            return await manager.findOneOrFail(SolarItemEntity, {
+                where: { id: locked.id },
+            });
+        });
+    }
+
+    async updatePicture(item: SolarItemEntity, picture: Express.Multer.File): Promise<SolarItemEntity> {
+        const oldFileId = item.picture_id;
+
+        const uploadedFile = await this.fileUploadService.uploadFile(picture, 'solar-item-image');
+        
+        let updated: SolarItemEntity;
+        try {
+            updated = await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
+                await manager.update(SolarItemEntity, item.id, { picture_id: uploadedFile.id });
+                return await manager.findOneOrFail(SolarItemEntity, { where: { id: item.id } });
+            });
+        } catch (error) {
+            try {
+                await this.fileUploadService.deleteFile(uploadedFile.id);
+            } catch (rollbackError) {
+                this.logger.error(
+                    FILE_LOG_MESSAGES.UPDATE_ROLLBACK_FAILED(uploadedFile.id),
+                    rollbackError instanceof Error ? rollbackError.stack : rollbackError,
+                );
+            }
+
+            throw error;
+        }
+
+        try {
+            await this.fileUploadService.deleteFile(oldFileId);
+        } catch (cleanupError) {
+            this.logger.error(
+                FILE_LOG_MESSAGES.OLD_FILE_CLEANUP_FAILED(`Safari ${item.id}`, oldFileId),
+                cleanupError instanceof Error ? cleanupError.stack : cleanupError,
+            );
+        }
+
+        return updated;
+    }
+
+    async toggleStatus(item: SolarItemEntity): Promise<SolarItemEntity> {
+        await this.solarItemRepo
+            .createQueryBuilder()
+            .update(SolarItemEntity)
+            .set({ is_active: () => 'NOT is_active' })
+            .where('id = :id', { id: item.id })
+            .execute();
+
+        return this.findById(item.id);
+    }
+
+    async remove(item: SolarItemEntity): Promise<void> {
+        const imageFileId = item.picture_id;
+
+        let deleteResult: DeleteResult;
+        try {
+            deleteResult = await this.solarItemRepo
+                .createQueryBuilder()
+                .delete()
+                .from(SolarItemEntity)
+                .where('id = :id', { id: item.id })
+                .execute();
+        } catch (error) {
+            throw new BadRequestException(`Cannot delete solar-item "${item.code}" — it is still assigned to one or more records`);
+        }
+
+        if (!deleteResult.affected) {
+            return;
+        }
+
+        if (imageFileId) {
+            try {
+                await this.fileUploadService.deleteFile(imageFileId);
+            } catch (error) {
+                this.logger.error(
+                    FILE_LOG_MESSAGES.DELETE_CASCADE_CLEANUP_FAILED(`Solar-item ${item.id}`, imageFileId),
+                    (error as Error).stack,
+                );
+            }
+        }
     }
 
 

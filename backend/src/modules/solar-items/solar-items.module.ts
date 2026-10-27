@@ -8,6 +8,7 @@ import { ItemCategoryEntity } from './categories/entities/item-category.entity';
 import { ItemCategoryExistsPipe } from './categories/pipes/category-exists.pipe';
 import { FilesModule } from '../files/files.module';
 import { SolarItemEntity } from './items/entities/solar-items.entity';
+import { SolarItemExistsPipe } from './items/pipes/solar-item-exists.pipe';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SolarItemEntity } from './items/entities/solar-items.entity';
     ItemsService, 
     CategoriesService, 
     ItemCategoryExistsPipe,
+    SolarItemExistsPipe,
   ]
 })
 export class SolarItemsModule {}
