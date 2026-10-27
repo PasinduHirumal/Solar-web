@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
+import { formatPrice,currencyType } from "../../../../lib/formatPrice";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -297,10 +298,10 @@ export default function CreateSolarItemModal({
                   value={formData.marked_price}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="w-full pl-8 pr-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 font-bold text-xs">
-                  $
+                  {currencyType}
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { DollarSign, X, Loader2 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
-import { formatPrice } from "../../../../lib/formatPrice";
+import { formatPrice, currencyType } from "../../../../lib/formatPrice";
 
 export default function UpdatePriceModal({
   isOpen,
@@ -146,10 +146,10 @@ export default function UpdatePriceModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition"
               />
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 font-bold text-xs">
-                $
+                {currencyType}
               </div>
             </div>
             <p className="text-[11px] text-gray-400">
