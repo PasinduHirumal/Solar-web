@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FolderTree, Menu, X, LogOut, Home, Sun } from "lucide-react";
+import { LayoutDashboard, Users, FolderTree, Package, Menu, X, LogOut, Home, Sun } from "lucide-react";
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
 
@@ -25,6 +25,7 @@ export default function AdminLayout() {
     { name: "Dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { name: "Manage Users", path: "/admin/users", icon: <Users size={18} /> },
     { name: "Manage Categories", path: "/admin/categories", icon: <FolderTree size={18} /> },
+    { name: "Manage Solar Items", path: "/admin/items", icon: <Package size={18} /> },
   ];
 
   return (
@@ -110,10 +111,10 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-13 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 sticky top-0 z-30 shrink-0">
+        <header className="h-13 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 sticky top-0 z-30 shrink-0 md:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg mr-3"
+            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg mr-3 cursor-pointer"
           >
             <Menu size={20} />
           </button>

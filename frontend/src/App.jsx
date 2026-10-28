@@ -29,6 +29,7 @@ const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const ManageUsers = lazy(() => import("./pages/admin/user/ManageUsers"));
 const ManageCategories = lazy(() => import("./pages/admin/category/ManageCategories"));
+const ManageSolarItems = lazy(() => import("./pages/admin/item/ManageSolarItems"));
 
 export default function App() {
   const user = useAuthStore((s) => s.user);
@@ -99,6 +100,9 @@ export default function App() {
           <Route path="/admin/users/create" element={<Navigate to="/admin/users" replace />} />
           <Route path="/admin/categories" element={<ManageCategories />} />
           <Route path="/admin/categories/create" element={<Navigate to="/admin/categories" replace />} />
+          <Route path="/admin/items" element={<ManageSolarItems />} />
+          <Route path="/admin/items/create" element={<Navigate to="/admin/items" replace />} />
+          <Route path="/admin/solar-items" element={<Navigate to="/admin/items" replace />} />
           <Route path="/admin/*" element={<NotFound />} />
         </Route>
       </AnimatedRoutes>
