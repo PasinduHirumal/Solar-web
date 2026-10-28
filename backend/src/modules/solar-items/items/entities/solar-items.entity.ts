@@ -1,6 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { ItemCategoryEntity } from "../../categories/entities/item-category.entity";
-import { FileEntity } from "../../../files/entities/file.entity";
 
 @Entity('solar_items')
 @Index('UQ_solar_item_code',            ['code'], { unique: true })
