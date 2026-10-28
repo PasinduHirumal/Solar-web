@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import useAuthStore from "../../lib/authStore";
 import { axiosInstance } from "../../lib/axiosInstance";
+import { isSuperAdmin } from "../../lib/roles";
 import {
   Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2, Package
 } from "lucide-react";
@@ -19,8 +20,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const canFetchUsers = isSuperAdmin(user?.role);
         const [usersRes, categoriesRes, activeCatsRes, itemsRes] = await Promise.all([
-          axiosInstance.get("/users", { params: { limit: 1 } }),
+          canFetchUsers
+            ? axiosInstance.get("/users", { params: { limit: 1 } }).catch(() => null)
+            : Promise.resolve(null),
           axiosInstance.get("/categories", { params: { limit: 1 } }),
           axiosInstance.get("/categories", { params: { limit: 1, is_active: true } }),
           axiosInstance.get("/items", { params: { limit: 1 } }),
@@ -31,7 +35,7 @@ export default function AdminDashboard() {
         };
 
         setStats({
-          totalUsers: extractTotal(usersRes),
+          totalUsers: usersRes ? extractTotal(usersRes) : 0,
           totalCategories: extractTotal(categoriesRes),
           activeCategories: extractTotal(activeCatsRes),
           totalItems: extractTotal(itemsRes),
@@ -45,19 +49,24 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-  }, []);
+  }, [user?.role]);
 
+  const isSuper = isSuperAdmin(user?.role);
   const statCards = [
-    {
-      title: "Total Users",
-      value: stats.totalUsers,
-      icon: Users,
-      gradient: "from-blue-500 to-indigo-600",
-      lightBg: "bg-blue-50",
-      darkBg: "",
-      iconColor: "text-blue-600",
-      delay: "0",
-    },
+    ...(isSuper
+      ? [
+          {
+            title: "Total Users",
+            value: stats.totalUsers,
+            icon: Users,
+            gradient: "from-blue-500 to-indigo-600",
+            lightBg: "bg-blue-50",
+            darkBg: "",
+            iconColor: "text-blue-600",
+            delay: "0",
+          },
+        ]
+      : []),
     {
       title: "Hardware Categories",
       value: stats.totalCategories,
@@ -127,7 +136,7 @@ export default function AdminDashboard() {
       {/* Stats Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(isSuper ? 4 : 3)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm animate-pulse h-32">
               <div className="flex justify-between items-start">
                 <div className="space-y-3 w-full">
@@ -140,7 +149,7 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuper ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
           {statCards.map((stat, i) => (
             <div
               key={i}

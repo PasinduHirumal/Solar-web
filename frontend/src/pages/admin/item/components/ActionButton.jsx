@@ -35,7 +35,7 @@ export default function ActionButton({
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isPictureOpen, setIsPictureOpen] = useState(false);
 
-  const canEdit = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
+  const canEdit = isSuperAdmin(currentUser?.role);
   const canUpdatePrice = isSuperAdmin(currentUser?.role);
   const canDelete = isSuperAdmin(currentUser?.role);
 

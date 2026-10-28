@@ -18,7 +18,7 @@ export default function RegisterUserModal({ isOpen, onClose, onUserCreated }) {
     name: "",
     email: "",
     password: "",
-    role: UserRole.USER,
+    role: UserRole.ADMIN,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +39,7 @@ export default function RegisterUserModal({ isOpen, onClose, onUserCreated }) {
       name: "",
       email: "",
       password: "",
-      role: UserRole.USER,
+      role: UserRole.ADMIN,
     });
     setShowPassword(false);
     setLoading(false);
@@ -173,7 +173,6 @@ export default function RegisterUserModal({ isOpen, onClose, onUserCreated }) {
                 required
                 className="w-full pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-xs transition appearance-none cursor-pointer"
               >
-                <option value={UserRole.USER}>Standard User</option>
                 <option value={UserRole.ADMIN}>Admin</option>
                 <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
               </select>

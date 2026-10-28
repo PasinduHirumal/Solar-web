@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Package, X, Loader2, UploadCloud, Layers, Check, AlertCircle,
+  Package, X, Loader2, UploadCloud, Layers, Check, AlertCircle, ShieldCheck
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { currencyType } from "../../../../lib/formatPrice";
@@ -25,6 +25,7 @@ export default function CreateSolarItemModal({
     title: "",
     category_id: "",
     marked_price: "",
+    warranty_period: "",
     description: "",
   });
   const [pictureFile, setPictureFile] = useState(null);
@@ -45,6 +46,7 @@ export default function CreateSolarItemModal({
       title: "",
       category_id: "",
       marked_price: "",
+      warranty_period: "",
       description: "",
     });
     setPictureFile(null);
@@ -52,8 +54,23 @@ export default function CreateSolarItemModal({
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     setLoading(false);
     onClose();
+  };
+
+  const handleRemovePicture = (e) => {
+    e.stopPropagation();
+    setPictureFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const validateAndSetFile = (file) => {
@@ -124,8 +141,18 @@ export default function CreateSolarItemModal({
       return;
     }
 
+    const trimmedWarranty = formData.warranty_period.trim();
+    if (trimmedWarranty && trimmedWarranty.length < 3) {
+      toast.error("Warranty period must be at least 3 characters if provided");
+      return;
+    }
+    if (trimmedWarranty && trimmedWarranty.length > 255) {
+      toast.error("Warranty period cannot exceed 255 characters");
+      return;
+    }
+
     if (!pictureFile) {
-      toast.error("Please upload an image for this solar item");
+      toast.error("Please upload a product picture for this solar item");
       return;
     }
 
@@ -141,10 +168,15 @@ export default function CreateSolarItemModal({
       data.append("title", trimmedTitle);
       data.append("category_id", formData.category_id);
       data.append("marked_price", String(priceNum));
+      if (trimmedWarranty) {
+        data.append("warranty_period", trimmedWarranty);
+      }
       if (trimmedDesc) {
         data.append("description", trimmedDesc);
       }
-      data.append("picture", pictureFile);
+      if (pictureFile) {
+        data.append("picture", pictureFile);
+      }
 
       const response = await axiosInstance.post("/items", data, {
         headers: {
@@ -298,21 +330,58 @@ export default function CreateSolarItemModal({
             </div>
           </div>
 
-          {/* Picture Upload Zone */}
+          {/* Warranty Period */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Product Picture <span className="text-red-500">*</span>
+              Warranty Period <span className="text-gray-400 font-normal lowercase">(optional)</span>
             </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="warranty_period"
+                minLength={3}
+                maxLength={255}
+                value={formData.warranty_period}
+                onChange={handleChange}
+                placeholder="e.g. 5 Years / 10 Years Replacement"
+                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              Manufacturer or shop warranty guarantee (min. 3 characters if provided)
+            </p>
+          </div>
+
+          {/* Picture Upload Zone */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                Product Picture <span className="text-red-500">*</span>
+              </label>
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemovePicture}
+                  className="text-[11px] text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer font-medium"
+                >
+                  Remove image
+                </button>
+              )}
+            </div>
 
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${isDragging
-                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
-                : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50/50 dark:bg-gray-800/30"
-                }`}
+              className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${
+                isDragging
+                  ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 bg-gray-50/50 dark:bg-gray-800/30"
+              }`}
             >
               <input
                 type="file"

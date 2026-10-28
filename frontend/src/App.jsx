@@ -96,7 +96,10 @@ export default function App() {
         >
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<ManageUsers />} />
+          <Route
+            path="/admin/users"
+            element={isSuperAdmin(user?.role) ? <ManageUsers /> : <Navigate to="/admin/dashboard" replace />}
+          />
           <Route path="/admin/users/create" element={<Navigate to="/admin/users" replace />} />
           <Route path="/admin/categories" element={<ManageCategories />} />
           <Route path="/admin/categories/create" element={<Navigate to="/admin/categories" replace />} />
