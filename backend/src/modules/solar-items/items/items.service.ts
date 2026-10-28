@@ -1,17 +1,13 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SolarItemEntity } from './entities/solar-items.entity';
-import { DeleteResult, EntityManager, Not, Repository, SelectQueryBuilder } from 'typeorm';
-import { FilesService } from '../../files/files.service';
+import { EntityManager, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateSolarItemDto } from './dto/create-solar-item.dto';
 import { randomUUID } from 'crypto';
-import { FileEntity } from '../../files/entities/file.entity';
 import { CategoriesService } from '../categories/categories.service';
-import { FILE_LOG_MESSAGES } from '../../files/constants/file-errors.constants';
 import { FindSolarItemsQueryDto } from './dto/find-solar-items-query.dto';
 import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 import { pick } from '../../../utils/pick-fields.util';
-import { FILE_FIELDS } from '../../files/constants/file-fields.constants';
 import { CATEGORY_FIELDS } from '../categories/constants/item-category-fields.constants';
 import { UpdateSolarItemDto } from './dto/update-solar-item.dto';
 import { UpdatePriceDto } from '../../../common/dto/inventory/update-price.dto';
@@ -25,17 +21,14 @@ const EXACT_FILTER_MAP: Partial<Record<keyof FindSolarItemsQueryDto, string>> = 
 
 @Injectable()
 export class ItemsService {
-    private readonly logger = new Logger(ItemsService.name);
-
     constructor(
         @InjectRepository(SolarItemEntity)
         private readonly solarItemRepo: Repository<SolarItemEntity>,
 
-        private readonly fileUploadService: FilesService,
         private readonly categoryService: CategoriesService,
     ) {}
 
-    async create(dto: CreateSolarItemDto, picture: Express.Multer.File): Promise<SolarItemEntity> {
+    async create(dto: CreateSolarItemDto): Promise<SolarItemEntity> {
         const category = await this.categoryService.findById(dto.category_id);
         if (!category.is_active) throw new BadRequestException(`Category not in active`);
 
@@ -44,36 +37,18 @@ export class ItemsService {
 
         const solarItemCode = await this.generateItemCode(dto.title);
 
-        let uploadedFile: FileEntity | null = null;
-
-        if (picture) {
-            uploadedFile = await this.fileUploadService.uploadFile(picture, 'solar-item-image');
-        }
-
         try {
             return await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
                 const solarItem = manager.create(SolarItemEntity, {
                     ...dto,
                     code: solarItemCode,
                     category_id: category.id,
-                    picture_id: uploadedFile!.id,
                     selling_price: dto.marked_price,
                 });
 
                 return await manager.save(SolarItemEntity, solarItem);
             });
         } catch (error) {
-            if (uploadedFile) {
-                try {
-                    await this.fileUploadService.deleteFile(uploadedFile.id);
-                } catch (rollbackError) {
-                    this.logger.error(
-                        FILE_LOG_MESSAGES.UPLOAD_ROLLBACK_FAILED(uploadedFile.id),
-                        rollbackError instanceof Error ? rollbackError.stack : rollbackError,
-                    );
-                }
-            }
-
             throw error;
         }
     }
@@ -211,44 +186,6 @@ export class ItemsService {
         });
     }
 
-    async updatePicture(item: SolarItemEntity, picture: Express.Multer.File): Promise<SolarItemEntity> {
-        const oldFileId = item.picture_id;
-
-        const uploadedFile = await this.fileUploadService.uploadFile(picture, 'solar-item-image');
-        
-        let updated: SolarItemEntity;
-        try {
-            updated = await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
-                await manager.update(SolarItemEntity, item.id, { picture_id: uploadedFile.id });
-                return await manager.findOneOrFail(SolarItemEntity, { where: { id: item.id } });
-            });
-        } catch (error) {
-            try {
-                await this.fileUploadService.deleteFile(uploadedFile.id);
-            } catch (rollbackError) {
-                this.logger.error(
-                    FILE_LOG_MESSAGES.UPDATE_ROLLBACK_FAILED(uploadedFile.id),
-                    rollbackError instanceof Error ? rollbackError.stack : rollbackError,
-                );
-            }
-
-            throw error;
-        }
-
-        if (oldFileId) {
-            try {
-                await this.fileUploadService.deleteFile(oldFileId);
-            } catch (cleanupError) {
-                this.logger.error(
-                    FILE_LOG_MESSAGES.OLD_FILE_CLEANUP_FAILED(`Safari ${item.id}`, oldFileId),
-                    cleanupError instanceof Error ? cleanupError.stack : cleanupError,
-                );
-            }
-        }
-
-        return updated;
-    }
-
     async toggleStatus(item: SolarItemEntity): Promise<SolarItemEntity> {
         await this.solarItemRepo
             .createQueryBuilder()
@@ -261,11 +198,8 @@ export class ItemsService {
     }
 
     async remove(item: SolarItemEntity): Promise<void> {
-        const imageFileId = item.picture_id;
-
-        let deleteResult: DeleteResult;
         try {
-            deleteResult = await this.solarItemRepo
+            await this.solarItemRepo
                 .createQueryBuilder()
                 .delete()
                 .from(SolarItemEntity)
@@ -273,21 +207,6 @@ export class ItemsService {
                 .execute();
         } catch (error) {
             throw new BadRequestException(`Cannot delete solar-item "${item.code}" — it is still assigned to one or more records`);
-        }
-
-        if (!deleteResult.affected) {
-            return;
-        }
-
-        if (imageFileId) {
-            try {
-                await this.fileUploadService.deleteFile(imageFileId);
-            } catch (error) {
-                this.logger.error(
-                    FILE_LOG_MESSAGES.DELETE_CASCADE_CLEANUP_FAILED(`Solar-item ${item.id}`, imageFileId),
-                    (error as Error).stack,
-                );
-            }
         }
     }
 
@@ -312,23 +231,14 @@ export class ItemsService {
     // query-builders
     private cardQueryBuilder() {
         let qb = this.solarItemRepo.createQueryBuilder(SOLAR_ITEMS_ALIAS);
-        qb = this.withPicture(qb);
-
         return qb;
     }
 
     private detailQueryBuilder() {
         let qb = this.solarItemRepo.createQueryBuilder(SOLAR_ITEMS_ALIAS);
         qb = this.withCategory(qb);
-        qb = this.withPicture(qb);
 
         return qb;
-    }
-
-    private withPicture(qb: SelectQueryBuilder<SolarItemEntity>) {
-        return qb
-            .leftJoin(`${SOLAR_ITEMS_ALIAS}.picture`, 'picture')
-            .addSelect(pick('picture', FILE_FIELDS));
     }
 
     private withCategory(qb: SelectQueryBuilder<SolarItemEntity>) {

@@ -6,7 +6,6 @@ import { CategoriesService } from './categories/categories.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ItemCategoryEntity } from './categories/entities/item-category.entity';
 import { ItemCategoryExistsPipe } from './categories/pipes/category-exists.pipe';
-import { FilesModule } from '../files/files.module';
 import { SolarItemEntity } from './items/entities/solar-items.entity';
 import { SolarItemExistsPipe } from './items/pipes/solar-item-exists.pipe';
 
@@ -15,8 +14,7 @@ import { SolarItemExistsPipe } from './items/pipes/solar-item-exists.pipe';
     TypeOrmModule.forFeature([
       ItemCategoryEntity,
       SolarItemEntity,
-    ]),
-    FilesModule,
+    ])
   ],
   controllers: [
     ItemsController, 

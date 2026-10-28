@@ -31,13 +31,6 @@ export class SolarItemEntity {
     @Column({ type: 'text', nullable: true })
     description!: string | null;
 
-    @ManyToOne(() => FileEntity, { eager: false, nullable: true, onDelete: 'RESTRICT' })
-    @JoinColumn({ name: 'picture_id' })
-    picture!: FileEntity | null;
-    
-    @Column({ name: 'picture_id', type: 'uuid', nullable: true})
-    picture_id!: string | null;
-
     @Column({ type: 'float', default: 0 })
     marked_price!: number;
 
