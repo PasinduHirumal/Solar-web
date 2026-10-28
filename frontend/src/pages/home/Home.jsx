@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Sun, Shield, Zap, ArrowRight, FolderTree, Award, CheckCircle2, Calculator, PhoneCall,
+  Sun, Shield, ArrowRight, Award, Calculator, PhoneCall,
 } from "lucide-react";
-import { axiosInstance } from "../../lib/axiosInstance";
 import SolarCalculator from "./components/SolarCalculator";
 import SolarItemShowcase from "./components/SolarItemShowcase";
 import SolarSolutionsGrid from "./components/SolarSolutionsGrid";
@@ -11,34 +10,6 @@ import InstallationProcess from "./components/InstallationProcess";
 import SolarFaq from "./components/SolarFaq";
 
 export default function Home() {
-  const [categories, setCategories] = useState([]);
-  const [loadingCats, setLoadingCats] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    const fetchActiveCategories = async () => {
-      try {
-        const res = await axiosInstance.get("/categories", {
-          params: { is_active: true, limit: 6, sort_by: "created_at", sort_order: "DESC" },
-        });
-        if (active) {
-          const data = res.data?.data || res.data;
-          setCategories(data.items || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch public categories:", err);
-      } finally {
-        if (active) setLoadingCats(false);
-      }
-    };
-
-    fetchActiveCategories();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const scrollToCalculator = () => {
     const el = document.getElementById("calculator");
