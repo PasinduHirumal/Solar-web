@@ -103,12 +103,17 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
         }
     };
 
-    const canEdit = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
+    const canEdit = isSuperAdmin(currentUser?.role);
     const canDelete = isSuperAdmin(currentUser?.role);
 
     return (
         <>
             <div className="flex items-center justify-end gap-1">
+                {!canEdit && !canDelete && (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 italic px-2 py-0.5">
+                        Read only
+                    </span>
+                )}
                 {/* Edit Category Button */}
                 {canEdit && (
                     <button

@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, FolderTree, Package, Menu, X, LogOut, Home, Sun } from "lucide-react";
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
+import { isSuperAdmin } from "../lib/roles";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,7 +24,9 @@ export default function AdminLayout() {
 
   const navLinks = [
     { name: "Dashboard", path: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
-    { name: "Manage Users", path: "/admin/users", icon: <Users size={18} /> },
+    ...(isSuperAdmin(user?.role)
+      ? [{ name: "Manage Users", path: "/admin/users", icon: <Users size={18} /> }]
+      : []),
     { name: "Manage Categories", path: "/admin/categories", icon: <FolderTree size={18} /> },
     { name: "Manage Solar Items", path: "/admin/items", icon: <Package size={18} /> },
   ];

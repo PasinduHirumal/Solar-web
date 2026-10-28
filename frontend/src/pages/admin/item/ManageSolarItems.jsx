@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Search, Filter, Package, Plus, X, Layers, Image as ImageIcon } from "lucide-react";
+import { Search, Filter, Package, Plus, X, Layers, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { isAdmin, isSuperAdmin } from "../../../lib/roles";
 import { formatPrice } from "../../../lib/formatPrice";
@@ -217,7 +217,7 @@ export default function ManageSolarItems() {
       sortOrder !== "DESC"
   );
 
-  const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
+  const canCreate = isSuperAdmin(currentUser?.role);
 
   return (
     <div className="p-2 md:p-3 max-w-7xl mx-auto w-full animate-fade-in">
@@ -381,10 +381,16 @@ export default function ManageSolarItems() {
                             <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs truncate max-w-xs sm:max-w-sm">
                               {item.title}
                             </span>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                               <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded font-semibold">
                                 {item.code}
                               </span>
+                              {item.warranty_period && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded font-medium border border-emerald-200 dark:border-emerald-800/50">
+                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                  {item.warranty_period}
+                                </span>
+                              )}
                               <span className="text-[10px] text-gray-400">
                                 {new Date(item.created_at).toLocaleDateString()}
                               </span>

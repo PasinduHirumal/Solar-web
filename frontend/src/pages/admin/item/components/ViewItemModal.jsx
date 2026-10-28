@@ -167,6 +167,23 @@ export default function ViewItemModal({ isOpen, onClose, item, categoryName }) {
             </div>
           </div>
 
+          {/* Warranty Period Display */}
+          {currentItem.warranty_period && (
+            <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-xl border border-emerald-200/80 dark:border-emerald-800/40 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-semibold text-emerald-800 dark:text-emerald-300">
+                  Warranty Guarantee
+                </p>
+                <p className="text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                  {currentItem.warranty_period}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="space-y-1">
             <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">

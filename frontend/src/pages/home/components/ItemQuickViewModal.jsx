@@ -106,7 +106,11 @@ export default function ItemQuickViewModal({ item, categoryName, onClose }) {
               <div className="space-y-2 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span>25-Year Manufacturer Linear Power Warranty</span>
+                  <span>
+                    {item.warranty_period
+                      ? `${item.warranty_period} Official Warranty`
+                      : "25-Year Manufacturer Linear Power Warranty"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Zap size={15} className="text-amber-500 shrink-0" />

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
-import { Package, X, Loader2, Layers, AlertCircle } from "lucide-react";
+import { Package, X, Loader2, Layers, AlertCircle, ShieldCheck } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 
 export default function EditItemModal({
@@ -14,6 +14,7 @@ export default function EditItemModal({
   const [formData, setFormData] = useState({
     title: item?.title || "",
     category_id: item?.category_id || item?.category?.id || "",
+    warranty_period: item?.warranty_period || "",
     description: item?.description || "",
   });
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,7 @@ export default function EditItemModal({
     setFormData({
       title: item?.title || "",
       category_id: item?.category_id || item?.category?.id || "",
+      warranty_period: item?.warranty_period || "",
       description: item?.description || "",
     });
   }
@@ -53,6 +55,16 @@ export default function EditItemModal({
       return;
     }
 
+    const trimmedWarranty = formData.warranty_period.trim();
+    if (trimmedWarranty && trimmedWarranty.length < 3) {
+      toast.error("Warranty period must be at least 3 characters if provided");
+      return;
+    }
+    if (trimmedWarranty && trimmedWarranty.length > 255) {
+      toast.error("Warranty period cannot exceed 255 characters");
+      return;
+    }
+
     const trimmedDesc = formData.description.trim();
     if (trimmedDesc && trimmedDesc.length < 3) {
       toast.error("Description must be at least 3 characters if provided");
@@ -64,11 +76,9 @@ export default function EditItemModal({
       const payload = {
         title: trimmedTitle,
         category_id: formData.category_id,
+        warranty_period: trimmedWarranty || null,
+        description: trimmedDesc || null,
       };
-
-      if (trimmedDesc) {
-        payload.description = trimmedDesc;
-      }
 
       const response = await axiosInstance.put(
         `/items/${item.id}/update/data`,
@@ -118,7 +128,7 @@ export default function EditItemModal({
                 Edit Solar Item
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Update item title, category, or specifications.
+                Update item title, category, warranty, or specifications.
               </p>
             </div>
           </div>
@@ -204,6 +214,31 @@ export default function EditItemModal({
             )}
           </div>
 
+          {/* Warranty Period */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Warranty Period <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                name="warranty_period"
+                minLength={3}
+                maxLength={255}
+                value={formData.warranty_period}
+                onChange={handleChange}
+                placeholder="e.g. 5 Years / 10 Years Replacement"
+                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400">
+              Manufacturer or shop warranty coverage (min. 3 characters if provided)
+            </p>
+          </div>
+
           {/* Description */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -214,7 +249,7 @@ export default function EditItemModal({
               rows={3}
               value={formData.description}
               onChange={handleChange}
-              placeholder="Technical specs, warranty, or feature description..."
+              placeholder="Technical specs, features, or description..."
               className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
             />
           </div>

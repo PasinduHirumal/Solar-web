@@ -229,9 +229,17 @@ export default function SolarItemShowcase() {
 
                   {/* Short description */}
                   {item.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 font-light leading-relaxed mb-4">
+                    <p className="text-xs text-slate-500 line-clamp-2 font-light leading-relaxed mb-3">
                       {item.description.replace(/<[^>]*>/g, "")}
                     </p>
+                  )}
+
+                  {/* Warranty Badge */}
+                  {item.warranty_period && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg w-fit mb-3 border border-emerald-200/60">
+                      <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                      <span>{item.warranty_period} Warranty</span>
+                    </div>
                   )}
                 </div>
 
