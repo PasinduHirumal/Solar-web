@@ -23,6 +23,8 @@ export class ItemsController {
     ) {}
 
     @Get()
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     async getAllSolarItems(
         @Query() query: FindSolarItemsQueryDto,
     ): Promise<PaginatedResponse<SolarItemEntity>> {
@@ -30,7 +32,7 @@ export class ItemsController {
     }
 
     @Post()
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @UseInterceptors(FileInterceptor('picture'))
     async createSolarItem(
@@ -39,14 +41,14 @@ export class ItemsController {
             new ParseFilePipeBuilder()
             .addMaxSizeValidator({ maxSize: MAX_FILE_SIZE.IMAGE })
             .addValidator(new CustomFileTypeValidator([...IMAGE_MIME_TYPES]))
-            .build({ fileIsRequired: true })
+            .build({ fileIsRequired: false })
         ) picture: Express.Multer.File,
     ): Promise<SolarItemEntity> {
         return this.itemsService.create(dto, picture);
     }
 
     @Put(':item_id/toggle/status')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async toggleSolarItemStatus(
         @Param('item_id', new ParseUUIDPipe({ version: '4'}), SolarItemExistsPipe) item: SolarItemEntity,
@@ -55,7 +57,7 @@ export class ItemsController {
     }
 
     @Put(':item_id/update/data')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async updateSolarItemData(
         @Param('item_id', new ParseUUIDPipe({ version: '4'}), SolarItemExistsPipe) item: SolarItemEntity,
@@ -75,7 +77,7 @@ export class ItemsController {
     }
 
     @Put(':item_id/update/picture')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @UseInterceptors(FileInterceptor('picture'))
     async updateSolarItemPicture(
@@ -91,6 +93,8 @@ export class ItemsController {
     }
 
     @Get(':item_id')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     async getSolarItemById(
         @Param('item_id', new ParseUUIDPipe({ version: '4' })) item_id: string,
     ): Promise<SolarItemEntity> {

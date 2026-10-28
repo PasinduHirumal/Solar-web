@@ -24,6 +24,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SolarItemsModule } from './modules/solar-items/solar-items.module';
+import { QuotationsModule } from './modules/quotations/quotations.module';
 
 @Module({
   imports: [
@@ -68,6 +69,8 @@ import { SolarItemsModule } from './modules/solar-items/solar-items.module';
     IdentityModule,
 
     SolarItemsModule,
+
+    QuotationsModule,
   ],
   controllers: [AppController],
   providers: [

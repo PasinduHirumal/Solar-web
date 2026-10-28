@@ -42,17 +42,19 @@ export class ItemsService {
         const exists = await this.solarItemRepo.existsBy({ category_id: category.id, title: dto.title });
         if (exists) throw new ConflictException(`Solar-Item already exists with category: ${category.title} & title: ${dto.title}`);
 
-        const safariCode = await this.generateItemCode(dto.title);
+        const solarItemCode = await this.generateItemCode(dto.title);
 
-        let uploadedFile: FileEntity | undefined;
+        let uploadedFile: FileEntity | null = null;
+
+        if (picture) {
+            uploadedFile = await this.fileUploadService.uploadFile(picture, 'solar-item-image');
+        }
 
         try {
-            uploadedFile = await this.fileUploadService.uploadFile(picture, 'solar-item-image');
-            
             return await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
                 const solarItem = manager.create(SolarItemEntity, {
                     ...dto,
-                    code: safariCode,
+                    code: solarItemCode,
                     category_id: category.id,
                     picture_id: uploadedFile!.id,
                     selling_price: dto.marked_price,
@@ -233,13 +235,15 @@ export class ItemsService {
             throw error;
         }
 
-        try {
-            await this.fileUploadService.deleteFile(oldFileId);
-        } catch (cleanupError) {
-            this.logger.error(
-                FILE_LOG_MESSAGES.OLD_FILE_CLEANUP_FAILED(`Safari ${item.id}`, oldFileId),
-                cleanupError instanceof Error ? cleanupError.stack : cleanupError,
-            );
+        if (oldFileId) {
+            try {
+                await this.fileUploadService.deleteFile(oldFileId);
+            } catch (cleanupError) {
+                this.logger.error(
+                    FILE_LOG_MESSAGES.OLD_FILE_CLEANUP_FAILED(`Safari ${item.id}`, oldFileId),
+                    cleanupError instanceof Error ? cleanupError.stack : cleanupError,
+                );
+            }
         }
 
         return updated;
@@ -323,7 +327,7 @@ export class ItemsService {
 
     private withPicture(qb: SelectQueryBuilder<SolarItemEntity>) {
         return qb
-            .innerJoin(`${SOLAR_ITEMS_ALIAS}.picture`, 'picture')
+            .leftJoin(`${SOLAR_ITEMS_ALIAS}.picture`, 'picture')
             .addSelect(pick('picture', FILE_FIELDS));
     }
 

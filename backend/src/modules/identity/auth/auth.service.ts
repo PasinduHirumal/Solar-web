@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { isAdminRole } from '../../../utils/role.util';
@@ -43,6 +43,10 @@ export class AuthService {
 
     // methods
     async register(dto: RegisterUserDto): Promise<UserResponse> {
+        if (dto.role === UserRole.USER) {
+            throw new BadRequestException(`No user registration for system yet`);
+        }
+
         const newUser = await this.authHelperService.createUserBySystem(dto, {
             googleId: null,
             isAnonymous: false,

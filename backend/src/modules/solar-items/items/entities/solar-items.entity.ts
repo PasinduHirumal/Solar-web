@@ -25,15 +25,18 @@ export class SolarItemEntity {
     @Column({ type: 'varchar', length: 255 })
     title!: string;
 
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    warranty_period!: string | null;
+
     @Column({ type: 'text', nullable: true })
     description!: string | null;
 
-    @ManyToOne(() => FileEntity, { eager: false, onDelete: 'RESTRICT' })
+    @ManyToOne(() => FileEntity, { eager: false, nullable: true, onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'picture_id' })
-    picture!: FileEntity;
+    picture!: FileEntity | null;
     
-    @Column({ name: 'picture_id', type: 'uuid'})
-    picture_id!: string;
+    @Column({ name: 'picture_id', type: 'uuid', nullable: true})
+    picture_id!: string | null;
 
     @Column({ type: 'float', default: 0 })
     marked_price!: number;

@@ -18,6 +18,8 @@ export class CategoriesController {
     ) {}
 
     @Get()
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     async getAllCategories(
         @Query() query: FindCategoriesQueryDto,
     ): Promise<PaginatedResponse<ItemCategoryEntity>> {
@@ -25,7 +27,7 @@ export class CategoriesController {
     }
 
     @Post()
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async createCategory(
         @Body() dto: CreateCategoryDto,
@@ -34,7 +36,7 @@ export class CategoriesController {
     }
 
     @Put(':category_id/toggle/status')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async toggleCategoryStatus(
         @Param('category_id', new ParseUUIDPipe({ version: '4' }), ItemCategoryExistsPipe) category: ItemCategoryEntity,
@@ -43,7 +45,7 @@ export class CategoriesController {
     }
 
     @Put(':category_id/update/data')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async updateCategoryData(
         @Param('category_id', new ParseUUIDPipe({ version: '4' }), ItemCategoryExistsPipe) category: ItemCategoryEntity,
@@ -53,6 +55,8 @@ export class CategoriesController {
     }
 
     @Get(':category_id')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     async getCategoryById(
         @Param('category_id', new ParseUUIDPipe({ version: '4' })) category_id: string,
     ): Promise<ItemCategoryEntity> {

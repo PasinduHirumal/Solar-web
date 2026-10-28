@@ -20,7 +20,7 @@ export class UsersController {
     ) {}
 
     @Get('')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async getAllUsers(
         @Query() query: FindUsersQueryDto,
@@ -72,7 +72,7 @@ export class UsersController {
     }
 
     @Get(':user_id')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @Roles(UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async getUserById(
         @Param('user_id', new ParseUUIDPipe({ version: '4' })) user_id: string,
