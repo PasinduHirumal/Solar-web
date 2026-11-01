@@ -1,11 +1,7 @@
 import { QuotationEntity } from "../entities/quotation.entity";
+import { PriceBreakdown } from "./price-breakdown.interface";
 
 export interface QuotationResponse {
     quotation: QuotationEntity;
-    price_breakdown: {
-        subtotal: number;
-        discount: number;
-        tax: number;
-        total: number;
-    };
+    price_breakdown: PriceBreakdown;
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
 import { Roles } from '../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../identity/enums/user.enum';
@@ -11,6 +11,7 @@ import { PaginatedResponse } from '../../common/interfaces/paginated-response.in
 import { QuotationResponse } from './interfaces/quotation-response.interface';
 import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto';
 import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
+import { QuotationExistsPipe } from './pipes/quotation-exists.pipe';
 
 @Controller('quotations')
 export class QuotationsController {
@@ -59,9 +60,19 @@ export class QuotationsController {
     @Get(':quotation_id')
     @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
-    async getQuotationById(
-        @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
+    async getQuotationWithPriceBreakdown(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
     ): Promise<QuotationResponse> {
-        return this.quotationService.findById(quotation_id);
+        return this.quotationService.findWithPriceBreakdown(quotation);
+    }
+
+    @Delete(':quotation_id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async deleteQuotation(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
+    ): Promise<void> {
+        return this.quotationService.remove(quotation);
     }
 }

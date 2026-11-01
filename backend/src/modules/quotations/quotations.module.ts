@@ -8,6 +8,7 @@ import { QuotationItemEntity } from './quotation-items/entities/quotation-item.e
 import { QuotationEntity } from './entities/quotation.entity';
 import { IdentityModule } from '../identity/identity.module';
 import { SolarItemsModule } from '../solar-items/solar-items.module';
+import { QuotationExistsPipe } from './pipes/quotation-exists.pipe';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SolarItemsModule } from '../solar-items/solar-items.module';
   providers: [
     QuotationsService, 
     QuotationItemsService,
+    QuotationExistsPipe,
   ]
 })
 export class QuotationsModule {}

@@ -19,6 +19,7 @@ import { DiscountType } from '../../common/enums/discount-type.enum';
 import { TaxType } from '../../common/enums/tax-type.enum';
 import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto';
 import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
+import { PriceBreakdown } from './interfaces/price-breakdown.interface';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -163,42 +164,16 @@ export class QuotationsService {
         return { items, meta };
     }
 
-    async findById(quotation_id: string): Promise<QuotationResponse> {
-        const quotation = await this.detailQueryBuilder()
-            .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id})
-            .getOne();
-
-        if (!quotation) throw new NotFoundException(`Quotation Not Found`);
-
-        const itemIds: string[] = [ ...quotation.items.map((i) => i.solar_item_id)];
-
-        const subtotal = await this.itemsService.getTotalPriceForItems(itemIds);
-
-        let discount: number = 0;
-        if (quotation.discount_type === DiscountType.FIXED) {
-            discount = quotation.discount;
-        }
-        if (quotation.discount_type === DiscountType.PERCENTAGE) {
-            discount = (subtotal * (quotation.discount / 100));
-        }
-
-        let tax: number = 0;
-        if (quotation.tax_type === TaxType.FIXED) {
-            tax = quotation.tax;
-        }
-        if (quotation.tax_type === TaxType.PERCENTAGE) {
-            tax = (subtotal * (quotation.tax / 100));
-        }
-
-        const total = subtotal - discount + tax;
+    async findWithPriceBreakdown(quotation: QuotationEntity): Promise<QuotationResponse> {
+        const priceBreakdownResult = await this.getPriceBreakdown(quotation);
 
         return {
             quotation,
             price_breakdown: {
-                subtotal,
-                discount,
-                tax,
-                total,
+                subtotal: priceBreakdownResult.subtotal,
+                discount: priceBreakdownResult.discount,
+                tax: priceBreakdownResult.tax,
+                total: priceBreakdownResult.total,
             }
         }
     }
@@ -253,6 +228,35 @@ export class QuotationsService {
         });
     }
 
+    async remove(quotation: QuotationEntity): Promise<void> {
+        if(quotation.status !== QuotationStatus.DRAFT) {
+            throw new BadRequestException(`Cannot delete status ${quotation.status} quotation`);
+        }
+
+        try {
+            await this.quotationRepo
+                .createQueryBuilder()
+                .delete()
+                .from(QuotationEntity)
+                .where('id = :id', { id: quotation.id })
+                .execute();
+        } catch (error) {
+            throw new BadRequestException(`Cannot delete quotation "${quotation.quotation_number}" — it is still assigned to one or more records`);
+        }
+    }
+
+
+    // helper methods
+    async findById(quotation_id: string): Promise<QuotationEntity> {
+        const quotation = await this.detailQueryBuilder()
+            .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id})
+            .getOne();
+
+        if (!quotation) throw new NotFoundException(`Quotation Not Found`);
+
+        return quotation;
+    }
+
 
     // helpers
     private async generateQuotationNumber(customer_name: string): Promise<string> {
@@ -268,6 +272,37 @@ export class QuotationsService {
         }
 
         throw new BadRequestException('Failed to generate a unique quotation number, please try again');
+    }
+
+    private async getPriceBreakdown(quotation: QuotationEntity): Promise<PriceBreakdown> {
+        const itemIds: string[] = [ ...quotation.items.map((i) => i.solar_item_id)];
+
+        const subtotal = await this.itemsService.getTotalPriceForItems(itemIds);
+
+        let discount: number = 0;
+        if (quotation.discount_type === DiscountType.FIXED) {
+            discount = quotation.discount;
+        }
+        if (quotation.discount_type === DiscountType.PERCENTAGE) {
+            discount = (subtotal * (quotation.discount / 100));
+        }
+
+        let tax: number = 0;
+        if (quotation.tax_type === TaxType.FIXED) {
+            tax = quotation.tax;
+        }
+        if (quotation.tax_type === TaxType.PERCENTAGE) {
+            tax = (subtotal * (quotation.tax / 100));
+        }
+
+        const total = subtotal - discount + tax;
+
+        return {
+            subtotal,
+            discount,
+            tax,
+            total,
+        }
     }
 
 
