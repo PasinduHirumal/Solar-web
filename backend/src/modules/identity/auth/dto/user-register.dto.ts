@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, MaxLength, MinLength } from "class-validator";
 import { TrimCapitalize, TrimLower } from "../../../../common/transformers/trim.transformer";
 import { IsPassword } from "../../../../common/validators/is-password.validator";
 import { UserRole } from "../../enums/user.enum";
@@ -29,4 +29,18 @@ export class RegisterUserDto {
 
 export class RegisterUserAnonymous extends OmitType(
     RegisterUserDto, ['password', 'role']
-) {}
+) {
+    @IsOptional()
+    @IsString()
+    @MaxLength(15)
+    @MinLength(9)
+    @IsPhoneNumber('LK')
+    readonly phone?: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    @MinLength(3)
+    @TrimCapitalize()
+    readonly address?: string;
+}

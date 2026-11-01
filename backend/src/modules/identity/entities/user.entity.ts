@@ -26,6 +26,12 @@ export class UserEntity {
     @Column({ type: 'varchar', length: 255, nullable: true })
     google_id!: string | null;
 
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    phone!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    address!: string | null;
+
 
     // system data
     @Column({ type: 'boolean', default: false })

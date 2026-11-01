@@ -8,6 +8,8 @@ export class UserResponse {
     @Expose() name!: string;
     @Expose() role!: UserRole;
     @Expose() google_id!: string | null;
+    @Expose() phone!: string | null;
+    @Expose() address!: string | null;
     @Expose() must_change_password!: boolean;
     @Expose() remember_me!: boolean;
     @Expose() is_anonymous!: boolean;

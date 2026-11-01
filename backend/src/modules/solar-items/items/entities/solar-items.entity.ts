@@ -36,7 +36,7 @@ export class SolarItemEntity {
     @Column({ type: 'float', default: 0 })
     selling_price!: number;
 
-    @Column({ type: 'float', default: 0 })
+    @Column({ type: 'float', default: 1 })
     quantity!: number;
 
     @Column({ type: 'boolean', default: true })
