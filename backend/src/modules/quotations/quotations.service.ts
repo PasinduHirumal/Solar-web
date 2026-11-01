@@ -17,6 +17,8 @@ import { CATEGORY_FIELDS } from '../solar-items/categories/constants/item-catego
 import { ItemsService } from '../solar-items/items/items.service';
 import { DiscountType } from '../../common/enums/discount-type.enum';
 import { TaxType } from '../../common/enums/tax-type.enum';
+import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto';
+import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -37,6 +39,24 @@ export class QuotationsService {
     async create(dto: CreateQuotationDto): Promise<QuotationEntity> {
         if (!dto.phone || !dto.address) {
             throw new BadRequestException(`Customer Phone-Number & Address are required`);
+        }
+
+        if (dto.discount_type && dto.discount_type === DiscountType.PERCENTAGE) {
+            if(dto.discount >= 100) throw new BadRequestException(`Discount percentage cannot be over 100`);
+            if(dto.discount <= 0) throw new BadRequestException(`Discount percentage cannot be less than 0`);
+        }
+
+        if (dto.discount_type && dto.discount_type === DiscountType.FIXED) {
+            if(dto.discount <= 0) throw new BadRequestException(`Discount cannot be less than 0`);
+        }
+
+        if (dto.tax_type && dto.tax_type === TaxType.PERCENTAGE) {
+            if(dto.tax >= 100) throw new BadRequestException(`Tax percentage cannot be over 100`);
+            if(dto.tax <= 0) throw new BadRequestException(`Tax percentage cannot be less than 0`);
+        }
+
+        if (dto.tax_type && dto.tax_type === TaxType.FIXED) {
+            if(dto.tax <= 0) throw new BadRequestException(`Tax cannot be less than 0`);
         }
 
         let customer = await this.authService.findEntityByEmail(dto.email);
@@ -181,6 +201,56 @@ export class QuotationsService {
                 total,
             }
         }
+    }
+
+    async updateDiscount(quotation_id: string, dto: UpdateQuotationDiscountDto): Promise<void> {
+        if (dto.discount_type === DiscountType.PERCENTAGE) {
+            if(dto.discount >= 100) throw new BadRequestException(`Discount percentage cannot be over 100`);
+            if(dto.discount <= 0) throw new BadRequestException(`Discount percentage cannot be less than 0`);
+        }
+
+        if (dto.discount_type === DiscountType.FIXED) {
+            if(dto.discount <= 0) throw new BadRequestException(`Discount cannot be less than 0`);
+        }
+
+        await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            await manager.update(QuotationEntity, locked.id, dto);
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
+    }
+
+    async updateTax(quotation_id: string, dto: UpdateQuotationTaxDto): Promise<void> {
+        if (dto.tax_type === TaxType.PERCENTAGE) {
+            if(dto.tax >= 100) throw new BadRequestException(`Tax percentage cannot be over 100`);
+            if(dto.tax <= 0) throw new BadRequestException(`Tax percentage cannot be less than 0`);
+        }
+
+        if (dto.tax_type === TaxType.FIXED) {
+            if(dto.tax <= 0) throw new BadRequestException(`Tax cannot be less than 0`);
+        }
+
+        await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            await manager.update(QuotationEntity, locked.id, dto);
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
     }
 
 
