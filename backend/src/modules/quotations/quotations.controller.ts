@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
 import { Roles } from '../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../identity/enums/user.enum';
@@ -8,6 +8,7 @@ import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { QuotationEntity } from './entities/quotation.entity';
 import { FindQuotationsQueryDto } from './dto/find-quotation-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { QuotationResponse } from './interfaces/quotation-response.interface';
 
 @Controller('quotations')
 export class QuotationsController {
@@ -31,5 +32,14 @@ export class QuotationsController {
         @Query() query: FindQuotationsQueryDto,
     ): Promise<PaginatedResponse<QuotationEntity>> {
         return this.quotationService.findAll(query);
+    }
+
+    @Get(':quotation_id')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async getQuotationById(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
+    ): Promise<QuotationResponse> {
+        return this.quotationService.findById(quotation_id);
     }
 }

@@ -211,6 +211,23 @@ export class ItemsService {
     }
 
 
+    // helper methods
+    async getTotalPriceForItems(item_ids: string[]): Promise<number> {
+        if (!item_ids?.length) return 0;
+
+        const uniqueIds = [...new Set(item_ids)];
+
+        const result = await this.solarItemRepo
+            .createQueryBuilder('item')
+            .select('COALESCE(SUM(item.selling_price), 0)', 'total')
+            .where('item.id IN (:...uniqueIds)', { uniqueIds })
+            .andWhere('item.is_active = :active', { active: true })
+            .getRawOne<{ total: string | number }>();
+
+        return Math.round(Number(result?.total ?? 0) * 100) / 100;
+    }
+
+
     // helpers
     private async generateItemCode(title: string): Promise<string> {
         const orgPrefix = `SO`;

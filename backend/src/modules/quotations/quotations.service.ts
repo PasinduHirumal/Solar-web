@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { QuotationEntity, QuotationStatus } from './entities/quotation.entity';
 import { randomUUID } from 'crypto';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
@@ -9,6 +9,14 @@ import { UserRole } from '../identity/enums/user.enum';
 import { QuotationItemEntity } from './quotation-items/entities/quotation-item.entity';
 import { FindQuotationsQueryDto } from './dto/find-quotation-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { QuotationResponse } from './interfaces/quotation-response.interface';
+import { pick } from '../../utils/pick-fields.util';
+import { USER_FIELDS } from '../identity/constants/user-fields.constants';
+import { SOLAR_ITEM_FIELDS } from '../solar-items/items/constants/solar-item-fields.constants';
+import { CATEGORY_FIELDS } from '../solar-items/categories/constants/item-category-fields.constants';
+import { ItemsService } from '../solar-items/items/items.service';
+import { DiscountType } from '../../common/enums/discount-type.enum';
+import { TaxType } from '../../common/enums/tax-type.enum';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -23,6 +31,7 @@ export class QuotationsService {
         private readonly quotationRepo: Repository<QuotationEntity>,
 
         private readonly authService: AuthHelperService,
+        private readonly itemsService: ItemsService,
     ) {}
 
     async create(dto: CreateQuotationDto): Promise<QuotationEntity> {
@@ -134,6 +143,46 @@ export class QuotationsService {
         return { items, meta };
     }
 
+    async findById(quotation_id: string): Promise<QuotationResponse> {
+        const quotation = await this.detailQueryBuilder()
+            .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id})
+            .getOne();
+
+        if (!quotation) throw new NotFoundException(`Quotation Not Found`);
+
+        const itemIds: string[] = [ ...quotation.items.map((i) => i.solar_item_id)];
+
+        const subtotal = await this.itemsService.getTotalPriceForItems(itemIds);
+
+        let discount: number = 0;
+        if (quotation.discount_type === DiscountType.FIXED) {
+            discount = quotation.discount;
+        }
+        if (quotation.discount_type === DiscountType.PERCENTAGE) {
+            discount = (subtotal * (quotation.discount / 100));
+        }
+
+        let tax: number = 0;
+        if (quotation.tax_type === TaxType.FIXED) {
+            tax = quotation.tax;
+        }
+        if (quotation.tax_type === TaxType.PERCENTAGE) {
+            tax = (subtotal * (quotation.tax / 100));
+        }
+
+        const total = subtotal - discount + tax;
+
+        return {
+            quotation,
+            price_breakdown: {
+                subtotal,
+                discount,
+                tax,
+                total,
+            }
+        }
+    }
+
 
     // helpers
     private async generateQuotationNumber(customer_name: string): Promise<string> {
@@ -156,5 +205,28 @@ export class QuotationsService {
     private cardQueryBuilder() {
         let qb = this.quotationRepo.createQueryBuilder(QUOTATION_ALIAS);
         return qb;
+    }
+
+    private detailQueryBuilder() {
+        let qb = this.quotationRepo.createQueryBuilder(QUOTATION_ALIAS);
+        qb = this.withCustomer(qb);
+        qb = this.withItems(qb);
+
+        return qb;
+    }
+
+    private withCustomer(qb: SelectQueryBuilder<QuotationEntity>) {
+        return qb
+            .innerJoin(`${QUOTATION_ALIAS}.customer`, 'customer')
+            .addSelect(pick('customer', USER_FIELDS));
+    }
+
+    private withItems(qb: SelectQueryBuilder<QuotationEntity>) {
+        return qb
+            .leftJoinAndSelect(`${QUOTATION_ALIAS}.items`, 'item')
+            .leftJoin('item.solar_item', 'solar_item')
+            .addSelect(pick('solar_item', SOLAR_ITEM_FIELDS))
+            .innerJoin(`solar_item.category`, 'category')
+            .addSelect(pick('category', CATEGORY_FIELDS));
     }
 }

@@ -25,6 +25,9 @@ import { SolarItemExistsPipe } from './items/pipes/solar-item-exists.pipe';
     CategoriesService, 
     ItemCategoryExistsPipe,
     SolarItemExistsPipe,
+  ],
+  exports: [
+    ItemsService,
   ]
 })
 export class SolarItemsModule {}

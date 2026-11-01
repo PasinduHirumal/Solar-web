@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuotationItemEntity } from './quotation-items/entities/quotation-item.entity';
 import { QuotationEntity } from './entities/quotation.entity';
 import { IdentityModule } from '../identity/identity.module';
+import { SolarItemsModule } from '../solar-items/solar-items.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { IdentityModule } from '../identity/identity.module';
       QuotationEntity,
     ]),
     IdentityModule,
+    SolarItemsModule,
   ],
   controllers: [
     QuotationsController, 
