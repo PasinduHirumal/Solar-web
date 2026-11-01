@@ -37,7 +37,7 @@ export class QuotationEntity {
     @Column({ type: 'text', nullable: true })
     terms!: string | null;
 
-    @OneToMany(() => QuotationItemEntity, (item) => item.quotation, { cascade: ['insert'] })
+    @OneToMany(() => QuotationItemEntity, (item) => item.quotation, { eager: false, cascade: true })
     items!: QuotationItemEntity[];
 
     @Column({ type: 'enum', enum: DiscountType, default: DiscountType.NON })
