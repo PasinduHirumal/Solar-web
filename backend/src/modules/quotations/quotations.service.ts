@@ -7,6 +7,14 @@ import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { AuthHelperService } from '../identity/auth/helpers/auth-helper.service';
 import { UserRole } from '../identity/enums/user.enum';
 import { QuotationItemEntity } from './quotation-items/entities/quotation-item.entity';
+import { FindQuotationsQueryDto } from './dto/find-quotation-query.dto';
+import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+
+const QUOTATION_ALIAS = 'quotation';
+
+const EXACT_FILTER_MAP: Partial<Record<keyof FindQuotationsQueryDto, string>> = {
+    status:     `${QUOTATION_ALIAS}.status`,
+};
 
 @Injectable()
 export class QuotationsService {
@@ -57,6 +65,75 @@ export class QuotationsService {
         });
     }
 
+    async findAll(query: FindQuotationsQueryDto): Promise<PaginatedResponse<QuotationEntity>> {
+        const { page = 1, limit = 10, search_term, sort_by = 'created_at', sort_order = 'DESC' } = query;
+        const skip = (page - 1) * limit;
+
+        const idQueryBuilder = this.quotationRepo
+            .createQueryBuilder(QUOTATION_ALIAS)
+            .select(`${QUOTATION_ALIAS}.id`)
+            .addSelect(`${QUOTATION_ALIAS}.${sort_by}`)
+            .distinct(true);
+
+        if (search_term) {
+            const escaped = search_term.replace(/[\\%_]/g, '\\$&');
+
+            idQueryBuilder
+                .leftJoin(`${QUOTATION_ALIAS}.customer`, `customer`)
+                .andWhere(
+                `(
+                    ${QUOTATION_ALIAS}.quotation_number       LIKE :search OR
+                    customer.email      LIKE :search OR
+                    customer.name       LIKE :search OR
+                    customer.phone      LIKE :search OR
+                )`, 
+                { search: `%${escaped}%` }
+            );
+        }
+
+        for (const [key, column] of Object.entries(EXACT_FILTER_MAP)) {
+            const value = query[key as keyof FindQuotationsQueryDto];
+            if (value != null) {
+                idQueryBuilder.andWhere(`${column} = :${key}`, { [key]: value });
+            }
+        }
+
+        const totalItems = await idQueryBuilder.clone().getCount();
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const meta = {
+            currentPage: page,
+            itemsPerPage: limit,
+            totalItems,
+            totalPages,
+            hasPreviousPage: page > 1,
+            hasNextPage: page < totalPages,
+        };
+
+        if (totalItems === 0 || skip >= totalItems) {
+            return { items: [], meta };
+        }
+
+        const ids = (
+            await idQueryBuilder
+                .orderBy(`${QUOTATION_ALIAS}.${sort_by}`, sort_order)
+                .addOrderBy(`${QUOTATION_ALIAS}.id`, 'DESC')
+                .skip(skip)
+                .take(limit)
+                .getMany()
+        ).map((j) => j.id);
+
+        if (ids.length === 0) return { items: [], meta };
+
+        const items = await this.cardQueryBuilder()
+            .where(`${QUOTATION_ALIAS}.id IN (:...ids)`, { ids })
+            .orderBy(`${QUOTATION_ALIAS}.${sort_by}`, sort_order)
+            .addOrderBy(`${QUOTATION_ALIAS}.id`, 'DESC')
+            .getMany();
+
+        return { items, meta };
+    }
+
 
     // helpers
     private async generateQuotationNumber(customer_name: string): Promise<string> {
@@ -72,5 +149,12 @@ export class QuotationsService {
         }
 
         throw new BadRequestException('Failed to generate a unique quotation number, please try again');
+    }
+
+
+    // query-builders
+    private cardQueryBuilder() {
+        let qb = this.quotationRepo.createQueryBuilder(QUOTATION_ALIAS);
+        return qb;
     }
 }

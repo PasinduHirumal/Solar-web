@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
 import { Roles } from '../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../identity/enums/user.enum';
@@ -6,6 +6,8 @@ import { JwtAuthGuard } from '../identity/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../identity/auth/guards/roles.guard';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { QuotationEntity } from './entities/quotation.entity';
+import { FindQuotationsQueryDto } from './dto/find-quotation-query.dto';
+import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
 
 @Controller('quotations')
 export class QuotationsController {
@@ -20,5 +22,14 @@ export class QuotationsController {
         @Body() dto: CreateQuotationDto,
     ): Promise<QuotationEntity> {
         return this.quotationService.create(dto);
+    }
+
+    @Get()
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async getAllQuotations(
+        @Query() query: FindQuotationsQueryDto,
+    ): Promise<PaginatedResponse<QuotationEntity>> {
+        return this.quotationService.findAll(query);
     }
 }
