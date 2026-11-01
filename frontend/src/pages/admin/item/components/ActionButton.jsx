@@ -7,7 +7,6 @@ import {
   Trash2,
   Loader2,
   DollarSign,
-  Image as ImageIcon,
   Eye,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
@@ -16,7 +15,6 @@ import { isSuperAdmin, isAdmin } from "../../../../lib/roles";
 import ViewItemModal from "./ViewItemModal";
 import EditItemModal from "./EditItemModal";
 import UpdatePriceModal from "./UpdatePriceModal";
-import UpdatePictureModal from "./UpdatePictureModal";
 
 export default function ActionButton({
   item,
@@ -33,7 +31,6 @@ export default function ActionButton({
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
-  const [isPictureOpen, setIsPictureOpen] = useState(false);
 
   const canEdit = isSuperAdmin(currentUser?.role);
   const canUpdatePrice = isSuperAdmin(currentUser?.role);
@@ -74,7 +71,7 @@ export default function ActionButton({
   const handleDeleteItem = async () => {
     const confirmed = await confirmAction({
       title: "Delete Solar Item?",
-      text: `Are you sure you want to permanently delete "${item.title}" (${item.code})? This will also remove its associated image and cannot be undone.`,
+      text: `Are you sure you want to permanently delete "${item.title}" (${item.code})? This action cannot be undone.`,
       confirmButtonText: "Yes, delete",
     });
 
@@ -130,17 +127,6 @@ export default function ActionButton({
             title="Update Price"
           >
             <DollarSign className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Update Picture Button */}
-        {canEdit && (
-          <button
-            onClick={() => setIsPictureOpen(true)}
-            className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 transition-colors rounded-md ring-1 ring-indigo-600/10 dark:ring-indigo-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Update Picture"
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
           </button>
         )}
 
@@ -204,14 +190,6 @@ export default function ActionButton({
       <UpdatePriceModal
         isOpen={isPriceOpen}
         onClose={() => setIsPriceOpen(false)}
-        item={item}
-        onItemUpdated={onUpdateItem}
-      />
-
-      {/* Update Picture Modal */}
-      <UpdatePictureModal
-        isOpen={isPictureOpen}
-        onClose={() => setIsPictureOpen(false)}
         item={item}
         onItemUpdated={onUpdateItem}
       />

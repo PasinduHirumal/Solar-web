@@ -20,13 +20,13 @@ export default function SolarItemShowcase() {
       try {
         setLoading(true);
         const [catsRes, itemsRes] = await Promise.all([
-          axiosInstance.get("/categories", { params: { is_active: true, limit: 20 } }),
-          axiosInstance.get("/items", { params: { is_active: true, limit: 30 } }),
+          axiosInstance.get("/categories", { params: { is_active: true, limit: 20 } }).catch(() => null),
+          axiosInstance.get("/items", { params: { is_active: true, limit: 30 } }).catch(() => null),
         ]);
 
         if (active) {
-          const catsData = catsRes.data?.data?.items || catsRes.data?.items || [];
-          const itemsData = itemsRes.data?.data?.items || itemsRes.data?.items || [];
+          const catsData = catsRes?.data?.data?.items || catsRes?.data?.items || [];
+          const itemsData = itemsRes?.data?.data?.items || itemsRes?.data?.items || [];
           setCategories(catsData);
           setItems(itemsData);
         }
@@ -174,24 +174,17 @@ export default function SolarItemShowcase() {
                 className="group bg-white rounded-3xl border border-slate-200/90 hover:border-blue-400/40 p-5 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  {/* Image container */}
-                  <div className="w-full aspect-[4/3] rounded-2xl bg-slate-100 border border-slate-100 overflow-hidden relative flex items-center justify-center mb-4">
-                    {item.picture?.url ? (
-                      <img
-                        src={item.picture.url}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-slate-400">
-                        <Package size={36} className="text-blue-500/70 mb-1" />
-                        <span className="text-[11px] font-medium text-slate-400">Solar Web Certified</span>
-                      </div>
-                    )}
+                  {/* Hardware Visual Card */}
+                  <div className="w-full aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/40 border border-slate-200/80 overflow-hidden relative flex flex-col items-center justify-center mb-4 p-6 transition-all group-hover:border-blue-400/50 group-hover:from-blue-50/60 group-hover:to-indigo-100/50">
+                    <div className="w-16 h-16 rounded-2xl bg-white shadow-md shadow-blue-500/10 border border-blue-100 flex items-center justify-center text-blue-600 mb-2 transition-transform duration-300 group-hover:scale-110">
+                      <Package size={32} className="stroke-[1.75]" />
+                    </div>
+                    <span className="text-[11px] font-bold tracking-wide uppercase text-slate-500">
+                      Solar Web Certified
+                    </span>
 
                     {hasDiscount && (
-                      <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                      <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
                         SPECIAL OFFER
                       </div>
                     )}

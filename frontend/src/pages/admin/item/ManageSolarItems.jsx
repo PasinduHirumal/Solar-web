@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Search, Filter, Package, Plus, X, Layers, Image as ImageIcon, ShieldCheck } from "lucide-react";
+import { Search, Filter, Package, Plus, X, Layers, ShieldCheck } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { isAdmin, isSuperAdmin } from "../../../lib/roles";
 import { formatPrice } from "../../../lib/formatPrice";
@@ -189,7 +189,6 @@ export default function ManageSolarItems() {
           ? {
               ...item,
               ...updatedItem,
-              picture: updatedItem.picture || item.picture,
               category: updatedItem.category || item.category,
             }
           : item
@@ -350,51 +349,25 @@ export default function ManageSolarItems() {
                       key={item.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
                     >
-                      {/* Item Thumbnail & Title */}
+                      {/* Solar Item */}
                       <td className="py-2.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 overflow-hidden flex items-center justify-center shrink-0">
-                            {item.picture?.url ? (
-                              <img
-                                key={`${item.id}-${item.picture?.id || item.picture_id || ""}-${item.picture?.url || ""}`}
-                                src={item.picture.url}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = "none";
-                                  if (e.target.nextSibling) {
-                                    e.target.nextSibling.style.display = "flex";
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`w-full h-full flex items-center justify-center text-gray-400 ${
-                                item.picture?.url ? "hidden" : "flex"
-                              }`}
-                            >
-                              <ImageIcon className="w-4 h-4" />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs truncate max-w-xs sm:max-w-sm">
-                              {item.title}
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs truncate max-w-xs sm:max-w-sm">
+                            {item.title}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-semibold">
+                              {item.code}
                             </span>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                              <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded font-semibold">
-                                {item.code}
+                            {item.warranty_period && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded font-medium border border-emerald-200 dark:border-emerald-800/50">
+                                <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                {item.warranty_period}
                               </span>
-                              {item.warranty_period && (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded font-medium border border-emerald-200 dark:border-emerald-800/50">
-                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
-                                  {item.warranty_period}
-                                </span>
-                              )}
-                              <span className="text-[10px] text-gray-400">
-                                {new Date(item.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
+                            )}
+                            <span className="text-[10px] text-gray-400">
+                              {new Date(item.created_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </td>

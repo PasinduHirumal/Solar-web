@@ -48,20 +48,17 @@ export default function ItemQuickViewModal({ item, categoryName, onClose }) {
 
         <div className="overflow-y-auto p-6 sm:p-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* Image Preview */}
-            <div className="w-full aspect-square rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative">
-              {item.picture?.url ? (
-                <img
-                  src={item.picture.url}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                  <Package size={48} className="stroke-[1.5] mb-2 text-blue-500" />
-                  <span className="text-xs font-semibold">Tier-1 Certified Hardware</span>
-                </div>
-              )}
+            {/* Hardware Visual & Certification Badge */}
+            <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/60 to-indigo-50/50 border border-slate-200 overflow-hidden flex flex-col items-center justify-center p-6 text-center relative shadow-inner">
+              <div className="w-20 h-20 rounded-2xl bg-white shadow-lg shadow-blue-500/10 border border-blue-100/80 flex items-center justify-center text-blue-600 mb-3">
+                <Package size={40} className="stroke-[1.75]" />
+              </div>
+              <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                SolarWeb Tier-1 Hardware
+              </span>
+              <p className="text-[11px] text-slate-500 font-medium mt-1 max-w-[200px]">
+                Engineered for maximum photovoltaic yield & high durability
+              </p>
 
               {hasDiscount && (
                 <div className="absolute top-3 left-3 bg-red-500 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">

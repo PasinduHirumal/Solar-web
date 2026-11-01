@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Package, Layers, ShieldCheck, ShieldAlert, Image as ImageIcon, Loader2, Calendar } from "lucide-react";
+import { X, Package, Layers, ShieldCheck, ShieldAlert, Loader2, Calendar } from "lucide-react";
 import { formatPrice } from "../../../../lib/formatPrice";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 
@@ -12,7 +12,7 @@ export default function ViewItemModal({ isOpen, onClose, item, categoryName }) {
 
     let active = true;
 
-    // Fetch full details with joined category and picture from backend
+    // Fetch full details with joined category from backend
     const fetchItemDetails = async () => {
       try {
         setLoading(true);
@@ -41,7 +41,6 @@ export default function ViewItemModal({ isOpen, onClose, item, categoryName }) {
 
   const currentItem = (fetchedDetails?.id === item.id ? fetchedDetails : null) || item;
   const currentCategory = currentItem.category?.title || categoryName || "Uncategorized";
-  const pictureUrl = currentItem.picture?.url;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left">
@@ -80,61 +79,42 @@ export default function ViewItemModal({ isOpen, onClose, item, categoryName }) {
             </div>
           )}
 
-          {/* Picture Preview */}
-          <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 aspect-video flex items-center justify-center group">
-            {pictureUrl ? (
-              <img
-                src={pictureUrl}
-                alt={currentItem.title}
-                className="w-full h-full object-contain p-2"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  e.target.nextSibling.style.display = "flex";
-                }}
-              />
-            ) : null}
-            <div
-              className={`flex flex-col items-center justify-center gap-1.5 text-gray-400 ${
-                pictureUrl ? "hidden" : "flex"
-              }`}
-            >
-              <ImageIcon className="w-10 h-10 stroke-1 text-gray-300 dark:text-gray-600" />
-              <span className="text-xs">No image uploaded</span>
-            </div>
-
-            {/* Status Badge Overlay */}
-            <div className="absolute top-2.5 right-2.5">
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md shadow-sm ${
-                  currentItem.is_active
-                    ? "bg-emerald-500/90 text-white"
-                    : "bg-red-500/90 text-white"
-                }`}
-              >
-                {currentItem.is_active ? (
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                ) : (
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                )}
-                {currentItem.is_active ? "Active" : "Inactive"}
-              </span>
-            </div>
-          </div>
-
           {/* Item Main Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
-                {currentItem.code}
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                <Layers className="w-3 h-3 text-gray-500" />
-                {currentCategory}
-              </span>
+          <div className="relative rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 dark:from-gray-800/80 dark:via-gray-800/50 dark:to-blue-950/30 border border-blue-100/80 dark:border-gray-800 shadow-xs flex flex-col gap-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100/80 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                    {currentItem.code}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-gray-200/70 dark:border-gray-700">
+                    <Layers className="w-3 h-3 text-gray-400" />
+                    {currentCategory}
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-snug">
+                  {currentItem.title}
+                </h2>
+              </div>
+
+              {/* Status Badge */}
+              <div className="shrink-0">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-2xs ${
+                    currentItem.is_active
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60"
+                      : "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 border border-red-300 dark:border-red-800/60"
+                  }`}
+                >
+                  {currentItem.is_active ? (
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  ) : (
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                  )}
+                  {currentItem.is_active ? "Active" : "Inactive"}
+                </span>
+              </div>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-              {currentItem.title}
-            </h2>
           </div>
 
           {/* Price & Quantity Grid */}
