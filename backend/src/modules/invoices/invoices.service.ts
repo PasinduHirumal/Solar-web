@@ -11,6 +11,7 @@ import { Quotation_FIELDS } from '../quotations/constants/quotation-fields.const
 import { QUOTATION_ITEM_SNAP_FIELDS } from '../quotations/quotation-items/constants/quotation-item-snap-fields.constants';
 import { FindInvoicesQueryDto } from './dto/find-invoice-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { USER_FIELDS } from '../identity/constants/user-fields.constants';
 
 const INVOICE_ALIAS = 'invoice';
 
@@ -196,6 +197,8 @@ export class InvoicesService {
         return qb
         .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
         .addSelect(pick('quotation', Quotation_FIELDS))
+        .innerJoin('quotation.customer', 'customer')
+        .addSelect(pick('customer', USER_FIELDS))
         .leftJoin(`quotation.items`, `quo_item`)
         .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
     }
