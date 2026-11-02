@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, FolderTree, Package, FileText, Menu, X, LogOut,
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
 import { isSuperAdmin } from "../lib/roles";
+import fullLogo from "../assets/logo/full_logo.png";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -50,11 +51,9 @@ export default function AdminLayout() {
       >
         <div className="flex items-center justify-between h-13 px-3.5 border-b border-slate-200">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg text-white shadow-sm">
-              <Sun size={18} className="text-amber-300" />
-            </div>
-            <span className="text-base font-bold text-slate-900 tracking-tight">
-              Solar<span className="text-blue-600">Admin</span>
+            <img src={fullLogo} alt="Shree Energy" className="w-7 h-7 rounded-lg object-contain" />
+            <span className="text-base font-black text-slate-900 tracking-tight">
+              Shree<span className="text-[#008BD7]">Admin</span>
             </span>
           </Link>
           <button

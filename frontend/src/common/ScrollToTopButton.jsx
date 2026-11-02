@@ -35,7 +35,7 @@ export default function ScrollToTopButton() {
   }, []);
 
   const ring = useMemo(() => {
-    const r = 20; // Slightly larger radius for a more premium look
+    const r = 20;
     const c = 2 * Math.PI * r;
     const dash = c * progress;
     const gap = c - dash;
@@ -53,21 +53,21 @@ export default function ScrollToTopButton() {
       aria-label="Scroll to top"
       title="Scroll to top"
       className={[
-        "fixed bottom-6 right-6 z-50",
-        "h-12 w-12 rounded-full",
-        "border border-slate-200 bg-white/90 backdrop-blur-md",
-        "shadow-lg shadow-blue-500/10",
+        "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40",
+        "h-10 w-10 sm:h-12 sm:w-12 rounded-full",
+        "border border-slate-200 bg-white/95 backdrop-blur-md",
+        "shadow-lg shadow-[#008BD7]/20",
         "grid place-items-center",
         "transition-all duration-300",
-        "hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/20",
+        "hover:-translate-y-1 hover:shadow-xl hover:shadow-[#008BD7]/30",
         "active:translate-y-0 active:scale-[0.95]",
-        "focus:outline-none focus:ring-4 focus:ring-blue-100",
+        "focus:outline-none focus:ring-4 focus:ring-[#008BD7]/20",
         isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4 pointer-events-none",
       ].join(" ")}
     >
       {/* progress ring */}
       <span className="absolute inset-0 grid place-items-center pointer-events-none">
-        <svg width="48" height="48" viewBox="0 0 48 48" className="opacity-100 -rotate-90">
+        <svg viewBox="0 0 48 48" className="w-10 h-10 sm:w-12 sm:h-12 opacity-100 -rotate-90">
           {/* track */}
           <circle
             cx="24"
@@ -83,7 +83,7 @@ export default function ScrollToTopButton() {
             cy="24"
             r={ring.r}
             fill="none"
-            className="stroke-blue-600 transition-all duration-300 ease-out"
+            className="stroke-[#008BD7] transition-all duration-300 ease-out"
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray={ring.dasharray}
@@ -93,7 +93,7 @@ export default function ScrollToTopButton() {
 
       {/* icon */}
       <span className="relative">
-        <FiArrowUp className="text-blue-600 group-hover:-translate-y-0.5 transition-transform duration-300" size={20} />
+        <FiArrowUp className="text-[#008BD7] group-hover:-translate-y-0.5 transition-transform duration-300 w-4 h-4 sm:w-5 sm:h-5" />
       </span>
     </button>
   );

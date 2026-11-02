@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 480px;
+  --font-sans: "Inter", "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-shree-blue: #008BD7;
+  --color-shree-blue-hover: #0076B8;
+  --color-shree-blue-dark: #031F4C;
+  --color-shree-blue-deep: #194081;
+  --color-shree-blue-soft: #E6F1FA;
+  --color-shree-green: #63B723;
+  --color-shree-green-hover: #549E1E;
+  --color-shree-green-light: #61CE70;
+  --color-shree-green-soft: #EBF7E5;
+  --color-shree-navy: #0F172B;
+  --color-shree-navy-light: #1E293B;
+  --color-shree-bg: #F5F7FA;
+  --color-shree-card: #FFFFFF;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 .swal2-popup-custom {
@@ -217,4 +235,30 @@
 .dark .ProseMirror a,
 .dark .rich-text-rendered a {
   color: #60a5fa;
+}
+
+
+/* Smooth scrolling for anchor targets with clearance for fixed navbar */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+/* Marquee animation for brand/feature tickers */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  animation: marquee 28s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
