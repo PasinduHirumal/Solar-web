@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Mail, Shield, ShieldAlert, ShieldCheck, Search, Filter, CheckCircle, Ban, UserPlus, X } from 'lucide-react';
+import { Mail, Shield, ShieldAlert, ShieldCheck, Search, Filter, CheckCircle, Ban, UserPlus, X, Phone, MapPin } from 'lucide-react';
 import { axiosInstance } from '../../../lib/axiosInstance';
 import { confirmAction } from '../../../lib/confirmAction';
 import { UserRole, isSuperAdmin } from '../../../lib/roles';
@@ -279,6 +279,18 @@ export default function ManageUsers() {
                                                         <Mail className="w-2.5 h-2.5" />
                                                         {u.email}
                                                     </span>
+                                                    {u.phone && (
+                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                                                            <Phone className="w-2.5 h-2.5 text-blue-500" />
+                                                            {u.phone}
+                                                        </span>
+                                                    )}
+                                                    {u.address && (
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5 truncate max-w-xs" title={u.address}>
+                                                            <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                                                            {u.address}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>

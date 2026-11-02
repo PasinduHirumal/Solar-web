@@ -3,7 +3,7 @@ import useAuthStore from "../../lib/authStore";
 import { axiosInstance } from "../../lib/axiosInstance";
 import { isSuperAdmin } from "../../lib/roles";
 import {
-  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2, Package
+  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2, Package, FileText
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -14,6 +14,7 @@ export default function AdminDashboard() {
     totalCategories: 0,
     activeCategories: 0,
     totalItems: 0,
+    totalQuotations: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -21,13 +22,14 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const canFetchUsers = isSuperAdmin(user?.role);
-        const [usersRes, categoriesRes, activeCatsRes, itemsRes] = await Promise.all([
+        const [usersRes, categoriesRes, activeCatsRes, itemsRes, quotationsRes] = await Promise.all([
           canFetchUsers
             ? axiosInstance.get("/users", { params: { limit: 1 } }).catch(() => null)
             : Promise.resolve(null),
           axiosInstance.get("/categories", { params: { limit: 1 } }),
           axiosInstance.get("/categories", { params: { limit: 1, is_active: true } }),
           axiosInstance.get("/items", { params: { limit: 1 } }),
+          axiosInstance.get("/quotations", { params: { limit: 1 } }).catch(() => null),
         ]);
 
         const extractTotal = (res) => {
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
           totalCategories: extractTotal(categoriesRes),
           activeCategories: extractTotal(activeCatsRes),
           totalItems: extractTotal(itemsRes),
+          totalQuotations: quotationsRes ? extractTotal(quotationsRes) : 0,
         });
       } catch (error) {
         console.error("Failed to fetch analytics", error);
@@ -96,6 +99,16 @@ export default function AdminDashboard() {
       darkBg: "",
       iconColor: "text-cyan-600",
       delay: "300",
+    },
+    {
+      title: "Quotations",
+      value: stats.totalQuotations,
+      icon: FileText,
+      gradient: "from-purple-500 to-indigo-600",
+      lightBg: "bg-purple-50",
+      darkBg: "",
+      iconColor: "text-purple-600",
+      delay: "400",
     },
   ];
 

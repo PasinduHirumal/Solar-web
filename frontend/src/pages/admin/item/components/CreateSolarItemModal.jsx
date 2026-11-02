@@ -23,6 +23,7 @@ export default function CreateSolarItemModal({
     category_id: "",
     marked_price: "",
     warranty_period: "",
+    warranty_details: "",
     description: "",
   });
   const [loading, setLoading] = useState(false);
@@ -40,6 +41,7 @@ export default function CreateSolarItemModal({
       category_id: "",
       marked_price: "",
       warranty_period: "",
+      warranty_details: "",
       description: "",
     });
     setLoading(false);
@@ -84,6 +86,12 @@ export default function CreateSolarItemModal({
       return;
     }
 
+    const trimmedWarrantyDetails = formData.warranty_details.trim();
+    if (trimmedWarrantyDetails && trimmedWarrantyDetails.length < 3) {
+      toast.error("Warranty details must be at least 3 characters if provided");
+      return;
+    }
+
     const trimmedDesc = formData.description.trim();
     if (trimmedDesc && trimmedDesc.length < 3) {
       toast.error("Description must be at least 3 characters if provided");
@@ -100,6 +108,9 @@ export default function CreateSolarItemModal({
 
       if (trimmedWarranty) {
         payload.warranty_period = trimmedWarranty;
+      }
+      if (trimmedWarrantyDetails) {
+        payload.warranty_details = trimmedWarrantyDetails;
       }
       if (trimmedDesc) {
         payload.description = trimmedDesc;
@@ -275,7 +286,25 @@ export default function CreateSolarItemModal({
               </div>
             </div>
             <p className="text-[10px] text-gray-400">
-              Manufacturer or shop warranty guarantee (min. 3 characters if provided)
+              Manufacturer or shop warranty duration (3-255 characters if provided)
+            </p>
+          </div>
+
+          {/* Warranty Details */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Warranty Terms & Coverage <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            </label>
+            <textarea
+              name="warranty_details"
+              rows={2}
+              value={formData.warranty_details}
+              onChange={handleChange}
+              placeholder="e.g. 25-year linear performance warranty with 80% degradation limit; covers inverter replacement parts."
+              className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+            />
+            <p className="text-[10px] text-gray-400">
+              Detailed breakdown of warranty guarantee, inclusions, and claims terms
             </p>
           </div>
 

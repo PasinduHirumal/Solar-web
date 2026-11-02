@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FolderTree, Package, Menu, X, LogOut, Home, Sun } from "lucide-react";
+import { LayoutDashboard, Users, FolderTree, Package, FileText, Menu, X, LogOut, Home, Sun } from "lucide-react";
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
 import { isSuperAdmin } from "../lib/roles";
@@ -29,6 +29,7 @@ export default function AdminLayout() {
       : []),
     { name: "Manage Categories", path: "/admin/categories", icon: <FolderTree size={18} /> },
     { name: "Manage Solar Items", path: "/admin/items", icon: <Package size={18} /> },
+    { name: "Manage Quotations", path: "/admin/quotations", icon: <FileText size={18} /> },
   ];
 
   return (

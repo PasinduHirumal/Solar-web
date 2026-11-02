@@ -15,6 +15,7 @@ export default function EditItemModal({
     title: item?.title || "",
     category_id: item?.category_id || item?.category?.id || "",
     warranty_period: item?.warranty_period || "",
+    warranty_details: item?.warranty_details || "",
     description: item?.description || "",
   });
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,7 @@ export default function EditItemModal({
       title: item?.title || "",
       category_id: item?.category_id || item?.category?.id || "",
       warranty_period: item?.warranty_period || "",
+      warranty_details: item?.warranty_details || "",
       description: item?.description || "",
     });
   }
@@ -65,6 +67,12 @@ export default function EditItemModal({
       return;
     }
 
+    const trimmedWarrantyDetails = formData.warranty_details.trim();
+    if (trimmedWarrantyDetails && trimmedWarrantyDetails.length < 3) {
+      toast.error("Warranty details must be at least 3 characters if provided");
+      return;
+    }
+
     const trimmedDesc = formData.description.trim();
     if (trimmedDesc && trimmedDesc.length < 3) {
       toast.error("Description must be at least 3 characters if provided");
@@ -77,6 +85,7 @@ export default function EditItemModal({
         title: trimmedTitle,
         category_id: formData.category_id,
         warranty_period: trimmedWarranty || null,
+        warranty_details: trimmedWarrantyDetails || null,
         description: trimmedDesc || null,
       };
 
@@ -235,7 +244,25 @@ export default function EditItemModal({
               </div>
             </div>
             <p className="text-[10px] text-gray-400">
-              Manufacturer or shop warranty coverage (min. 3 characters if provided)
+              Manufacturer or shop warranty coverage (3-255 characters if provided)
+            </p>
+          </div>
+
+          {/* Warranty Details */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Warranty Terms & Coverage <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            </label>
+            <textarea
+              name="warranty_details"
+              rows={2}
+              value={formData.warranty_details}
+              onChange={handleChange}
+              placeholder="e.g. Inverter repairs, cell degradation limits, or on-site replacement terms..."
+              className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+            />
+            <p className="text-[10px] text-gray-400">
+              Detailed breakdown of warranty guarantee, inclusions, and claims terms
             </p>
           </div>
 
