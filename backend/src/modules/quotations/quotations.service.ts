@@ -285,6 +285,31 @@ export class QuotationsService {
                 throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
             }
 
+            const items = await manager.find(QuotationItemEntity, {
+                where: { quotation_id: locked.id },
+                relations: { solar_item: true },
+            });
+
+            if (!items.length) {
+                throw new BadRequestException(`Cannot accept a quotation with no items`);
+            }
+
+            const inactive = items.filter((i) => !i.solar_item?.is_active);
+            if (inactive.length) {
+                throw new BadRequestException(
+                    `Cannot accept: items no longer available: ${inactive.map((i) => i.solar_item_id).join(', ')}`,
+                );
+            }
+
+            for (const item of items) {
+                await manager.update(QuotationItemEntity, item.id, {
+                    snap_title: item.solar_item.title,
+                    snap_warranty_period: item.solar_item.warranty_period,
+                    snap_warranty_details: item.solar_item.warranty_details,
+                    snap_selling_price: item.solar_item.selling_price,
+                });
+            }
+
             await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.ACCEPTED });
             return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
         });
