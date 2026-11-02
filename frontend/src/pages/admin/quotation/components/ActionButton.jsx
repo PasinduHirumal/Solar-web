@@ -198,8 +198,8 @@ export default function ActionButton({
       <ViewQuotationModal
         isOpen={isViewOpen}
         onClose={() => setIsViewOpen(false)}
+        quotation={quotation}
         quotationId={quotation.id}
-        initialQuotation={quotation}
       />
 
       {/* Edit Modal */}
