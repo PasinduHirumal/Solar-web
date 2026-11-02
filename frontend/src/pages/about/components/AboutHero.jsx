@@ -1,13 +1,9 @@
 import { motion } from "framer-motion";
-import headerBg from "../../../assets/header-bg.jpg";
 
 export default function AboutHero() {
   return (
-    <section className="relative overflow-hidden h-[70vh] flex items-center justify-center pt-20 bg-white transition-colors duration-300">
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed opacity-90 pointer-events-none"
-        style={{ backgroundImage: `url(${headerBg})` }}
-      ></div>
+    <section className="relative overflow-hidden h-[70vh] flex items-center justify-center pt-20 bg-gradient-to-b from-blue-50/50 via-slate-50 to-white transition-colors duration-300">
+      <div className="absolute inset-0 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 relative z-10 text-center flex justify-center">
         <motion.div

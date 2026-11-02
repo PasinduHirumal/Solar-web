@@ -101,13 +101,20 @@ export default function ItemQuickViewModal({ item, categoryName, onClose }) {
 
               {/* Key Highlights */}
               <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-                  <span>
-                    {item.warranty_period
-                      ? `${item.warranty_period} Official Warranty`
-                      : "25-Year Manufacturer Linear Power Warranty"}
-                  </span>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span>
+                      {item.warranty_period
+                        ? `${item.warranty_period} Official Warranty`
+                        : "25-Year Manufacturer Linear Power Warranty"}
+                    </span>
+                    {item.warranty_details && (
+                      <p className="text-[11px] text-slate-500 mt-0.5 font-normal">
+                        {item.warranty_details}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Zap size={15} className="text-amber-500 shrink-0" />
