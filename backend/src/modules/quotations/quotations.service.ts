@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { QuotationEntity, QuotationStatus } from './entities/quotation.entity';
@@ -389,19 +389,24 @@ export class QuotationsService {
         const isApproved = quotation.items.every((i) => i.snap_selling_price != null && i.snap_title != null);
 
         if (isApproved) {
-            return quotation.items.reduce((sum, i) => sum + i.snap_selling_price * i.quantity, 0);
+            return quotation.items.reduce((sum, i) => {
+                if (i.snap_selling_price === null) {
+                    throw new InternalServerErrorException(
+                        `Approved quotation ${quotation.id} has item ${i.id} without a price snapshot`,
+                    );
+                }
+                return sum + i.snap_selling_price * i.quantity;
+            }, 0);
         }
 
         // Draft: use live prices
-        const ids = [...new Set(quotation.items.map((i) => i.solar_item_id))];
-        const priceMap = await this.itemsService.getSellingPriceMap(ids); // Map<string, number>
-
         return quotation.items.reduce((sum, i) => {
-            const price = priceMap.get(i.solar_item_id);
-            if (price === undefined) {
-                throw new NotFoundException(`Solar item ${i.solar_item_id} not found or inactive`);
+            if (!i.solar_item?.is_active) {
+                throw new BadRequestException(
+                    `Solar item ${i.solar_item_id} is inactive or missing; update the quotation`,
+                );
             }
-            return sum + price * i.quantity;
+            return sum + i.solar_item.selling_price * i.quantity;
         }, 0);
     }
 
@@ -430,7 +435,7 @@ export class QuotationsService {
         return qb
             .leftJoin(`${QUOTATION_ALIAS}.items`, `quo_item`)
             .addSelect(pick('quo_item', QUOTATION_ITEM_FIELDS))
-            .leftJoin('item.solar_item', 'solar_item')
+            .leftJoin('quo_item.solar_item', 'solar_item')
             .addSelect(pick('solar_item', SOLAR_ITEM_FIELDS))
             .innerJoin(`solar_item.category`, 'category')
             .addSelect(pick('category', CATEGORY_FIELDS));

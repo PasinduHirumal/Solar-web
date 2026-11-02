@@ -227,17 +227,6 @@ export class ItemsService {
         return Math.round(Number(result?.total ?? 0) * 100) / 100;
     }
 
-    async getSellingPriceMap(ids: string[]): Promise<Map<string, number>> {
-        if (!ids.length) return new Map();
-
-        const rows = await this.solarItemRepo.find({
-            where: { id: In(ids), is_active: true },
-            select: { id: true, selling_price: true },
-        });
-
-        return new Map(rows.map((r) => [r.id, Number(r.selling_price)]));
-    }
-
     async getItemsByIds(item_ids: string[]): Promise<SolarItemEntity[]> {
         if (!item_ids?.length) return [];
 
