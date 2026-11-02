@@ -38,6 +38,24 @@ export class QuotationsController {
         return this.quotationService.findAll(query);
     }
 
+    @Put(':quotation_id/status/accept')
+    @Roles(UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async updateQuotationStatusAccept(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
+    ): Promise<QuotationEntity> {
+        return this.quotationService.acceptQuotation(quotation_id);
+    }
+
+    @Put(':quotation_id/status/reject')
+    @Roles(UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async updateQuotationStatusReject(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
+    ): Promise<QuotationEntity> {
+        return this.quotationService.rejectQuotation(quotation_id);
+    }
+
     @Put(':quotation_id/data')
     @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)

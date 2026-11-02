@@ -257,6 +257,46 @@ export class QuotationsService {
         });
     }
 
+    async acceptQuotation(quotation_id: string): Promise<QuotationEntity> {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            if (locked.status !== QuotationStatus.SENT) {
+                throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
+            }
+
+            await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.ACCEPTED });
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
+    }
+
+    async rejectQuotation(quotation_id: string): Promise<QuotationEntity> {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            if (locked.status !== QuotationStatus.SENT) {
+                throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
+            }
+
+            await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.REJECTED });
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
+    }
+
     async remove(quotation: QuotationEntity): Promise<void> {
         if (quotation.status !== QuotationStatus.DRAFT) {
             throw new BadRequestException(`Cannot delete quotation in status: ${quotation.status} `);
