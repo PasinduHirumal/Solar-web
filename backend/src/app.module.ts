@@ -25,6 +25,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SolarItemsModule } from './modules/solar-items/solar-items.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 @Module({
   imports: [
@@ -71,6 +72,8 @@ import { QuotationsModule } from './modules/quotations/quotations.module';
     SolarItemsModule,
 
     QuotationsModule,
+
+    InvoicesModule,
   ],
   controllers: [AppController],
   providers: [

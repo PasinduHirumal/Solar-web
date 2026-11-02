@@ -20,6 +20,10 @@ export class QuotationItemsService {
             throw new BadRequestException(`Cannot add new item when ${quotation.status}`);
         }
 
+        if (quotation.items.length + 1 > 25) {
+            throw new BadRequestException(`Maximum 25 items can add for a Quotation`);
+        }
+
         const exists = await this.quotationItemRepo.existsBy({ quotation_id: quotation.id, solar_item_id: dto.solar_item_id });
         if (exists) throw new ConflictException(`Item ${dto.solar_item_id} already exists`);
 
