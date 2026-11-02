@@ -62,6 +62,10 @@ export class QuotationsService {
             if(dto.tax <= 0) throw new BadRequestException(`Tax cannot be less than 0`);
         }
 
+        if (dto.item_ids.length > 10) {
+            throw new BadRequestException(`Maximum 10 items can add at this time`);
+        }
+
         const uniqueIds = [...new Set(dto.item_ids.map((i) => i.solar_item_id))];
         const found = await this.itemsService.getItemsByIds(uniqueIds);
 
@@ -285,31 +289,6 @@ export class QuotationsService {
                 throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
             }
 
-            const items = await manager.find(QuotationItemEntity, {
-                where: { quotation_id: locked.id },
-                relations: { solar_item: true },
-            });
-
-            if (!items.length) {
-                throw new BadRequestException(`Cannot accept a quotation with no items`);
-            }
-
-            const inactive = items.filter((i) => !i.solar_item?.is_active);
-            if (inactive.length) {
-                throw new BadRequestException(
-                    `Cannot accept: items no longer available: ${inactive.map((i) => i.solar_item_id).join(', ')}`,
-                );
-            }
-
-            for (const item of items) {
-                await manager.update(QuotationItemEntity, item.id, {
-                    snap_title: item.solar_item.title,
-                    snap_warranty_period: item.solar_item.warranty_period,
-                    snap_warranty_details: item.solar_item.warranty_details,
-                    snap_selling_price: item.solar_item.selling_price,
-                });
-            }
-
             await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.ACCEPTED });
             return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
         });
@@ -364,24 +343,52 @@ export class QuotationsService {
         return quotation;
     }
 
+    async sentQuotation(quotation_id: string): Promise<QuotationEntity> {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
 
-    // helpers
-    private async generateQuotationNumber(customer_name: string): Promise<string> {
-        const orgPrefix = `SO-QU`;
-        const customerPrefix = customer_name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase().padEnd(3, 'X');
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
-        for (let attempt = 0; attempt < 5; attempt++) {
-            const suffix = randomUUID().split('-')[0].toUpperCase();
-            const code = `${orgPrefix}-${customerPrefix}-${suffix}`;
+            if (locked.status !== QuotationStatus.DRAFT && locked.status !== QuotationStatus.SENT) {
+                throw new BadRequestException(`Cannot sent quotation in status: ${locked.status} `);
+            }
 
-            const exists = await this.quotationRepo.existsBy({ quotation_number: code });
-            if (!exists) return code;
-        }
+            const items = await manager.find(QuotationItemEntity, {
+                where: { quotation_id: locked.id },
+                relations: { solar_item: true },
+            });
 
-        throw new BadRequestException('Failed to generate a unique quotation number, please try again');
+            if (!items.length) {
+                throw new BadRequestException(`Cannot accept a quotation with no items`);
+            }
+
+            const inactive = items.filter((i) => !i.solar_item?.is_active);
+            if (inactive.length) {
+                throw new BadRequestException(
+                    `Cannot accept: items no longer available: ${inactive.map((i) => i.solar_item_id).join(', ')}`,
+                );
+            }
+
+            for (const item of items) {
+                await manager.update(QuotationItemEntity, item.id, {
+                    snap_title: item.solar_item.title,
+                    snap_warranty_period: item.solar_item.warranty_period,
+                    snap_warranty_details: item.solar_item.warranty_details,
+                    snap_selling_price: item.solar_item.selling_price,
+                });
+            }
+
+            await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.SENT });
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
     }
 
-    private async getPriceBreakdown(quotation: QuotationEntity): Promise<PriceBreakdown> {
+    async getPriceBreakdown(quotation: QuotationEntity): Promise<PriceBreakdown> {
         const subtotal = await this.calculateSubtotal(quotation);
 
         let discount: number = 0;
@@ -406,6 +413,23 @@ export class QuotationsService {
             tax: round(tax),
             total: round(subtotal - discount + tax),
         }
+    }
+
+
+    // helpers
+    private async generateQuotationNumber(customer_name: string): Promise<string> {
+        const orgPrefix = `SO-QU`;
+        const customerPrefix = customer_name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase().padEnd(3, 'X');
+
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const suffix = randomUUID().split('-')[0].toUpperCase();
+            const code = `${orgPrefix}-${customerPrefix}-${suffix}`;
+
+            const exists = await this.quotationRepo.existsBy({ quotation_number: code });
+            if (!exists) return code;
+        }
+
+        throw new BadRequestException('Failed to generate a unique quotation number, please try again');
     }
 
     private async calculateSubtotal(quotation: QuotationEntity): Promise<number> {

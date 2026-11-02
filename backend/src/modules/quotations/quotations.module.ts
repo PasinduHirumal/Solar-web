@@ -27,6 +27,10 @@ import { QuotationExistsPipe } from './pipes/quotation-exists.pipe';
     QuotationsService, 
     QuotationItemsService,
     QuotationExistsPipe,
+  ],
+  exports: [
+    QuotationsService,
+    QuotationExistsPipe,
   ]
 })
 export class QuotationsModule {}
