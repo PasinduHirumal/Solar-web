@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, ArrowRight, ShieldCheck, Zap, Send, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, ArrowRight, ShieldCheck } from "lucide-react";
 import { FaFacebook, FaInstagram, FaWhatsapp, FaYoutube } from "react-icons/fa";
 import logoCircle from "../assets/logo/logo_circle.jpg";
 import { contactDetails, brandPartnersData } from "../data/dataset";
-import toast from "react-hot-toast";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const [newsletterEmail, setNewsletterEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
 
   const phone1 = contactDetails.phones[0]?.display || "+94 76 033 2537";
   const rawPhone1 = contactDetails.phones[0]?.number || "+94760332537";
@@ -19,16 +16,6 @@ export default function Footer() {
   const whatsappNumber = contactDetails.whatsapp.clean;
   const email = contactDetails.emails[1]?.address || "shree.engsolar@gmail.com";
   const facebookUrl = contactDetails.social.facebook;
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (!newsletterEmail || !newsletterEmail.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    setSubscribed(true);
-    toast.success("Thank you for subscribing to Shree Energy updates!");
-  };
 
   // Clean Real Navigation Routes Only
   const navLinks = [
