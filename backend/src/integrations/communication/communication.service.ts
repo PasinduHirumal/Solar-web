@@ -72,4 +72,31 @@ export class CommunicationService {
 
         this.logger.log(`Welcome email sent to: ${email}`);
     }
+
+    async sendInvoiceEmail(email: string, customerName: string, invoiceNumber: string, pdf: Express.Multer.File): Promise<any> {
+        const APP_NAME = this.configService.get<string>('APP_NAME');
+
+        await this.nodemailerService.sendEmail({
+            to: email,
+            subject: `Invoice ${invoiceNumber} - ${APP_NAME}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2>Hello, ${customerName}</h2>
+                    <p>Please find your invoice <strong>${invoiceNumber}</strong> attached to this email.</p>
+                    <p>If you have any questions, feel free to get in touch with us.</p>
+                    <hr>
+                    <p style="font-size: 12px; color: #666;">This is an automated email, please do not reply.</p>
+                </div>
+            `,
+            attachments: [
+                {
+                    filename: pdf.originalname || `invoice-${invoiceNumber}.pdf`,
+                    content: pdf.buffer,
+                    contentType: pdf.mimetype || 'application/pdf',
+                },
+            ],
+        });
+
+        this.logger.log(`Invoice ${invoiceNumber} email sent to: ${email}`);
+    }
 }

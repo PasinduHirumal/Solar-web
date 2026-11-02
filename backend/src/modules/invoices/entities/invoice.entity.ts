@@ -50,9 +50,6 @@ export class InvoiceEntity {
     @Column({ type: 'timestamp', nullable: true })
     paid_at!: Date | null;
 
-    @Column({ type: 'boolean', default: false })
-    is_need_to_re_generate!: boolean;
-
     @CreateDateColumn()
     created_at!: Date;
 

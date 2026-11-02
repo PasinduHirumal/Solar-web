@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
-import { QuotationEntity } from '../quotations/entities/quotation.entity';
+import { QuotationEntity, QuotationStatus } from '../quotations/entities/quotation.entity';
 import { randomUUID } from 'crypto';
 import { QuotationsService } from '../quotations/quotations.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -12,6 +12,7 @@ import { QUOTATION_ITEM_SNAP_FIELDS } from '../quotations/quotation-items/consta
 import { FindInvoicesQueryDto } from './dto/find-invoice-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
 import { USER_FIELDS } from '../identity/constants/user-fields.constants';
+import { CommunicationService } from '../../integrations/communication/communication.service';
 
 const INVOICE_ALIAS = 'invoice';
 
@@ -26,6 +27,7 @@ export class InvoicesService {
         private readonly invoiceRepo: Repository<InvoiceEntity>,
 
         private readonly quotationService: QuotationsService,
+        private readonly mailService: CommunicationService,
     ) {}
 
     async generate(quotation: QuotationEntity, dto: CreateInvoiceDto): Promise<InvoiceEntity> {
@@ -50,7 +52,7 @@ export class InvoicesService {
     }
 
     async findWithPriceBreakdown(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<InvoiceEntity> {
-        await this.quotationService.sentQuotation(quotation.id);
+        await this.quotationService.updateSnapQuotation(quotation.id);
         await this.updatePriceBreakdown(quotation, invoice.id);
 
         return await this.findById(invoice.id);
@@ -124,6 +126,27 @@ export class InvoicesService {
             .getMany();
 
         return { items, meta };
+    }
+
+    async sendToCustomer(invoice: InvoiceEntity, pdf: Express.Multer.File): Promise<void> {
+        const customer = invoice.quotation?.customer;
+
+        if (!customer.email) {
+            throw new BadRequestException('Customer email not found for this invoice');
+        }
+
+        if (invoice.quotation.status === QuotationStatus.REJECTED) {
+            throw new BadRequestException(`Cannot send invoice: the quotation is already ${invoice.quotation.status}`);
+        }
+
+        await this.mailService.sendInvoiceEmail(
+            customer.email,
+            customer.name,
+            invoice.invoice_number,
+            pdf,
+        );
+
+        await this.quotationService.sentQuotation(invoice.quotation_id);
     }
 
 
