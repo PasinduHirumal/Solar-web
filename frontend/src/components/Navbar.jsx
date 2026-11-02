@@ -16,10 +16,10 @@ export default function Navbar() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  const phone = contactDetails.phones[0]?.display || "+94 76 033 2537";
-  const rawPhone = contactDetails.phones[0]?.number || "+94760332537";
-  const whatsappNumber = contactDetails.whatsapp.clean || "94760332537";
-  const email = contactDetails.emails[1]?.address || "shree.engsolar@gmail.com";
+  const phone = contactDetails.phones[0]?.display;
+  const rawPhone = contactDetails.phones[0]?.number;
+  const whatsappNumber = contactDetails.whatsapp.clean;
+  const email = contactDetails.emails[1]?.address || contactDetails.emails[0]?.address;
 
   const handleLogout = async () => {
     const isConfirmed = await confirmAction({

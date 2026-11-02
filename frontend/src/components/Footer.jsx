@@ -8,13 +8,13 @@ import { contactDetails, brandPartnersData } from "../data/dataset";
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
-  const phone1 = contactDetails.phones[0]?.display || "+94 76 033 2537";
-  const rawPhone1 = contactDetails.phones[0]?.number || "+94760332537";
-  const phone2 = contactDetails.phones[1]?.display || "+94 71 333 2537";
-  const rawPhone2 = contactDetails.phones[1]?.number || "+94713332537";
+  const phone1 = contactDetails.phones[0]?.display;
+  const rawPhone1 = contactDetails.phones[0]?.number;
+  const phone2 = contactDetails.phones[1]?.display;
+  const rawPhone2 = contactDetails.phones[1]?.number;
   const address = contactDetails.address.street;
   const whatsappNumber = contactDetails.whatsapp.clean;
-  const email = contactDetails.emails[0]?.address || "shree.engsolar@gmail.com";
+  const email = contactDetails.emails[0]?.address || contactDetails.emails[1]?.address;
   const facebookUrl = contactDetails.social.facebook;
 
   // Clean Real Navigation Routes Only
