@@ -1,18 +1,13 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Eye,
-  Edit3,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Loader2,
+  Eye, Edit3, Trash2, CheckCircle, XCircle, Loader2,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { confirmAction } from "../../../../lib/confirmAction";
-import { isSuperAdmin } from "../../../../lib/roles";
+import { isAdmin, isSuperAdmin } from "../../../../lib/roles";
 import ViewQuotationModal from "./ViewQuotationModal";
-import EditQuotationModal from "./EditQuotationModal";
+import EditQuotationModal from "./editQuotation/EditQuotationModal";
 
 export default function ActionButton({
   quotation,
@@ -29,8 +24,23 @@ export default function ActionButton({
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const isSuper = isSuperAdmin(currentUser?.role);
+  const isAdm = isAdmin(currentUser?.role);
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
+  const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
+
+  // Role & status validation according to backend quotations.controller.ts:
+  // - SUPER_ADMIN status actions: Accept and Reject buttons (PUT /quotations/:id/status/accept & /status/reject)
+  //   Visible to SUPER_ADMIN on any non-finalized quotation
+  const canAcceptReject = isSuper && !isFinalized;
+
+  // - Edit button:
+  //   * ADMIN can edit when DRAFT (all tabs) or SENT (items tab)
+  //   * SUPER_ADMIN can edit when DRAFT (discount, tax, notes)
+  const canEdit = isAdm ? (isDraft || isSent) : (isSuper && isDraft);
+
+  // - Delete button: DELETE /quotations/:id is allowed for ADMIN & SUPER_ADMIN when status is DRAFT
+  const canDelete = (isAdm || isSuper) && isDraft;
 
   const handleAccept = async () => {
     const confirmed = await confirmAction({
@@ -125,33 +135,33 @@ export default function ActionButton({
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-        {/* View Details Button */}
+        {/* View Details Button (GET /quotations/:id - ADMIN, SUPER_ADMIN) */}
         <button
           onClick={() => setIsViewOpen(true)}
           className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors rounded-md ring-1 ring-slate-600/10 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-          title="View Quotation"
+          title="View Quotation Details"
         >
           <Eye className="w-3.5 h-3.5" />
         </button>
 
-        {/* Edit Button (DRAFT status only) */}
-        {isDraft && (
+        {/* Edit Button (Opens Modal with tab navigation by role & status) */}
+        {canEdit && (
           <button
             onClick={() => setIsEditOpen(true)}
             className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-md ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Edit Quotation (Terms, Tax, Discount)"
+            title="Edit Quotation"
           >
             <Edit3 className="w-3.5 h-3.5" />
           </button>
         )}
 
-        {/* SuperAdmin Accept Button (SENT status only) */}
-        {isSuper && isSent && (
+        {/* SuperAdmin Accept Button (SENT status only - PUT /quotations/:id/status/accept) */}
+        {canAcceptReject && (
           <button
             onClick={handleAccept}
             disabled={acceptLoading}
             className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors rounded-md ring-1 ring-emerald-600/10 dark:ring-emerald-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Accept Quotation"
+            title="Approve & Accept Quotation"
           >
             {acceptLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -161,8 +171,8 @@ export default function ActionButton({
           </button>
         )}
 
-        {/* SuperAdmin Reject Button (SENT status only) */}
-        {isSuper && isSent && (
+        {/* SuperAdmin Reject Button (SENT status only - PUT /quotations/:id/status/reject) */}
+        {canAcceptReject && (
           <button
             onClick={handleReject}
             disabled={rejectLoading}
@@ -177,8 +187,8 @@ export default function ActionButton({
           </button>
         )}
 
-        {/* Delete Button (DRAFT status only) */}
-        {isDraft && (
+        {/* Delete Button (DRAFT status only - DELETE /quotations/:id - ADMIN, SUPER_ADMIN) */}
+        {canDelete && (
           <button
             onClick={handleDelete}
             disabled={deleteLoading}
@@ -202,7 +212,7 @@ export default function ActionButton({
         quotationId={quotation.id}
       />
 
-      {/* Edit Modal */}
+      {/* Edit Modal with role-based tabs & switch-case navigation */}
       <EditQuotationModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}

@@ -2,17 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search,
-  Filter,
-  Plus,
-  X,
-  FileText,
-  Clock,
-  User,
-  Percent,
+  Search, Filter, Plus, X, FileText, Clock
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
-import { isAdmin, isSuperAdmin } from "../../../lib/roles";
+import { isAdmin } from "../../../lib/roles";
 import useAuthStore from "../../../lib/authStore";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
@@ -163,7 +156,8 @@ export default function ManageQuotations() {
     statusFilter || sortBy !== "created_at" || sortOrder !== "DESC"
   );
 
-  const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
+  // POST /quotations has @Roles(UserRole.ADMIN) only in quotations.controller.ts
+  const canCreate = isAdmin(currentUser?.role);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -238,11 +232,10 @@ export default function ManageQuotations() {
           {/* Filter Toggle */}
           <button
             onClick={() => setIsFilterOpen(true)}
-            className={`p-1.5 border rounded-lg transition-colors flex items-center justify-center shrink-0 h-[34px] w-[34px] cursor-pointer ${
-              hasActiveFilters
+            className={`p-1.5 border rounded-lg transition-colors flex items-center justify-center shrink-0 h-[34px] w-[34px] cursor-pointer ${hasActiveFilters
                 ? "bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400"
                 : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
-            }`}
+              }`}
             title="Filters"
           >
             <Filter size={14} />
@@ -351,8 +344,8 @@ export default function ManageQuotations() {
                               {quo.discount_type === "PERCENTAGE"
                                 ? `${quo.discount}%`
                                 : quo.discount_type === "FIXED"
-                                ? `${formatPrice(quo.discount)}`
-                                : "None"}
+                                  ? `${formatPrice(quo.discount)}`
+                                  : "None"}
                             </span>
                           </span>
                           <span className="text-gray-600 dark:text-gray-300">
@@ -361,8 +354,8 @@ export default function ManageQuotations() {
                               {quo.tax_type === "PERCENTAGE"
                                 ? `${quo.tax}%`
                                 : quo.tax_type === "FIXED"
-                                ? `${formatPrice(quo.tax)}`
-                                : "None"}
+                                  ? `${formatPrice(quo.tax)}`
+                                  : "None"}
                             </span>
                           </span>
                         </div>

@@ -1,13 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Package,
-  X,
-  Loader2,
-  Layers,
-  AlertCircle,
-  ShieldCheck,
-  FileText,
+  Package, X, Loader2, Layers, AlertCircle, ShieldCheck, FileText,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { currencyType } from "../../../../lib/formatPrice";

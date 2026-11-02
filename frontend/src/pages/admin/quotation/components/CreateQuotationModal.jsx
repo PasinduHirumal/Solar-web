@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
-  FileText,
-  X,
-  Loader2,
-  Plus,
-  Trash2,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Layers,
-  DollarSign,
-  Percent,
+  FileText, X, Loader2, Plus, Trash2, User, Layers,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice, currencyType } from "../../../../lib/formatPrice";
@@ -223,6 +212,16 @@ export default function CreateQuotationModal({
       }
     }
 
+    if (formData.notes.trim().length > 0 && formData.notes.trim().length < 3) {
+      toast.error("Notes must be at least 3 characters long if provided");
+      return;
+    }
+
+    if (formData.terms.trim().length > 0 && formData.terms.trim().length < 3) {
+      toast.error("Terms & Conditions must be at least 3 characters long if provided");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -234,16 +233,21 @@ export default function CreateQuotationModal({
           solar_item_id: i.solar_item_id,
           quantity: Number(i.quantity),
         })),
+        discount_type: formData.discount_type || "NON",
+        tax_type: formData.tax_type || "NON",
       };
 
       if (formData.discount_type !== "NON" && Number(formData.discount) > 0) {
-        payload.discount_type = formData.discount_type;
         payload.discount = Number(formData.discount);
       }
 
       if (formData.tax_type !== "NON" && Number(formData.tax) > 0) {
-        payload.tax_type = formData.tax_type;
         payload.tax = Number(formData.tax);
+      } else if (payload.discount_type !== "NON") {
+        // Backend DTO validation quirk:
+        // @ValidateIf((o) => o.discount_type !== TaxType.NON) on tax requires a positive number
+        // when discount_type is not NON, even if tax_type is NON.
+        payload.tax = 1;
       }
 
       const trimmedNotes = formData.notes.trim();
