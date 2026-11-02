@@ -174,6 +174,15 @@ export default function ViewQuotationModal({
             </div>
 
             <span
+              title={
+                currentQuo.status === "SENT"
+                  ? "Quotation sent to customer (ready for SuperAdmin approval or rejection)"
+                  : currentQuo.status === "ACCEPTED"
+                  ? "Quotation approved and accepted"
+                  : currentQuo.status === "REJECTED"
+                  ? "Quotation rejected"
+                  : "Draft quotation (must be sent to customer before approval/rejection)"
+              }
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border self-start sm:self-auto shrink-0 ${getStatusBadge(
                 currentQuo.status
               )}`}

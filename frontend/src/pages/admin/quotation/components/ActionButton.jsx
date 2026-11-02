@@ -28,21 +28,33 @@ export default function ActionButton({
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
   const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
-
-  // Role & status validation according to backend quotations.controller.ts:
-  // - SUPER_ADMIN status actions: Accept and Reject buttons (PUT /quotations/:id/status/accept & /status/reject)
-  //   Visible to SUPER_ADMIN on any non-finalized quotation
+  /*
+  * Role & status validation according to backend quotations.service.ts & quotations.controller.ts:
+  * - SUPER_ADMIN status actions: Accept and Reject buttons (PUT /quotations/:id/status/accept & /status/reject)
+  * Backend strictly enforces that quotation MUST be in "SENT" status to be accepted or rejected.
+  * In "DRAFT" status, accepting/rejecting is blocked with: "Cannot update status for quotation in status: DRAFT"
+  * When DRAFT, buttons are displayed disabled with explanatory tooltips for SuperAdmin.
+  */
   const canAcceptReject = isSuper && !isFinalized;
 
-  // - Edit button:
-  //   * ADMIN can edit when DRAFT (all tabs) or SENT (items tab)
-  //   * SUPER_ADMIN can edit when DRAFT (discount, tax, notes)
+  /*
+  * - Edit button:
+  * ADMIN can edit when DRAFT (all tabs) or SENT (items tab)
+  * SUPER_ADMIN can edit when DRAFT (discount, tax, notes)
+  */
   const canEdit = isAdm ? (isDraft || isSent) : (isSuper && isDraft);
 
   // - Delete button: DELETE /quotations/:id is allowed for ADMIN & SUPER_ADMIN when status is DRAFT
   const canDelete = (isAdm || isSuper) && isDraft;
 
   const handleAccept = async () => {
+    if (!isSent) {
+      toast.error(
+        `Cannot accept quotation in "${quotation.status}" status. It must be in "SENT" status first.`
+      );
+      return;
+    }
+
     const confirmed = await confirmAction({
       title: "Accept Quotation?",
       text: `Are you sure you want to approve and accept quotation "${quotation.quotation_number}"? This will lock item pricing snapshots.`,
@@ -74,6 +86,13 @@ export default function ActionButton({
   };
 
   const handleReject = async () => {
+    if (!isSent) {
+      toast.error(
+        `Cannot reject quotation in "${quotation.status}" status. It must be in "SENT" status first.`
+      );
+      return;
+    }
+
     const confirmed = await confirmAction({
       title: "Reject Quotation?",
       text: `Are you sure you want to reject quotation "${quotation.quotation_number}"?`,
@@ -158,10 +177,17 @@ export default function ActionButton({
         {/* SuperAdmin Accept Button (SENT status only - PUT /quotations/:id/status/accept) */}
         {canAcceptReject && (
           <button
-            onClick={handleAccept}
-            disabled={acceptLoading}
-            className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors rounded-md ring-1 ring-emerald-600/10 dark:ring-emerald-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Approve & Accept Quotation"
+            onClick={isSent ? handleAccept : undefined}
+            disabled={!isSent || acceptLoading}
+            className={`p-1.5 transition-colors rounded-md ring-1 flex items-center justify-center ${isSent
+              ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20 cursor-pointer"
+              : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 ring-slate-200 dark:ring-slate-700 opacity-60 cursor-not-allowed"
+              }`}
+            title={
+              isSent
+                ? "Approve & Accept Quotation"
+                : "Cannot accept: Quotation must be in SENT status first"
+            }
           >
             {acceptLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -174,10 +200,17 @@ export default function ActionButton({
         {/* SuperAdmin Reject Button (SENT status only - PUT /quotations/:id/status/reject) */}
         {canAcceptReject && (
           <button
-            onClick={handleReject}
-            disabled={rejectLoading}
-            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors rounded-md ring-1 ring-amber-600/10 dark:ring-amber-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Reject Quotation"
+            onClick={isSent ? handleReject : undefined}
+            disabled={!isSent || rejectLoading}
+            className={`p-1.5 transition-colors rounded-md ring-1 flex items-center justify-center ${isSent
+              ? "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20 cursor-pointer"
+              : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 ring-slate-200 dark:ring-slate-700 opacity-60 cursor-not-allowed"
+              }`}
+            title={
+              isSent
+                ? "Reject Quotation"
+                : "Cannot reject: Quotation must be in SENT status first"
+            }
           >
             {rejectLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

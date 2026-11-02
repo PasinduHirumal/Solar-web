@@ -76,6 +76,11 @@ export default function CreateQuotationModal({
   };
 
   const handleAddItem = () => {
+    if (selectedItems.length >= 10) {
+      toast.error("Maximum 10 items can be added when creating a quotation");
+      return;
+    }
+
     const unselected = availableItems.find(
       (item) => !selectedItems.some((s) => s.solar_item_id === item.id)
     );
@@ -176,6 +181,11 @@ export default function CreateQuotationModal({
 
     if (selectedItems.length === 0) {
       toast.error("Please add at least one solar hardware item to the quotation");
+      return;
+    }
+
+    if (selectedItems.length > 10) {
+      toast.error("Maximum 10 items can be added when creating a quotation");
       return;
     }
 
@@ -400,12 +410,14 @@ export default function CreateQuotationModal({
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Quotation Items ({selectedItems.length})</span>
+                  <span>Quotation Items ({selectedItems.length}/10)</span>
                 </h4>
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition cursor-pointer"
+                  disabled={selectedItems.length >= 10}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  title={selectedItems.length >= 10 ? "Maximum 10 items reached" : "Add Item"}
                 >
                   <Plus size={13} />
                   <span>Add Item</span>

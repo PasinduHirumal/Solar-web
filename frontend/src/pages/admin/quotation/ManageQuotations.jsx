@@ -163,21 +163,30 @@ export default function ManageQuotations() {
     switch (status) {
       case "ACCEPTED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+          <span
+            title="Quotation accepted & locked"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Accepted
           </span>
         );
       case "REJECTED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
+          <span
+            title="Quotation rejected"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             Rejected
           </span>
         );
       case "SENT":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60">
+          <span
+            title="Quotation sent to customer (ready for SuperAdmin approval or rejection)"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
             Sent
           </span>
@@ -185,7 +194,10 @@ export default function ManageQuotations() {
       case "DRAFT":
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+          <span
+            title="Draft quotation (must be sent to customer before approval/rejection)"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
             Draft
           </span>
