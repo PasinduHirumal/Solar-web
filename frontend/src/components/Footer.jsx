@@ -14,7 +14,7 @@ export default function Footer() {
   const rawPhone2 = contactDetails.phones[1]?.number || "+94713332537";
   const address = contactDetails.address.street;
   const whatsappNumber = contactDetails.whatsapp.clean;
-  const email = contactDetails.emails[1]?.address || "shree.engsolar@gmail.com";
+  const email = contactDetails.emails[0]?.address || "shree.engsolar@gmail.com";
   const facebookUrl = contactDetails.social.facebook;
 
   // Clean Real Navigation Routes Only
