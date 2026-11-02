@@ -48,11 +48,11 @@ export class InvoicesService {
         });
     }
 
-    async findWithPriceBreakdown(quotation: QuotationEntity, invoice_id: string): Promise<InvoiceEntity> {
+    async findWithPriceBreakdown(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<InvoiceEntity> {
         await this.quotationService.sentQuotation(quotation.id);
-        await this.updatePriceBreakdown(quotation, invoice_id);
+        await this.updatePriceBreakdown(quotation, invoice.id);
 
-        return await this.findById(invoice_id);
+        return await this.findById(invoice.id);
     }
 
     async findAll(query: FindInvoicesQueryDto): Promise<PaginatedResponse<InvoiceEntity>> {
@@ -126,7 +126,7 @@ export class InvoicesService {
     }
 
 
-    // helpers
+    // helper methods
     async findById(invoice_id: string): Promise<InvoiceEntity> {
         const invoice = await this.detailQueryBuilder()
             .where(`${INVOICE_ALIAS}.id = :id`, { id: invoice_id})
@@ -137,6 +137,8 @@ export class InvoicesService {
         return invoice;
     }
 
+
+    // helpers
     private async generateInvoiceNumber(customer_name: string): Promise<string> {
         const orgPrefix = `SO-INV`;
         const customerPrefix = customer_name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase().padEnd(3, 'X');

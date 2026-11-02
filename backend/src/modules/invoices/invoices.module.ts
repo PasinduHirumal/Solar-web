@@ -4,6 +4,7 @@ import { InvoicesService } from './invoices.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { QuotationsModule } from '../quotations/quotations.module';
+import { InvoiceExistsPipe } from './pipes/invoice-exists.pipe';
 
 @Module({
   imports: [
@@ -11,6 +12,6 @@ import { QuotationsModule } from '../quotations/quotations.module';
     QuotationsModule,
   ],
   controllers: [InvoicesController],
-  providers: [InvoicesService]
+  providers: [InvoicesService, InvoiceExistsPipe]
 })
 export class InvoicesModule {}

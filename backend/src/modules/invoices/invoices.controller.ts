@@ -10,6 +10,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { FindInvoicesQueryDto } from './dto/find-invoice-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { InvoiceExistsPipe } from './pipes/invoice-exists.pipe';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -41,8 +42,8 @@ export class InvoicesController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     async getInvoiceWithPriceBreakdown(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
-        @Param('invoice_id', new ParseUUIDPipe({ version: '4'})) invoice_id: string,
+        @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
     ): Promise<InvoiceEntity> {
-        return this.invoiceService.findWithPriceBreakdown(quotation, invoice_id);
+        return this.invoiceService.findWithPriceBreakdown(quotation, invoice);
     }
 }
