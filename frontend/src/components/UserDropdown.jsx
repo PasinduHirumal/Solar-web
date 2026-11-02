@@ -27,7 +27,7 @@ export default function UserDropdown({ user, onLogout }) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium transition-all border border-slate-200"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#008BD7] to-[#031F4C] text-white flex items-center justify-center text-sm font-bold shadow-sm">
           {user?.name?.charAt(0)?.toUpperCase()}
         </div>
         <ChevronDown size={16} className={`hidden lg:block transition-transform duration-200 mr-2 ${isOpen ? "rotate-180" : ""} text-slate-500`} />
@@ -42,8 +42,8 @@ export default function UserDropdown({ user, onLogout }) {
             transition={{ duration: 0.15 }}
             className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-200 overflow-hidden z-50 origin-top-right"
           >
-            <div className="px-4 py-4 border-b border-slate-100 bg-slate-50/50">
-              <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+            <div className="px-4 py-4 border-b border-slate-100 bg-[#F5F7FA]">
+              <p className="text-sm font-bold text-[#031F4C] truncate">{user?.name}</p>
               <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
             </div>
 
@@ -52,7 +52,7 @@ export default function UserDropdown({ user, onLogout }) {
                 <Link
                   to="/admin/dashboard"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-[#E6F1FA] hover:text-[#008BD7] rounded-xl transition-colors"
                 >
                   <LayoutDashboard size={18} />
                   Dashboard

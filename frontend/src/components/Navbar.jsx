@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sun, Menu, X, LogOut, User, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard, Phone, Mail, MessageCircle } from "lucide-react";
 import useAuthStore from "../lib/authStore";
 import { confirmAction } from "../lib/confirmAction";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { isAdmin, isSuperAdmin } from "../lib/roles";
 import UserDropdown from "./UserDropdown";
+import logoCircle from "../assets/logo/logo_circle.jpg";
+import { contactDetails } from "../data/dataset";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,11 @@ export default function Navbar() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
+  const phone = contactDetails.phones[0]?.display || "+94 76 033 2537";
+  const rawPhone = contactDetails.phones[0]?.number || "+94760332537";
+  const whatsappNumber = contactDetails.whatsapp.clean || "94760332537";
+  const email = contactDetails.emails[1]?.address || "shree.engsolar@gmail.com";
 
   const handleLogout = async () => {
     const isConfirmed = await confirmAction({
@@ -27,7 +34,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 15);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -56,6 +63,7 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Clean navigation tabs only - no anchor pseudo-tabs
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "About Us", path: "/about" },
@@ -63,154 +71,230 @@ export default function Navbar() {
   ];
 
   return (
-    <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm py-2"
-          : "bg-white/95 backdrop-blur-sm border-b border-transparent py-3"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg text-white shadow-lg group-hover:shadow-blue-500/50 transition-all duration-300">
-              <Sun size={24} strokeWidth={2.5} className="text-amber-300" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-slate-900 transition-colors duration-300">
-              Solar<span className="text-blue-600">Web</span>
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-4">
-            {navLinks.map((link) => {
-              const isActive = location.pathname === link.path;
-              return (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full flex items-center justify-center ${
-                    isActive
-                      ? "text-blue-700 font-bold bg-blue-50 backdrop-blur-md border border-blue-100 shadow-sm"
-                      : "text-slate-700 hover:text-blue-600 hover:bg-slate-100/50"
-                  }`}
-                >
-                  {link.name}
-                  {isActive && (
-                    <motion.div
-                      layoutId="navbar-indicator"
-                      className="absolute inset-0 border-2 border-blue-400/20 rounded-full pointer-events-none"
-                    />
-                  )}
-                </Link>
-              );
-            })}
-            <div className="w-px h-6 bg-slate-200 mx-2 transition-colors duration-300"></div>
-            {user ? (
-              <UserDropdown user={user} onLogout={handleLogout} scrolled={scrolled} />
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/login"
-                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all duration-300 transform hover:-translate-y-0.5 border border-white/20"
-                >
-                  Login
-                </Link>
-              </div>
-            )}
+    <header className="fixed w-full z-50 transition-all duration-300 font-sans top-0 left-0">
+      {/* Top utility contact bar matching corporate Shree Energy style */}
+      <div
+        className={`hidden md:block bg-[#031F4C] text-slate-300 text-xs transition-all duration-300 ${
+          scrolled ? "h-0 py-0 opacity-0 overflow-hidden" : "py-2 border-b border-white/10 opacity-100"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <a
+              href={`tel:${rawPhone}`}
+              className="flex items-center gap-1.5 hover:text-[#008BD7] transition-colors"
+            >
+              <Phone size={13} className="text-[#008BD7]" />
+              <span className="font-semibold text-white">Hotline:</span>
+              <span>{phone}</span>
+            </a>
+            <span className="text-white/20">|</span>
+            <a
+              href={`mailto:${email}`}
+              className="flex items-center gap-1.5 hover:text-[#008BD7] transition-colors"
+            >
+              <Mail size={13} className="text-[#008BD7]" />
+              <span>{email}</span>
+            </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2 text-slate-700 hover:text-blue-600 transition-colors"
-              aria-label="Toggle Menu"
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-semibold text-[#63B723] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#63B723] animate-pulse"></span>
+              Powering Sri Lanka with Smart Energy Solutions
+            </span>
+            <span className="text-white/20">|</span>
+            <a
+              href={`https://wa.me/${whatsappNumber}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-[#63B723] hover:text-[#61CE70] font-bold transition-colors"
             >
-              {isOpen ? <X size={26} /> : <Menu size={26} />}
-            </button>
+              <MessageCircle size={13} />
+              <span>WhatsApp Chat</span>
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-18 right-3 w-72 z-50 rounded-3xl md:hidden bg-white border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
-          >
-            {/* Scrollable Nav Links */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+      {/* Main Navbar */}
+      <nav
+        className={`w-full transition-all duration-300 ${
+          scrolled
+            ? "bg-white/95 backdrop-blur-md shadow-md border-b border-slate-200/80 py-2.5"
+            : "bg-white/90 backdrop-blur-sm border-b border-slate-100 py-3.5"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 group">
+              <img
+                src={logoCircle}
+                alt="Shree Energy"
+                className="h-10 sm:h-11 w-10 sm:w-11 rounded-xl object-contain shadow-xs border border-slate-100 group-hover:scale-105 transition-transform"
+              />
+              <div className="flex flex-col">
+                <span className="text-lg sm:text-xl font-black tracking-tight text-[#031F4C] leading-none">
+                  SHREE <span className="text-[#008BD7]">ENERGY</span>
+                </span>
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-[#63B723] leading-tight mt-0.5">
+                  (Pvt) Ltd • Smart Solutions
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation - Clean Real Routes Only */}
+            <div className="hidden md:flex items-center gap-2 lg:gap-3">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
                   <Link
                     key={link.name}
                     to={link.path}
-                    onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-2.5 rounded-xl text-base font-medium transition-all ${
+                    className={`relative px-4 py-2 text-sm font-semibold transition-all duration-200 rounded-full flex items-center justify-center ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-sm"
-                        : "text-slate-700 hover:bg-slate-50"
+                        ? "text-[#008BD7] font-bold bg-[#E6F1FA]"
+                        : "text-slate-700 hover:text-[#008BD7] hover:bg-slate-50"
                     }`}
                   >
                     {link.name}
+                    {isActive && (
+                      <motion.div
+                        layoutId="navbar-pill"
+                        className="absolute inset-0 rounded-full border border-[#008BD7]/20 pointer-events-none"
+                      />
+                    )}
                   </Link>
                 );
               })}
+
+              <div className="w-px h-6 bg-slate-200 mx-2"></div>
+
+              {/* Account / Login Actions - (No Get a Quote button) */}
+              <div className="flex items-center gap-2.5">
+                {user ? (
+                  <UserDropdown user={user} onLogout={handleLogout} scrolled={scrolled} />
+                ) : (
+                  <Link
+                    to="/login"
+                    className="px-6 py-2 rounded-full bg-gradient-to-r from-[#008BD7] to-[#046bd2] hover:from-[#0077B8] hover:to-[#008BD7] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#008BD7]/25 transition-all duration-300 transform hover:-translate-y-0.5"
+                  >
+                    Login
+                  </Link>
+                )}
+              </div>
             </div>
 
-            {/* Fixed Footer Area (User Details & Buttons) */}
-            <div className="p-4 bg-slate-50/50 border-t border-slate-100">
-              {user ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-2 py-1">
-                    <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-                      <User size={18} />
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="font-bold text-slate-900 truncate text-sm">{user.name}</p>
-                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                    </div>
-                  </div>
-                  {(isAdmin(user?.role) || isSuperAdmin(user?.role)) && (
-                    <Link
-                      to="/admin/dashboard"
-                      onClick={() => setIsOpen(false)}
-                      className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 text-sm font-bold border border-slate-200 hover:bg-slate-50 transition-colors"
-                    >
-                      <LayoutDashboard size={18} />
-                      Dashboard
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors"
-                  >
-                    <LogOut size={18} />
-                    Logout
-                  </button>
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center gap-2">
+              {user && (
+                <div className="w-8 h-8 rounded-full bg-[#008BD7] text-white flex items-center justify-center text-xs font-bold mr-1">
+                  {user?.name?.charAt(0)?.toUpperCase()}
                 </div>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
-                >
-                  Login
-                </Link>
               )}
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 text-slate-700 hover:text-[#008BD7] rounded-xl hover:bg-slate-100 transition-colors"
+                aria-label="Toggle Menu"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Dropdown */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-white border-b border-slate-200 shadow-2xl overflow-hidden"
+            >
+              <div className="max-w-7xl mx-auto px-4 py-4 space-y-1">
+                {navLinks.map((link) => {
+                  const isActive = location.pathname === link.path;
+                  return (
+                    <Link
+                      key={link.name}
+                      to={link.path}
+                      onClick={() => setIsOpen(false)}
+                      className={`block px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                        isActive
+                          ? "bg-[#E6F1FA] text-[#008BD7] font-bold"
+                          : "text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  );
+                })}
+
+                <div className="pt-4 border-t border-slate-100 mt-2 space-y-3">
+                  <div className="flex flex-col gap-1.5 px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-600">
+                    <a href={`tel:${rawPhone}`} className="flex items-center gap-2 text-slate-900 font-bold">
+                      <Phone size={13} className="text-[#008BD7]" />
+                      <span>{phone}</span>
+                    </a>
+                    <a href={`mailto:${email}`} className="flex items-center gap-2 text-slate-600">
+                      <Mail size={13} className="text-[#008BD7]" />
+                      <span>{email}</span>
+                    </a>
+                  </div>
+
+                  {user ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-3 px-3 py-1">
+                        <div className="p-2 bg-[#E6F1FA] rounded-full text-[#008BD7]">
+                          <User size={16} />
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="font-bold text-slate-900 truncate text-xs">{user.name}</p>
+                          <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      {(isAdmin(user?.role) || isSuperAdmin(user?.role)) && (
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setIsOpen(false)}
+                          className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-bold"
+                        >
+                          <LayoutDashboard size={16} />
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold cursor-pointer"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pt-1">
+                      <Link
+                        to="/login"
+                        onClick={() => setIsOpen(false)}
+                        className="block w-full text-center px-4 py-2.5 rounded-xl bg-[#008BD7] text-white text-xs font-bold shadow-md shadow-[#008BD7]/25"
+                      >
+                        Login to Account
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+    </header>
   );
 }

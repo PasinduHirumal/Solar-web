@@ -5,6 +5,7 @@ import useAuthStore from "../../lib/authStore";
 import { getHomePathByRole } from "../../lib/roles";
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, ShieldCheck, ArrowLeft, Sun, Check, AlertCircle } from "lucide-react";
 import GoogleLoginButton from "../../common/GoogleLoginButton";
+import fullLogo from "../../assets/logo/full_logo.png";
 
 const validatePasswordRules = (pwd) => ({
   length: pwd.length >= 8 && pwd.length <= 128,
@@ -105,8 +106,8 @@ export default function Auth() {
           className="w-1/2 h-full flex flex-col justify-center px-10 py-6 text-left"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Sun className="text-amber-500" size={18} />
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Solar Web</span>
+            <img src={fullLogo} alt="Shree Energy" className="w-5 h-5 rounded object-contain" />
+            <span className="text-[10px] font-black text-[#008BD7] uppercase tracking-widest">Shree Energy</span>
           </div>
           <h2 className="text-2xl font-display font-bold text-slate-800 uppercase mb-1">Create Account</h2>
           <p className="text-xs text-slate-500 mb-3 font-light">
@@ -188,7 +189,7 @@ export default function Auth() {
               type="submit"
               disabled={isAuthLoading || (registerPassword.length > 0 && !isPasswordValid)}
               tabIndex={isSignUp ? 0 : -1}
-              className="w-full mt-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-md hover:shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
+              className="w-full mt-1 bg-gradient-to-r from-[#008BD7] to-[#046bd2] hover:from-[#0076B8] hover:to-[#008BD7] text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-md hover:shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
             >
               {isAuthLoading ? "Creating account..." : "Create Account"}
             </button>
@@ -212,8 +213,8 @@ export default function Auth() {
           className="w-1/2 h-full flex flex-col justify-center px-10 py-6 ml-auto text-left"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Sun className="text-amber-500" size={18} />
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Solar Web</span>
+            <img src={fullLogo} alt="Shree Energy" className="w-5 h-5 rounded object-contain" />
+            <span className="text-[10px] font-black text-[#008BD7] uppercase tracking-widest">Shree Energy</span>
           </div>
           <h2 className="text-2xl font-display font-bold text-slate-800 uppercase mb-1">Sign In</h2>
           <p className="text-xs text-slate-500 mb-4 font-light">
@@ -278,7 +279,7 @@ export default function Auth() {
               type="submit"
               disabled={isAuthLoading}
               tabIndex={!isSignUp ? 0 : -1}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-md hover:shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-gradient-to-r from-[#008BD7] to-[#046bd2] hover:from-[#0076B8] hover:to-[#008BD7] text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all shadow-md hover:shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
             >
               {isAuthLoading ? "Signing in..." : "Sign In"}
             </button>
@@ -293,7 +294,7 @@ export default function Auth() {
 
         {/* Sliding Overlay Panel */}
         <motion.div
-          className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-br from-blue-600 to-cyan-500 text-white p-8 flex flex-col justify-center overflow-hidden z-20 shadow-2xl"
+          className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-br from-[#031F4C] via-[#008BD7] to-[#031F4C] text-white p-8 flex flex-col justify-center overflow-hidden z-20 shadow-2xl"
           animate={{
             left: isSignUp ? "50%" : "0%",
             borderTopLeftRadius: isSignUp ? "0px" : "18px",
@@ -486,7 +487,7 @@ export default function Auth() {
                 <button
                   type="submit"
                   disabled={isAuthLoading || (registerPassword.length > 0 && !isPasswordValid)}
-                  className="w-full mt-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                  className="w-full mt-1 bg-gradient-to-r from-[#008BD7] to-[#046bd2] hover:from-[#0076B8] hover:to-[#008BD7] text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
                 >
                   {isAuthLoading ? "Creating account..." : "Create Account"}
                 </button>
@@ -571,7 +572,7 @@ export default function Auth() {
                 <button
                   type="submit"
                   disabled={isAuthLoading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-[#008BD7] to-[#046bd2] hover:from-[#0076B8] hover:to-[#008BD7] text-white py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-md hover:shadow-blue-500/20 cursor-pointer disabled:opacity-50"
                 >
                   {isAuthLoading ? "Signing in..." : "Sign In"}
                 </button>

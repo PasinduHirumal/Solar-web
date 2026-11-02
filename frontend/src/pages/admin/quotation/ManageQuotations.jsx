@@ -18,6 +18,7 @@ import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
 import CreateQuotationModal from "./components/CreateQuotationModal";
 import AdminFilterMenu from "../../../common/AdminFilterMenu";
+import { formatPrice } from "../../../lib/formatPrice";
 
 export default function ManageQuotations() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -350,7 +351,7 @@ export default function ManageQuotations() {
                               {quo.discount_type === "PERCENTAGE"
                                 ? `${quo.discount}%`
                                 : quo.discount_type === "FIXED"
-                                ? `LKR ${Number(quo.discount).toLocaleString()}`
+                                ? `${formatPrice(quo.discount)}`
                                 : "None"}
                             </span>
                           </span>
@@ -360,7 +361,7 @@ export default function ManageQuotations() {
                               {quo.tax_type === "PERCENTAGE"
                                 ? `${quo.tax}%`
                                 : quo.tax_type === "FIXED"
-                                ? `LKR ${Number(quo.tax).toLocaleString()}`
+                                ? `${formatPrice(quo.tax)}`
                                 : "None"}
                             </span>
                           </span>

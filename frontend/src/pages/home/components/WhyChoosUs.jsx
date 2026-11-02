@@ -1,54 +1,59 @@
 import React from "react";
-import { Sun, Shield, Award } from "lucide-react";
+import { UserCheck, Zap, Layers, DollarSign, CheckCircle2 } from "lucide-react";
+import { whyChooseUsData } from "../../../data/dataset";
 
 export default function WhyChoosUs() {
-    return (
-        <section className="py-20 bg-slate-50 border-t border-slate-200">
-            <div className="max-w-7xl mx-auto px-4">
-                <div className="text-center max-w-2xl mx-auto mb-16">
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-200/60">
-                        The SolarWeb Advantage
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
-                        Why Homeowners & Enterprises Trust Us
-                    </h2>
-                    <p className="text-slate-500 text-sm sm:text-base mt-2">
-                        We provide Tier-1 certified equipment backed by industry-leading warranties and engineering support.
-                    </p>
+  const iconMap = {
+    engineers: UserCheck,
+    efficiency: Zap,
+    solutions: Layers,
+    pricing: DollarSign,
+  };
+
+  return (
+    <section className="py-16 sm:py-24 bg-[#F5F7FA] border-t border-slate-200 font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-16">
+          <span className="text-xs font-bold text-[#63B723] uppercase tracking-widest bg-[#EBF7E5] px-3.5 py-1.5 rounded-full border border-[#63B723]/30">
+            The Shree Energy Advantage
+          </span>
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-[#031F4C] tracking-tight mt-3 leading-tight">
+            Eco-Friendly Doesn't Have To Be Complicated
+          </h2>
+          <p className="text-slate-600 text-xs sm:text-base mt-2 sm:mt-3 font-normal leading-relaxed">
+            We provide Tier-1 certified equipment backed by industry-leading warranties, transparent guidance, and dedicated engineering care.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {whyChooseUsData.map((f) => {
+            const Icon = iconMap[f.id] || UserCheck;
+            return (
+              <div
+                key={f.title}
+                className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xl hover:border-[#008BD7]/40 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between"
+              >
+                <div>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 border ${f.color}`}>
+                    <Icon size={24} className="sm:w-7 sm:h-7" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-[#031F4C] mb-2 sm:mb-3 leading-snug">
+                    {f.title}
+                  </h3>
+                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
+                    {f.desc}
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300">
-                        <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
-                            <Sun size={28} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">High Efficiency Cells</h3>
-                        <p className="text-slate-600 text-sm leading-relaxed">
-                            Our monocrystalline bifacial photovoltaic panels capture sunlight from both sides, maximizing output even during overcast mornings and late afternoons.
-                        </p>
-                    </div>
-
-                    <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300">
-                        <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6">
-                            <Shield size={28} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Intelligent Battery Storage</h3>
-                        <p className="text-slate-600 text-sm leading-relaxed">
-                            High-cycle life LiFePO4 batteries guarantee seamless power backup during grid outages, zero blackouts, and complete evening energy autonomy.
-                        </p>
-                    </div>
-
-                    <div className="p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6">
-                            <Award size={28} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">25-Year Certified Warranty</h3>
-                        <p className="text-slate-600 text-sm leading-relaxed">
-                            Enjoy complete peace of mind with 25-year performance warranties, comprehensive equipment guarantees, and dedicated engineering maintenance.
-                        </p>
-                    </div>
+                <div className="mt-5 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-100 flex items-center gap-1.5 text-xs font-semibold text-[#63B723]">
+                  <CheckCircle2 size={15} />
+                  <span>Quality Standard</span>
                 </div>
-            </div>
-        </section>
-    )
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 }
