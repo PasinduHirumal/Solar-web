@@ -12,6 +12,7 @@ import { QuotationResponse } from './interfaces/quotation-response.interface';
 import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto';
 import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
 import { QuotationExistsPipe } from './pipes/quotation-exists.pipe';
+import { UpdateQuotationDataDto } from './dto/update-quotation-data.dto';
 
 @Controller('quotations')
 export class QuotationsController {
@@ -37,13 +38,23 @@ export class QuotationsController {
         return this.quotationService.findAll(query);
     }
 
+    @Put(':quotation_id/data')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async updateQuotationData(
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
+        @Body() dto: UpdateQuotationDataDto,
+    ): Promise<QuotationEntity> {
+        return this.quotationService.updateData(quotation_id, dto);
+    }
+
     @Put(':quotation_id/discount')
     @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async updateQuotationDiscount(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
         @Body() dto: UpdateQuotationDiscountDto,
-    ): Promise<void> {
+    ): Promise<QuotationEntity> {
         return this.quotationService.updateDiscount(quotation_id, dto);
     }
 
@@ -53,7 +64,7 @@ export class QuotationsController {
     async updateQuotationTax(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'})) quotation_id: string,
         @Body() dto: UpdateQuotationTaxDto,
-    ): Promise<void> {
+    ): Promise<QuotationEntity> {
         return this.quotationService.updateTax(quotation_id, dto);
     }
 

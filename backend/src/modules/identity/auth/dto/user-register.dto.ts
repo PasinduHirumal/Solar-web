@@ -28,7 +28,7 @@ export class RegisterUserDto {
 }
 
 export class RegisterUserAnonymous extends OmitType(
-    RegisterUserDto, ['password', 'role']
+    RegisterUserDto, ['password', 'role'] as const
 ) {
     @IsOptional()
     @IsString()

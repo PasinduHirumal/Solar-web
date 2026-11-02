@@ -1,7 +1,6 @@
 import { Type } from "class-transformer";
 import { IsNumber, IsOptional, Max, Min } from "class-validator";
 import { IsNotLessThan } from "../../validators/is-budget-range-valid.validator";
-import { IsDecimalRange } from "../../validators/is-decimal-range.validator";
 
 export interface BudgetRangeOptions {
     min?: number;
@@ -21,7 +20,6 @@ export function WithBudgetRange({ min = 0.01, max = 1_000_000, precision = 12, s
         @IsNumber()
         @Min(min)
         @Max(max)
-        @IsDecimalRange(precision, scale)
         readonly lowest_budget?: number;
 
         @IsOptional()
@@ -29,7 +27,6 @@ export function WithBudgetRange({ min = 0.01, max = 1_000_000, precision = 12, s
         @IsNumber()
         @Min(min)
         @Max(max)
-        @IsDecimalRange(precision, scale)
         @IsNotLessThan('lowest_budget')
         readonly maximum_budget?: number;
     }

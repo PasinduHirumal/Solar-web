@@ -20,6 +20,7 @@ import { TaxType } from '../../common/enums/tax-type.enum';
 import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto';
 import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
 import { PriceBreakdown } from './interfaces/price-breakdown.interface';
+import { UpdateQuotationDataDto } from './dto/update-quotation-data.dto';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -178,7 +179,27 @@ export class QuotationsService {
         }
     }
 
-    async updateDiscount(quotation_id: string, dto: UpdateQuotationDiscountDto): Promise<void> {
+    async updateData(quotation_id: string, dto: UpdateQuotationDataDto): Promise<QuotationEntity> {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            if (locked.status !== QuotationStatus.DRAFT) {
+                throw new BadRequestException(`Cannot update quotation in status: ${locked.status} `);
+            }
+
+            await manager.update(QuotationEntity, locked.id, dto);
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
+    }
+
+    async updateDiscount(quotation_id: string, dto: UpdateQuotationDiscountDto): Promise<QuotationEntity> {
         if (dto.discount_type === DiscountType.PERCENTAGE) {
             if(dto.discount >= 100) throw new BadRequestException(`Discount percentage cannot be over 100`);
             if(dto.discount <= 0) throw new BadRequestException(`Discount percentage cannot be less than 0`);
@@ -188,7 +209,7 @@ export class QuotationsService {
             if(dto.discount <= 0) throw new BadRequestException(`Discount cannot be less than 0`);
         }
 
-        await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
             const locked = await manager
                 .getRepository(QuotationEntity)
                 .createQueryBuilder(QUOTATION_ALIAS)
@@ -198,12 +219,16 @@ export class QuotationsService {
 
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
+            if (locked.status !== QuotationStatus.DRAFT) {
+                throw new BadRequestException(`Cannot update discount for quotation in status: ${locked.status} `);
+            }
+
             await manager.update(QuotationEntity, locked.id, dto);
             return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
         });
     }
 
-    async updateTax(quotation_id: string, dto: UpdateQuotationTaxDto): Promise<void> {
+    async updateTax(quotation_id: string, dto: UpdateQuotationTaxDto): Promise<QuotationEntity> {
         if (dto.tax_type === TaxType.PERCENTAGE) {
             if(dto.tax >= 100) throw new BadRequestException(`Tax percentage cannot be over 100`);
             if(dto.tax <= 0) throw new BadRequestException(`Tax percentage cannot be less than 0`);
@@ -213,7 +238,7 @@ export class QuotationsService {
             if(dto.tax <= 0) throw new BadRequestException(`Tax cannot be less than 0`);
         }
 
-        await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
             const locked = await manager
                 .getRepository(QuotationEntity)
                 .createQueryBuilder(QUOTATION_ALIAS)
@@ -223,14 +248,18 @@ export class QuotationsService {
 
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
+            if (locked.status !== QuotationStatus.DRAFT) {
+                throw new BadRequestException(`Cannot update tax for quotation in status: ${locked.status} `);
+            }
+
             await manager.update(QuotationEntity, locked.id, dto);
             return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
         });
     }
 
     async remove(quotation: QuotationEntity): Promise<void> {
-        if(quotation.status !== QuotationStatus.DRAFT) {
-            throw new BadRequestException(`Cannot delete status ${quotation.status} quotation`);
+        if (quotation.status !== QuotationStatus.DRAFT) {
+            throw new BadRequestException(`Cannot delete quotation in status: ${quotation.status} `);
         }
 
         try {
