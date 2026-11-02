@@ -38,6 +38,6 @@ export class QuotationItemEntity {
     @Column({ type: 'text', nullable: true })
     snap_warranty_details!: string | null;
 
-    @Column({ type: 'float', default: 0 })
-    snap_selling_price!: number;
+    @Column({ type: 'float', nullable: true })
+    snap_selling_price!: number | null;
 }

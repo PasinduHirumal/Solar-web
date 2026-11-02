@@ -386,9 +386,7 @@ export class QuotationsService {
     private async calculateSubtotal(quotation: QuotationEntity): Promise<number> {
         if (!quotation.items?.length) return 0;
 
-        const isApproved = quotation.items.every((i) => i.snap_selling_price != null && i.snap_title != null);
-
-        if (isApproved) {
+        if (quotation.status === QuotationStatus.ACCEPTED) {
             return quotation.items.reduce((sum, i) => {
                 if (i.snap_selling_price === null) {
                     throw new InternalServerErrorException(
