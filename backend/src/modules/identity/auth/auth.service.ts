@@ -66,6 +66,10 @@ export class AuthService {
             throw new UnauthorizedException('Invalid Email');
         }
 
+        if (user.role === UserRole.USER) {
+            throw new BadRequestException(`User login not allowed yet`);
+        }
+
         const isValid = await this.passwordService.verify(dto.password, user.password);
         if (!isValid) {
             const result = this.loginAttemptService.recordFailedAttempt(dto.email);
@@ -78,7 +82,7 @@ export class AuthService {
             }
             
             throw new UnauthorizedException('Invalid Password');
-        } 
+        }
 
         this.authHelperService.validateLogin(user);
 

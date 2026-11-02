@@ -24,8 +24,15 @@ export class CreateSolarItemDto {
     @IsOptional()
     @IsString()
     @MinLength(3)
+    @MaxLength(255)
     @TrimCapitalize()
     readonly warranty_period?: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(3)
+    @Trim()
+    readonly warranty_details?: string;
 
     @IsNotEmpty()
     @IsNumber()

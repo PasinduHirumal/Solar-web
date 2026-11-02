@@ -28,6 +28,9 @@ export class SolarItemEntity {
     warranty_period!: string | null;
 
     @Column({ type: 'text', nullable: true })
+    warranty_details!: string | null;
+
+    @Column({ type: 'text', nullable: true })
     description!: string | null;
 
     @Column({ type: 'float', default: 0 })
