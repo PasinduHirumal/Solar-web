@@ -101,6 +101,7 @@ export class QuotationsService {
         return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
             const quotation = manager.create(QuotationEntity, {
                 ...restDto,
+                customer_id: customer.id,
                 quotation_number: quotationNumber,
                 status: QuotationStatus.DRAFT,
                 items: item_ids.map((i) => manager.create(QuotationItemEntity, { 
@@ -133,7 +134,7 @@ export class QuotationsService {
                     ${QUOTATION_ALIAS}.quotation_number       LIKE :search OR
                     customer.email      LIKE :search OR
                     customer.name       LIKE :search OR
-                    customer.phone      LIKE :search OR
+                    customer.phone      LIKE :search
                 )`, 
                 { search: `%${escaped}%` }
             );
