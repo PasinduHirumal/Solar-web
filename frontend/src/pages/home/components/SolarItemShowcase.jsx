@@ -134,11 +134,21 @@ export default function SolarItemShowcase() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(6)].map((_, idx) => (
-            <div key={idx} className="bg-white rounded-2xl sm:rounded-3xl p-5 border border-slate-200 animate-pulse space-y-4">
-              <div className="w-full aspect-video bg-slate-200 rounded-xl" />
-              <div className="h-4 bg-slate-200 rounded w-1/3" />
-              <div className="h-5 bg-slate-200 rounded w-3/4" />
-              <div className="h-4 bg-slate-100 rounded w-1/2" />
+            <div key={idx} className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 animate-pulse space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="h-5 bg-slate-200 rounded-full w-28" />
+                <div className="h-4 bg-slate-100 rounded w-16" />
+              </div>
+              <div className="h-6 bg-slate-200 rounded w-4/5" />
+              <div className="space-y-1.5">
+                <div className="h-3.5 bg-slate-100 rounded w-full" />
+                <div className="h-3.5 bg-slate-100 rounded w-4/5" />
+              </div>
+              <div className="h-6 bg-slate-100 rounded-lg w-32" />
+              <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                <div className="h-6 bg-slate-200 rounded w-28" />
+                <div className="h-8 bg-slate-200 rounded-xl w-24" />
+              </div>
             </div>
           ))}
         </div>
@@ -168,45 +178,32 @@ export default function SolarItemShowcase() {
               item.selling_price &&
               Number(item.marked_price) > Number(item.selling_price);
 
+            const formattedWarranty = item.warranty_period
+              ? (/warranty/i.test(item.warranty_period)
+                  ? item.warranty_period
+                  : `${item.warranty_period} Warranty`)
+              : null;
+
             return (
               <div
                 key={item.id}
-                className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 hover:border-[#008BD7]/50 p-4 sm:p-5 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 hover:border-[#008BD7]/50 p-5 sm:p-6 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
-                  {/* Hardware Visual Card */}
-                  <div className="w-full aspect-[4/3] rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-50 via-[#E6F1FA]/40 to-slate-100 border border-slate-200/80 overflow-hidden relative flex flex-col items-center justify-center mb-3 sm:mb-4 p-4 sm:p-6 transition-all group-hover:border-[#008BD7]/40">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white shadow-md shadow-[#008BD7]/10 border border-[#008BD7]/20 flex items-center justify-center text-[#008BD7] mb-2 transition-transform duration-300 group-hover:scale-110">
-                      <Package size={28} className="sm:w-8 sm:h-8 stroke-[1.75]" />
+                  {/* Category & SKU & Offer Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <span className="text-[11px] font-semibold text-[#008BD7] bg-[#E6F1FA] px-2.5 py-0.5 rounded-full truncate">
+                        {catTitle}
+                      </span>
+                      {hasDiscount && (
+                        <span className="bg-[#63B723] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                          SPECIAL OFFER
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500">
-                      Shree Energy Certified
-                    </span>
-
-                    {hasDiscount && (
-                      <div className="absolute top-3 left-3 bg-[#63B723] text-white text-[9px] sm:text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
-                        SPECIAL OFFER
-                      </div>
-                    )}
-
-                    {/* Quick View Button overlay */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedItem(item)}
-                      className="absolute inset-0 bg-[#031F4C]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-bold backdrop-blur-xs cursor-pointer"
-                    >
-                      <Eye size={16} />
-                      <span>Quick View</span>
-                    </button>
-                  </div>
-
-                  {/* Category & SKU */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[10px] sm:text-[11px] font-semibold text-[#008BD7] bg-[#E6F1FA] px-2.5 py-0.5 rounded-full truncate">
-                      {catTitle}
-                    </span>
                     {item.code && (
-                      <span className="text-[10px] font-mono text-slate-400 truncate max-w-[100px] sm:max-w-[120px]">
+                      <span className="text-[10px] sm:text-[11px] font-mono text-slate-400 truncate max-w-[110px] bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
                         {item.code}
                       </span>
                     )}
@@ -215,37 +212,37 @@ export default function SolarItemShowcase() {
                   {/* Title */}
                   <h3
                     onClick={() => setSelectedItem(item)}
-                    className="text-sm sm:text-base font-bold text-[#031F4C] group-hover:text-[#008BD7] transition-colors line-clamp-2 cursor-pointer leading-snug mb-1.5 sm:mb-2"
+                    className="text-base sm:text-lg font-bold text-[#031F4C] group-hover:text-[#008BD7] transition-colors line-clamp-2 cursor-pointer leading-snug mb-2"
                   >
                     {item.title}
                   </h3>
 
                   {/* Short description */}
                   {item.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 font-light leading-relaxed mb-3">
+                    <p className="text-xs sm:text-[13px] text-slate-500 line-clamp-3 font-light leading-relaxed mb-4">
                       {item.description.replace(/<[^>]*>/g, "")}
                     </p>
                   )}
 
                   {/* Warranty Badge */}
-                  {item.warranty_period && (
-                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-[#63B723] bg-[#EBF7E5] px-2.5 py-0.5 rounded-lg w-fit mb-3 border border-[#63B723]/30">
-                      <ShieldCheck size={12} className="text-[#63B723] shrink-0" />
-                      <span>{item.warranty_period} Warranty</span>
+                  {formattedWarranty && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#63B723] bg-[#EBF7E5] px-2.5 py-1 rounded-lg w-fit mb-4 border border-[#63B723]/30">
+                      <ShieldCheck size={13} className="text-[#63B723] shrink-0" />
+                      <span>{formattedWarranty}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Footer Price & Action */}
-                <div className="pt-3 sm:pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-2">
                   <div className="min-w-0">
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 block font-medium">Price</span>
+                    <span className="text-[10px] text-slate-400 block font-medium uppercase tracking-wider">Price</span>
                     <div className="flex items-baseline gap-1.5 flex-wrap">
-                      <span className="text-sm sm:text-base font-extrabold text-[#031F4C]">
+                      <span className="text-base sm:text-lg font-extrabold text-[#031F4C]">
                         {formatPrice(item.selling_price || item.marked_price || 0)}
                       </span>
                       {hasDiscount && (
-                        <span className="text-[10px] sm:text-xs line-through text-slate-400">
+                        <span className="text-[11px] sm:text-xs line-through text-slate-400">
                           {formatPrice(item.marked_price)}
                         </span>
                       )}
@@ -255,10 +252,10 @@ export default function SolarItemShowcase() {
                   <button
                     type="button"
                     onClick={() => setSelectedItem(item)}
-                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-50 group-hover:bg-[#008BD7] text-slate-700 group-hover:text-white text-xs font-bold transition-all flex items-center gap-1 shadow-2xs cursor-pointer shrink-0"
+                    className="px-3.5 py-2 rounded-xl bg-slate-50 group-hover:bg-[#008BD7] text-slate-700 group-hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
                   >
-                    <span>Details</span>
-                    <ArrowRight size={12} />
+                    <span>Quick View</span>
+                    <ArrowRight size={13} />
                   </button>
                 </div>
               </div>
