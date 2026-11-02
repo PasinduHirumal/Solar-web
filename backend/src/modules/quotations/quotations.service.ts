@@ -21,6 +21,7 @@ import { UpdateQuotationDiscountDto } from './dto/update-quotation-discount.dto'
 import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
 import { PriceBreakdown } from './interfaces/price-breakdown.interface';
 import { UpdateQuotationDataDto } from './dto/update-quotation-data.dto';
+import { QUOTATION_ITEM_FIELDS } from './quotation-items/constants/quotation-item-fields.constants';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -61,6 +62,15 @@ export class QuotationsService {
             if(dto.tax <= 0) throw new BadRequestException(`Tax cannot be less than 0`);
         }
 
+        const uniqueIds = [...new Set(dto.item_ids.map((i) => i.solar_item_id))];
+        const found = await this.itemsService.getItemsByIds(uniqueIds);
+
+        if (found.length !== uniqueIds.length) {
+            const foundIds = new Set(found.map((s) => s.id));
+            const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
+            throw new NotFoundException(`Solar items not found: ${missingIds.join(', ')}`);
+        }
+
         let customer = await this.authService.findEntityByEmail(dto.email);
 
         if (!customer) {
@@ -89,7 +99,10 @@ export class QuotationsService {
                 ...restDto,
                 quotation_number: quotationNumber,
                 status: QuotationStatus.DRAFT,
-                items: item_ids.map((i) => manager.create(QuotationItemEntity, { solar_item_id: i.solar_item_id, quantity: i.quantity })),
+                items: item_ids.map((i) => manager.create(QuotationItemEntity, { 
+                    solar_item_id: i.solar_item_id, 
+                    quantity: i.quantity,
+                })),
             });
 
             return await manager.save(QuotationEntity, quotation);
@@ -344,34 +357,52 @@ export class QuotationsService {
     }
 
     private async getPriceBreakdown(quotation: QuotationEntity): Promise<PriceBreakdown> {
-        const itemIds: string[] = [ ...quotation.items.map((i) => i.solar_item_id)];
-
-        const subtotal = await this.itemsService.getTotalPriceForItems(itemIds);
+        const subtotal = await this.calculateSubtotal(quotation);
 
         let discount: number = 0;
         if (quotation.discount_type === DiscountType.FIXED) {
             discount = quotation.discount;
-        }
-        if (quotation.discount_type === DiscountType.PERCENTAGE) {
+        } else if (quotation.discount_type === DiscountType.PERCENTAGE) {
             discount = (subtotal * (quotation.discount / 100));
         }
 
         let tax: number = 0;
         if (quotation.tax_type === TaxType.FIXED) {
             tax = quotation.tax;
-        }
-        if (quotation.tax_type === TaxType.PERCENTAGE) {
+        } else if (quotation.tax_type === TaxType.PERCENTAGE) {
             tax = (subtotal * (quotation.tax / 100));
         }
 
-        const total = subtotal - discount + tax;
+        const round = (n: number) => Math.round(n * 100) / 100;
 
         return {
-            subtotal,
-            discount,
-            tax,
-            total,
+            subtotal: round(subtotal),
+            discount: round(discount),
+            tax: round(tax),
+            total: round(subtotal - discount + tax),
         }
+    }
+
+    private async calculateSubtotal(quotation: QuotationEntity): Promise<number> {
+        if (!quotation.items?.length) return 0;
+
+        const isApproved = quotation.items.every((i) => i.snap_selling_price != null && i.snap_title != null);
+
+        if (isApproved) {
+            return quotation.items.reduce((sum, i) => sum + i.snap_selling_price * i.quantity, 0);
+        }
+
+        // Draft: use live prices
+        const ids = [...new Set(quotation.items.map((i) => i.solar_item_id))];
+        const priceMap = await this.itemsService.getSellingPriceMap(ids); // Map<string, number>
+
+        return quotation.items.reduce((sum, i) => {
+            const price = priceMap.get(i.solar_item_id);
+            if (price === undefined) {
+                throw new NotFoundException(`Solar item ${i.solar_item_id} not found or inactive`);
+            }
+            return sum + price * i.quantity;
+        }, 0);
     }
 
 
@@ -397,7 +428,8 @@ export class QuotationsService {
 
     private withItems(qb: SelectQueryBuilder<QuotationEntity>) {
         return qb
-            .leftJoinAndSelect(`${QUOTATION_ALIAS}.items`, 'item')
+            .leftJoin(`${QUOTATION_ALIAS}.items`, `quo_item`)
+            .addSelect(pick('quo_item', QUOTATION_ITEM_FIELDS))
             .leftJoin('item.solar_item', 'solar_item')
             .addSelect(pick('solar_item', SOLAR_ITEM_FIELDS))
             .innerJoin(`solar_item.category`, 'category')

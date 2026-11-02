@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SolarItemEntity } from './entities/solar-items.entity';
-import { EntityManager, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateSolarItemDto } from './dto/create-solar-item.dto';
 import { randomUUID } from 'crypto';
 import { CategoriesService } from '../categories/categories.service';
@@ -225,6 +225,28 @@ export class ItemsService {
             .getRawOne<{ total: string | number }>();
 
         return Math.round(Number(result?.total ?? 0) * 100) / 100;
+    }
+
+    async getSellingPriceMap(ids: string[]): Promise<Map<string, number>> {
+        if (!ids.length) return new Map();
+
+        const rows = await this.solarItemRepo.find({
+            where: { id: In(ids), is_active: true },
+            select: { id: true, selling_price: true },
+        });
+
+        return new Map(rows.map((r) => [r.id, Number(r.selling_price)]));
+    }
+
+    async getItemsByIds(item_ids: string[]): Promise<SolarItemEntity[]> {
+        if (!item_ids?.length) return [];
+
+        const uniqueIds = [...new Set(item_ids)];
+        
+        return this.solarItemRepo
+            .createQueryBuilder('item')
+            .where('item.id IN (:...uniqueIds)', { uniqueIds })
+            .getMany();
     }
 
 

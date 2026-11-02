@@ -26,4 +26,18 @@ export class QuotationItemEntity {
 
     @Column({ type: 'float', default: 1 })
     quantity!: number;
+
+
+    // snap of solar-item
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    snap_title!: string | null;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    snap_warranty_period!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    snap_warranty_details!: string | null;
+
+    @Column({ type: 'float', default: 0 })
+    snap_selling_price!: number;
 }
