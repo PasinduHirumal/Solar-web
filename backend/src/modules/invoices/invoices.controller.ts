@@ -37,7 +37,7 @@ export class InvoicesController {
     }
 
     @Get(':quotation_id/:invoice_id')
-    @Roles(UserRole.ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async getInvoiceWithPriceBreakdown(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
