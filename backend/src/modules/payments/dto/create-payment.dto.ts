@@ -8,8 +8,4 @@ export class CreatePaymentDto {
     @Min(0.1)
     @Type(() => Number)
     readonly amount!: number;
-
-    @IsNotEmpty()
-    @IsEnum(PaymentType)
-    readonly payment_type!: PaymentType;
 }

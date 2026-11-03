@@ -23,26 +23,57 @@ export class PaymentsService {
             throw new BadRequestException(`Invoice quotation not approved yet`);
         }
 
-        const balance = invoice.total - invoice.paid_amount;
-
-        if (balance < dto.amount) {
-            throw new BadRequestException(`${invoice.invoice_number} have to pay only ${round(balance)}`);
-        }
-
-        const totalPaid = invoice.paid_amount + dto.amount;
-
         return await this.paymentRepo.manager.transaction(async (manager: EntityManager) => {
-            const payment = manager.create(PaymentEntity, {
-                ...dto,
-                invoice_id: invoice.id,
+            const locked = await manager.findOneOrFail(InvoiceEntity, {
+                where: { id: invoice.id },
+                lock: { mode: 'pessimistic_write' },
             });
 
-            await manager.update(InvoiceEntity, invoice.id, { 
-                paid_amount: round(totalPaid),
-                payment_status: 
-                    dto.payment_type === PaymentType.ADVANCE ? PaymentStatus.ADVANCED :
-                    dto.payment_type === PaymentType.PARTIAL ? PaymentStatus.PARTIAL :
-                    PaymentStatus.PAID,
+            const total = round(locked.total);
+            const alreadyPaid = round(locked.paid_amount);
+            const balance = round(total - alreadyPaid);
+
+            if (balance <= 0) {
+                throw new BadRequestException(`${locked.invoice_number} is already fully paid`);
+            }
+
+            if (dto.amount > balance) {
+                throw new BadRequestException(`${locked.invoice_number} have to pay only ${balance}`);
+            }
+
+            const totalPaid = round(alreadyPaid + dto.amount);
+            const isFirstPayment = alreadyPaid === 0;
+            const isSettled = totalPaid >= total;
+
+            let paymentType: PaymentType;
+            if (isFirstPayment && isSettled) {
+                paymentType = PaymentType.FULL;
+            } else if (isFirstPayment) {
+                paymentType = PaymentType.ADVANCE;
+            } else if (isSettled) {
+                paymentType = PaymentType.FINAL;
+            } else {
+                paymentType = PaymentType.PARTIAL;
+            }
+
+            let paymentStatus: PaymentStatus;
+            if (isSettled) {
+                paymentStatus = PaymentStatus.PAID;
+            } else if (isFirstPayment) {
+                paymentStatus = PaymentStatus.ADVANCED;
+            } else {
+                paymentStatus = PaymentStatus.PARTIAL;
+            }
+
+            const payment = manager.create(PaymentEntity, {
+                ...dto,
+                invoice_id: locked.id,
+                payment_type: paymentType,
+            });
+
+            await manager.update(InvoiceEntity, locked.id, {
+                paid_amount: totalPaid,
+                payment_status: paymentStatus,
             });
 
             return await manager.save(PaymentEntity, payment);

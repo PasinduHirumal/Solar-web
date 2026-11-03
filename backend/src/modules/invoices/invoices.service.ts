@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InvoiceEntity, PaymentStatus } from './entities/invoice.entity';
+import { InvoiceEntity } from './entities/invoice.entity';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { QuotationEntity, QuotationStatus } from '../quotations/entities/quotation.entity';
 import { randomUUID } from 'crypto';
@@ -16,7 +16,6 @@ import { CommunicationService } from '../../integrations/communication/communica
 import { FilesService } from '../files/files.service';
 import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
 import { FILE_FIELDS } from '../files/constants/file-fields.constants';
-import { round } from '../../utils/math.round.util';
 
 const INVOICE_ALIAS = 'invoice';
 

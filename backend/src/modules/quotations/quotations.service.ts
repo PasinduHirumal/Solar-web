@@ -316,6 +316,26 @@ export class QuotationsService {
         });
     }
 
+    async sentQuotation(quotation_id: string): Promise<QuotationEntity> {
+        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
+            const locked = await manager
+                .getRepository(QuotationEntity)
+                .createQueryBuilder(QUOTATION_ALIAS)
+                .setLock('pessimistic_write')
+                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
+                .getOne();
+
+            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
+
+            if (locked.status !== QuotationStatus.DRAFT && locked.status !== QuotationStatus.SENT) {
+                throw new BadRequestException(`Cannot sent quotation in status: ${locked.status} `);
+            }
+
+            await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.SENT });
+            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
+        });
+    }
+
     async remove(quotation: QuotationEntity): Promise<void> {
         if (quotation.status !== QuotationStatus.DRAFT) {
             throw new BadRequestException(`Cannot delete quotation in status: ${quotation.status} `);
@@ -343,26 +363,6 @@ export class QuotationsService {
         if (!quotation) throw new NotFoundException(`Quotation Not Found`);
 
         return quotation;
-    }
-
-    async sentQuotation(quotation_id: string): Promise<QuotationEntity> {
-        return await this.quotationRepo.manager.transaction(async (manager: EntityManager) => {
-            const locked = await manager
-                .getRepository(QuotationEntity)
-                .createQueryBuilder(QUOTATION_ALIAS)
-                .setLock('pessimistic_write')
-                .where(`${QUOTATION_ALIAS}.id = :id`, { id: quotation_id })
-                .getOne();
-
-            if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
-
-            if (locked.status !== QuotationStatus.DRAFT && locked.status !== QuotationStatus.SENT) {
-                throw new BadRequestException(`Cannot sent quotation in status: ${locked.status} `);
-            }
-
-            await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.SENT });
-            return await manager.findOneOrFail(QuotationEntity, { where: { id: locked.id }});
-        });
     }
 
     async updateSnapQuotation(quotation_id: string): Promise<QuotationEntity> {
