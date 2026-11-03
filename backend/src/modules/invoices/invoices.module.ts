@@ -16,6 +16,7 @@ import { FilesModule } from '../files/files.module';
     FilesModule,
   ],
   controllers: [InvoicesController],
-  providers: [InvoicesService, InvoiceExistsPipe]
+  providers: [InvoicesService, InvoiceExistsPipe],
+  exports: [InvoicesService, InvoiceExistsPipe]
 })
 export class InvoicesModule {}

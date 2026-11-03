@@ -22,6 +22,7 @@ import { UpdateQuotationTaxDto } from './dto/update-quotation-tax.dto';
 import { PriceBreakdown } from './interfaces/price-breakdown.interface';
 import { UpdateQuotationDataDto } from './dto/update-quotation-data.dto';
 import { QUOTATION_ITEM_FIELDS } from './quotation-items/constants/quotation-item-fields.constants';
+import { round } from '../../utils/math.round.util';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -426,8 +427,6 @@ export class QuotationsService {
             tax = (subtotal * (quotation.tax / 100));
         }
 
-        const round = (n: number) => Math.round(n * 100) / 100;
-
         return {
             subtotal: round(subtotal),
             discount: round(discount),
@@ -456,7 +455,7 @@ export class QuotationsService {
     private async calculateSubtotal(quotation: QuotationEntity): Promise<number> {
         if (!quotation.items?.length) return 0;
 
-        if (quotation.status === QuotationStatus.ACCEPTED) {
+        if (quotation.status === QuotationStatus.ACCEPTED || quotation.status === QuotationStatus.REJECTED) {
             return quotation.items.reduce((sum, i) => {
                 if (i.snap_selling_price === null) {
                     throw new InternalServerErrorException(

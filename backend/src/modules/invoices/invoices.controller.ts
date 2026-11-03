@@ -28,7 +28,7 @@ export class InvoicesController {
     async getAllInvoices(
         @Query() query: FindInvoicesQueryDto,
     ): Promise<PaginatedResponse<InvoiceEntity>> {
-        return this.invoiceService.findAll(query);
+        return this.invoiceService.findAllInvoices(query);
     }
 
     @Post(':invoice_id/send/email')

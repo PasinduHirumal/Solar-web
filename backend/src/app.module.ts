@@ -26,6 +26,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SolarItemsModule } from './modules/solar-items/solar-items.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -74,6 +75,8 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     QuotationsModule,
 
     InvoicesModule,
+
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

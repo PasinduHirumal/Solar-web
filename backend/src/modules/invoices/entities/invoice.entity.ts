@@ -3,9 +3,10 @@ import { QuotationEntity } from "../../quotations/entities/quotation.entity";
 import { FileEntity } from "../../files/entities/file.entity";
 
 export enum PaymentStatus {
-    NOT_PAID = 'NOT_PAID',
+    PENDING = 'PENDING',
     PAID = 'PAID',
     ADVANCED = 'ADVANCED',
+    PARTIAL = 'PARTIAL',
 }
 
 @Entity('invoices')
@@ -19,13 +20,13 @@ export class InvoiceEntity {
     invoice_number!: string;
 
     @OneToOne(() => QuotationEntity, { eager: false, onDelete: 'RESTRICT' })
-    @JoinColumn({ name: 'customer_id' })
+    @JoinColumn({ name: 'quotation_id' })
     quotation!: QuotationEntity;
     
     @Column({ name: 'quotation_id', type: 'uuid' })
     quotation_id!: string;
 
-    @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.NOT_PAID })
+    @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
     payment_status!: PaymentStatus;
 
 
@@ -45,11 +46,8 @@ export class InvoiceEntity {
     @Column({ type: 'timestamp' })
     due_date!: Date;
 
-    @Column({ type: 'float', nullable: true })
-    paid_amount!: number | null;
-
-    @Column({ type: 'timestamp', nullable: true })
-    paid_at!: Date | null;
+    @Column({ type: 'float', default: 0 })
+    paid_amount!: number;
 
     @OneToOne(() => FileEntity, { eager: false, onDelete: 'RESTRICT', nullable: true })
     @JoinColumn({ name: 'invoice_pdf_id' })

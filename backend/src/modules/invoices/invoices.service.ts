@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InvoiceEntity } from './entities/invoice.entity';
+import { InvoiceEntity, PaymentStatus } from './entities/invoice.entity';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { QuotationEntity, QuotationStatus } from '../quotations/entities/quotation.entity';
 import { randomUUID } from 'crypto';
@@ -16,6 +16,7 @@ import { CommunicationService } from '../../integrations/communication/communica
 import { FilesService } from '../files/files.service';
 import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
 import { FILE_FIELDS } from '../files/constants/file-fields.constants';
+import { round } from '../../utils/math.round.util';
 
 const INVOICE_ALIAS = 'invoice';
 
@@ -37,6 +38,9 @@ export class InvoicesService {
     ) {}
 
     async generate(quotation: QuotationEntity, dto: CreateInvoiceDto): Promise<InvoiceEntity> {
+        const exists = await this.invoiceRepo.existsBy({ quotation_id: quotation.id })
+        if (exists) throw new ConflictException(`Invoice already generated for quotation: ${quotation.quotation_number}`);
+
         const invoiceNumber = await this.generateInvoiceNumber(quotation.customer.name);
 
         const priceBreakdown = await this.quotationService.getPriceBreakdown(quotation);
@@ -58,13 +62,15 @@ export class InvoicesService {
     }
 
     async findWithPriceBreakdown(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<InvoiceEntity> {
-        await this.quotationService.updateSnapQuotation(quotation.id);
-        await this.updatePriceBreakdown(quotation, invoice.id);
-
+        if (quotation.status !== QuotationStatus.ACCEPTED && quotation.status !== QuotationStatus.REJECTED) {
+            await this.quotationService.updateSnapQuotation(quotation.id);
+            await this.updatePriceBreakdown(quotation, invoice.id);
+        }
+        
         return await this.findById(invoice.id);
     }
 
-    async findAll(query: FindInvoicesQueryDto): Promise<PaginatedResponse<InvoiceEntity>> {
+    async findAllInvoices(query: FindInvoicesQueryDto): Promise<PaginatedResponse<InvoiceEntity>> {
         const { page = 1, limit = 10, search_term, sort_by = 'created_at', sort_order = 'DESC' } = query;
         const skip = (page - 1) * limit;
 
@@ -157,8 +163,12 @@ export class InvoicesService {
             throw new BadRequestException('Customer email not found for this invoice');
         }
 
-        if (invoice.quotation.status === QuotationStatus.ACCEPTED || invoice.quotation.status === QuotationStatus.REJECTED) {
-            throw new BadRequestException(`Cannot send invoice: the quotation is already ${invoice.quotation.status}`);
+        if (invoice.quotation.status === QuotationStatus.REJECTED) {
+            throw new BadRequestException(`Cannot send invoice: the quotation is ${invoice.quotation.status}`);
+        }
+
+        if (invoice.total === invoice.paid_amount) {
+            throw new BadRequestException(`${invoice.invoice_number} have completed full payment)}`);
         }
 
         const oldFileId = invoice.invoice_pdf_id;
