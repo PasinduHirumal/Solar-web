@@ -375,8 +375,8 @@ export class QuotationsService {
 
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
-            if (locked.status !== QuotationStatus.DRAFT && locked.status !== QuotationStatus.SENT) {
-                throw new BadRequestException(`Cannot sent quotation in status: ${locked.status} `);
+            if (locked.status === QuotationStatus.ACCEPTED || locked.status === QuotationStatus.REJECTED) {
+                return locked;
             }
 
             const items = await manager.find(QuotationItemEntity, {

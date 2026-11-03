@@ -106,11 +106,11 @@ export class InvoicesService {
             idQueryBuilder.andWhere(`${INVOICE_ALIAS}.total <= :maximum_budget`, { maximum_budget: query.maximum_budget });
         }
 
-        if (query.start_date) {
+        if (query.start_date != null) {
             idQueryBuilder.andWhere(`${INVOICE_ALIAS}.created_at >= :start_date`, { start_date: query.start_date });
         }
 
-        if (query.end_date) {
+        if (query.end_date != null) {
             idQueryBuilder.andWhere(`${INVOICE_ALIAS}.created_at <= :end_date`, { end_date: query.end_date });
         }
 
@@ -232,7 +232,11 @@ export class InvoicesService {
         throw new BadRequestException('Failed to generate a unique invoice number, please try again');
     }
 
-    private async updatePriceBreakdown(quotation: QuotationEntity, invoice_id: string): Promise<InvoiceEntity> {
+    private async updatePriceBreakdown(quotation: QuotationEntity, invoice_id: string): Promise<InvoiceEntity | undefined> {
+        if (quotation.status === QuotationStatus.ACCEPTED || quotation.status === QuotationStatus.REJECTED) {
+            return;
+        }
+
         const priceBreakdown = await this.quotationService.getPriceBreakdown(quotation);
 
         return await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
@@ -244,6 +248,15 @@ export class InvoicesService {
                 .getOne();
 
             if (!locked) throw new NotFoundException(`Invoice with ID ${invoice_id} not found`);
+
+            const full = await manager.findOneOrFail(InvoiceEntity, {
+                where: { id: locked.id },
+                relations: { quotation: true },
+            });
+
+            if (full.quotation.status === QuotationStatus.ACCEPTED || full.quotation.status === QuotationStatus.REJECTED) {
+                return full;
+            }
 
             await manager.update(InvoiceEntity, locked.id, {
                 subtotal: priceBreakdown.subtotal,
