@@ -1,13 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Ban,
-  CheckCircle,
-  Edit3,
-  Trash2,
-  Loader2,
-  DollarSign,
-  Eye,
+  Ban, CheckCircle, Edit3, Trash2, Loader2, DollarSign, Eye,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { confirmAction } from "../../../../lib/confirmAction";
@@ -135,11 +129,10 @@ export default function ActionButton({
           <button
             onClick={handleToggleStatus}
             disabled={statusLoading}
-            className={`p-1.5 transition-colors rounded-md ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${
-              item.is_active
+            className={`p-1.5 transition-colors rounded-md ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${item.is_active
                 ? "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20"
                 : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20"
-            }`}
+              }`}
             title={item.is_active ? "Deactivate Item" : "Activate Item"}
           >
             {statusLoading ? (

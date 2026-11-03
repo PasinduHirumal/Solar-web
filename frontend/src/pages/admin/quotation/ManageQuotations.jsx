@@ -2,17 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search,
-  Filter,
-  Plus,
-  X,
-  FileText,
-  Clock,
-  User,
-  Percent,
+  Search, Filter, Plus, X, FileText, Clock
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
-import { isAdmin, isSuperAdmin } from "../../../lib/roles";
+import { isAdmin } from "../../../lib/roles";
 import useAuthStore from "../../../lib/authStore";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
@@ -163,27 +156,37 @@ export default function ManageQuotations() {
     statusFilter || sortBy !== "created_at" || sortOrder !== "DESC"
   );
 
-  const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
+  // POST /quotations has @Roles(UserRole.ADMIN) only in quotations.controller.ts
+  const canCreate = isAdmin(currentUser?.role);
 
   const getStatusBadge = (status) => {
     switch (status) {
       case "ACCEPTED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+          <span
+            title="Quotation accepted & locked"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Accepted
           </span>
         );
       case "REJECTED":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60">
+          <span
+            title="Quotation rejected"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-300 dark:border-rose-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             Rejected
           </span>
         );
       case "SENT":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60">
+          <span
+            title="Quotation sent to customer (ready for SuperAdmin approval or rejection)"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
             Sent
           </span>
@@ -191,7 +194,10 @@ export default function ManageQuotations() {
       case "DRAFT":
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+          <span
+            title="Draft quotation (must be sent to customer before approval/rejection)"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700"
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
             Draft
           </span>
@@ -238,11 +244,10 @@ export default function ManageQuotations() {
           {/* Filter Toggle */}
           <button
             onClick={() => setIsFilterOpen(true)}
-            className={`p-1.5 border rounded-lg transition-colors flex items-center justify-center shrink-0 h-[34px] w-[34px] cursor-pointer ${
-              hasActiveFilters
+            className={`p-1.5 border rounded-lg transition-colors flex items-center justify-center shrink-0 h-[34px] w-[34px] cursor-pointer ${hasActiveFilters
                 ? "bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400"
                 : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
-            }`}
+              }`}
             title="Filters"
           >
             <Filter size={14} />
@@ -351,8 +356,8 @@ export default function ManageQuotations() {
                               {quo.discount_type === "PERCENTAGE"
                                 ? `${quo.discount}%`
                                 : quo.discount_type === "FIXED"
-                                ? `${formatPrice(quo.discount)}`
-                                : "None"}
+                                  ? `${formatPrice(quo.discount)}`
+                                  : "None"}
                             </span>
                           </span>
                           <span className="text-gray-600 dark:text-gray-300">
@@ -361,8 +366,8 @@ export default function ManageQuotations() {
                               {quo.tax_type === "PERCENTAGE"
                                 ? `${quo.tax}%`
                                 : quo.tax_type === "FIXED"
-                                ? `${formatPrice(quo.tax)}`
-                                : "None"}
+                                  ? `${formatPrice(quo.tax)}`
+                                  : "None"}
                             </span>
                           </span>
                         </div>

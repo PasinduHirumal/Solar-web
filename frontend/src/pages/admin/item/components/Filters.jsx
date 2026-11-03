@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import {
-  CheckCircle2,
-  FolderTree,
-  ArrowUpDown,
-  ArrowDownUp,
-  ChevronDown,
-  Check,
+  CheckCircle2, FolderTree, ArrowUpDown, ArrowDownUp, ChevronDown, Check,
 } from "lucide-react";
 
 export default function Filters({

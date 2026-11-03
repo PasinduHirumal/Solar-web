@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
-  FileText,
-  X,
-  Loader2,
-  Plus,
-  Trash2,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Layers,
-  DollarSign,
-  Percent,
+  FileText, X, Loader2, Plus, Trash2, User, Layers,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice, currencyType } from "../../../../lib/formatPrice";
@@ -39,6 +28,17 @@ export default function CreateQuotationModal({
   const [selectedItems, setSelectedItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") handleResetAndClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -76,7 +76,11 @@ export default function CreateQuotationModal({
   };
 
   const handleAddItem = () => {
-    // Pick first available item not already selected
+    if (selectedItems.length >= 10) {
+      toast.error("Maximum 10 items can be added when creating a quotation");
+      return;
+    }
+
     const unselected = availableItems.find(
       (item) => !selectedItems.some((s) => s.solar_item_id === item.id)
     );
@@ -157,7 +161,7 @@ export default function CreateQuotationModal({
     taxAmount = Math.max(0, Number(formData.tax) || 0);
   } else if (formData.tax_type === "PERCENTAGE") {
     const pct = Math.min(100, Math.max(0, Number(formData.tax) || 0));
-    taxAmount = (subtotal * pct) / 100;
+    taxAmount = (Math.max(0, subtotal - discountAmount) * pct) / 100;
   }
 
   const grandTotal = Math.max(0, subtotal - discountAmount + taxAmount);
@@ -177,6 +181,11 @@ export default function CreateQuotationModal({
 
     if (selectedItems.length === 0) {
       toast.error("Please add at least one solar hardware item to the quotation");
+      return;
+    }
+
+    if (selectedItems.length > 10) {
+      toast.error("Maximum 10 items can be added when creating a quotation");
       return;
     }
 
@@ -213,6 +222,16 @@ export default function CreateQuotationModal({
       }
     }
 
+    if (formData.notes.trim().length > 0 && formData.notes.trim().length < 3) {
+      toast.error("Notes must be at least 3 characters long if provided");
+      return;
+    }
+
+    if (formData.terms.trim().length > 0 && formData.terms.trim().length < 3) {
+      toast.error("Terms & Conditions must be at least 3 characters long if provided");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -224,23 +243,30 @@ export default function CreateQuotationModal({
           solar_item_id: i.solar_item_id,
           quantity: Number(i.quantity),
         })),
+        discount_type: formData.discount_type || "NON",
+        tax_type: formData.tax_type || "NON",
       };
 
       if (formData.discount_type !== "NON" && Number(formData.discount) > 0) {
-        payload.discount_type = formData.discount_type;
         payload.discount = Number(formData.discount);
       }
 
       if (formData.tax_type !== "NON" && Number(formData.tax) > 0) {
-        payload.tax_type = formData.tax_type;
         payload.tax = Number(formData.tax);
+      } else if (payload.discount_type !== "NON") {
+        // Backend DTO validation quirk:
+        // @ValidateIf((o) => o.discount_type !== TaxType.NON) on tax requires a positive number
+        // when discount_type is not NON, even if tax_type is NON.
+        payload.tax = 1;
       }
 
-      if (formData.notes.trim()) {
-        payload.notes = formData.notes.trim();
+      const trimmedNotes = formData.notes.trim();
+      const trimmedTerms = formData.terms.trim();
+      if (trimmedNotes.length >= 3) {
+        payload.notes = trimmedNotes;
       }
-      if (formData.terms.trim()) {
-        payload.terms = formData.terms.trim();
+      if (trimmedTerms.length >= 3) {
+        payload.terms = trimmedTerms;
       }
 
       const response = await axiosInstance.post("/quotations", payload);
@@ -264,8 +290,16 @@ export default function CreateQuotationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={handleResetAndClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]"
+      >
         {/* Header - Fixed */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -376,12 +410,14 @@ export default function CreateQuotationModal({
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Quotation Items ({selectedItems.length})</span>
+                  <span>Quotation Items ({selectedItems.length}/10)</span>
                 </h4>
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition cursor-pointer"
+                  disabled={selectedItems.length >= 10}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  title={selectedItems.length >= 10 ? "Maximum 10 items reached" : "Add Item"}
                 >
                   <Plus size={13} />
                   <span>Add Item</span>
@@ -453,23 +489,23 @@ export default function CreateQuotationModal({
               )}
             </div>
 
-            {/* Section 3: Discount & Tax */}
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+            {/* Section 3: Discount & Tax - ALWAYS flex-row side-by-side */}
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex flex-row gap-2 sm:gap-3 w-full">
               {/* Discount */}
-              <div className="space-y-1.5 p-2.5 sm:p-3 rounded-xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
-                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+              <div className="flex-1 min-w-0 space-y-1.5 p-2 sm:p-3 rounded-xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 truncate">
                   Discount
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-row items-center gap-1.5 sm:gap-2 min-w-0">
                   <select
                     name="discount_type"
                     value={formData.discount_type}
                     onChange={handleChange}
-                    className="w-36 shrink-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 truncate"
                   >
                     <option value="NON">None</option>
-                    <option value="FIXED">Fixed ({currencyType})</option>
                     <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FIXED">Fixed ({currencyType})</option>
                   </select>
 
                   {formData.discount_type !== "NON" && (
@@ -482,27 +518,27 @@ export default function CreateQuotationModal({
                       value={formData.discount}
                       onChange={handleChange}
                       placeholder={formData.discount_type === "PERCENTAGE" ? "e.g. 5" : "e.g. 500"}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-14 sm:w-20 shrink-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-center"
                     />
                   )}
                 </div>
               </div>
 
               {/* Tax */}
-              <div className="space-y-1.5 p-2.5 sm:p-3 rounded-xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
-                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+              <div className="flex-1 min-w-0 space-y-1.5 p-2 sm:p-3 rounded-xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 truncate">
                   Tax / VAT
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-row items-center gap-1.5 sm:gap-2 min-w-0">
                   <select
                     name="tax_type"
                     value={formData.tax_type}
                     onChange={handleChange}
-                    className="w-36 shrink-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 truncate"
                   >
                     <option value="NON">None</option>
-                    <option value="FIXED">Fixed ({currencyType})</option>
                     <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FIXED">Fixed ({currencyType})</option>
                   </select>
 
                   {formData.tax_type !== "NON" && (
@@ -515,7 +551,7 @@ export default function CreateQuotationModal({
                       value={formData.tax}
                       onChange={handleChange}
                       placeholder={formData.tax_type === "PERCENTAGE" ? "e.g. 18" : "e.g. 1500"}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-14 sm:w-20 shrink-0 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-center"
                     />
                   )}
                 </div>

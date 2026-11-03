@@ -3,19 +3,43 @@ import { X, FileText, User, Phone, MapPin, Mail, ShieldCheck, Layers, Loader2, C
 import { formatPrice } from "../../../../lib/formatPrice";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 
-export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
+export default function ViewQuotationModal({
+  isOpen,
+  onClose,
+  quotation,
+  initialQuotation,
+  quotationId,
+}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const targetQuotation = quotation || initialQuotation;
+  const targetId = quotationId || targetQuotation?.id;
+
+  // Escape key handler
   useEffect(() => {
-    if (!isOpen || !quotation?.id) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Fetch full quotation breakdown when modal opens
+  useEffect(() => {
+    if (!isOpen || !targetId) {
+      setData(null);
+      return;
+    }
 
     let active = true;
 
     const fetchQuotation = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get(`/quotations/${quotation.id}`);
+        const res = await axiosInstance.get(`/quotations/${targetId}`);
         if (active) {
           setData(res.data?.data || res.data);
         }
@@ -31,19 +55,46 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
     return () => {
       active = false;
     };
-  }, [isOpen, quotation?.id]);
+  }, [isOpen, targetId]);
 
-  if (!isOpen || !quotation) return null;
+  if (!isOpen || (!targetQuotation && !targetId)) return null;
 
-  const currentQuo = data?.quotation || quotation;
-  const breakdown = data?.price_breakdown || {
-    subtotal: 0,
-    discount: 0,
-    tax: 0,
-    total: 0,
-  };
+  const currentQuo = data?.quotation || targetQuotation || {};
   const customer = currentQuo.customer || {};
   const items = currentQuo.items || [];
+
+  // Robust price breakdown calculation
+  const calculatedSubtotal = items.reduce((sum, line) => {
+    const unitPrice =
+      line.snap_selling_price !== null && line.snap_selling_price !== undefined
+        ? Number(line.snap_selling_price)
+        : Number(line.solar_item?.selling_price || 0);
+    return sum + unitPrice * (line.quantity || 1);
+  }, 0);
+
+  const subtotal = data?.price_breakdown?.subtotal ?? calculatedSubtotal;
+
+  let discountAmount = data?.price_breakdown?.discount ?? 0;
+  if (!discountAmount && currentQuo.discount && currentQuo.discount_type !== "NON") {
+    if (currentQuo.discount_type === "PERCENTAGE") {
+      discountAmount = (subtotal * Number(currentQuo.discount)) / 100;
+    } else if (currentQuo.discount_type === "FIXED") {
+      discountAmount = Number(currentQuo.discount);
+    }
+  }
+
+  let taxAmount = data?.price_breakdown?.tax ?? 0;
+  if (!taxAmount && currentQuo.tax && currentQuo.tax_type !== "NON") {
+    const afterDiscount = Math.max(0, subtotal - discountAmount);
+    if (currentQuo.tax_type === "PERCENTAGE") {
+      taxAmount = (afterDiscount * Number(currentQuo.tax)) / 100;
+    } else if (currentQuo.tax_type === "FIXED") {
+      taxAmount = Number(currentQuo.tax);
+    }
+  }
+
+  const grandTotal =
+    data?.price_breakdown?.total ?? Math.max(0, subtotal - discountAmount + taxAmount);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -59,8 +110,16 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]"
+      >
         {/* Header - Fixed */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -100,11 +159,13 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100/80 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
-                  {currentQuo.quotation_number}
+                  {currentQuo.quotation_number || "N/A"}
                 </span>
                 <span className="text-[11px] text-gray-500 flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-gray-400" />
-                  {new Date(currentQuo.created_at).toLocaleDateString()}
+                  {currentQuo.created_at
+                    ? new Date(currentQuo.created_at).toLocaleDateString()
+                    : "N/A"}
                 </span>
               </div>
               <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
@@ -113,11 +174,20 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
             </div>
 
             <span
+              title={
+                currentQuo.status === "SENT"
+                  ? "Quotation sent to customer (ready for SuperAdmin approval or rejection)"
+                  : currentQuo.status === "ACCEPTED"
+                  ? "Quotation approved and accepted"
+                  : currentQuo.status === "REJECTED"
+                  ? "Quotation rejected"
+                  : "Draft quotation (must be sent to customer before approval/rejection)"
+              }
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border self-start sm:self-auto shrink-0 ${getStatusBadge(
                 currentQuo.status
               )}`}
             >
-              {currentQuo.status}
+              {currentQuo.status || "DRAFT"}
             </span>
           </div>
 
@@ -125,11 +195,11 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 min-w-0">
               <User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span className="font-medium truncate">{customer.name || "N/A"}</span>
+              <span className="font-medium truncate">{customer.name || "Customer"}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 min-w-0">
               <Mail className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span className="truncate">{customer.email || "N/A"}</span>
+              <span className="truncate">{customer.email || currentQuo.customer_id || "N/A"}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 min-w-0">
               <Phone className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -159,23 +229,24 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="py-4 text-center text-gray-400">
-                        No items in this quotation
+                      <td colSpan="4" className="py-6 text-center text-gray-400 text-xs">
+                        No items added to this quotation yet
                       </td>
                     </tr>
                   ) : (
-                    items.map((line) => {
+                    items.map((line, idx) => {
                       const itemTitle = line.snap_title || line.solar_item?.title || "Solar Item";
                       const itemCode = line.solar_item?.code;
                       const itemCat = line.solar_item?.category?.title;
                       const unitPrice =
                         line.snap_selling_price !== null && line.snap_selling_price !== undefined
-                          ? line.snap_selling_price
-                          : line.solar_item?.selling_price || 0;
-                      const lineTotal = unitPrice * line.quantity;
+                          ? Number(line.snap_selling_price)
+                          : Number(line.solar_item?.selling_price || 0);
+                      const qty = Number(line.quantity || 1);
+                      const lineTotal = unitPrice * qty;
 
                       return (
-                        <tr key={line.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                        <tr key={line.id || idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                           <td className="py-2.5 px-3">
                             <p className="font-semibold text-gray-900 dark:text-gray-100">{itemTitle}</p>
                             <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-gray-400">
@@ -197,7 +268,7 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
                             {formatPrice(unitPrice)}
                           </td>
                           <td className="py-2.5 px-3 text-center font-bold text-gray-800 dark:text-gray-200">
-                            {line.quantity}
+                            {qty}
                           </td>
                           <td className="py-2.5 px-3 text-right font-bold text-gray-900 dark:text-white">
                             {formatPrice(lineTotal)}
@@ -216,32 +287,32 @@ export default function ViewQuotationModal({ isOpen, onClose, quotation }) {
             <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300">
               <span>Subtotal:</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {formatPrice(breakdown.subtotal)}
+                {formatPrice(subtotal)}
               </span>
             </div>
 
-            {currentQuo.discount_type !== "NON" && (
+            {currentQuo.discount_type && currentQuo.discount_type !== "NON" && (
               <div className="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
                 <span>
                   Discount ({currentQuo.discount_type === "PERCENTAGE" ? `${currentQuo.discount}%` : "Fixed"}):
                 </span>
-                <span className="font-semibold">-{formatPrice(breakdown.discount)}</span>
+                <span className="font-semibold">-{formatPrice(discountAmount)}</span>
               </div>
             )}
 
-            {currentQuo.tax_type !== "NON" && (
+            {currentQuo.tax_type && currentQuo.tax_type !== "NON" && (
               <div className="flex justify-between text-xs text-amber-600 dark:text-amber-400">
                 <span>
                   Tax ({currentQuo.tax_type === "PERCENTAGE" ? `${currentQuo.tax}%` : "Fixed"}):
                 </span>
-                <span className="font-semibold">+{formatPrice(breakdown.tax)}</span>
+                <span className="font-semibold">+{formatPrice(taxAmount)}</span>
               </div>
             )}
 
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-sm">
               <span className="font-bold text-gray-900 dark:text-white">Grand Total:</span>
               <span className="font-extrabold text-blue-600 dark:text-blue-400 text-base">
-                {formatPrice(breakdown.total)}
+                {formatPrice(grandTotal)}
               </span>
             </div>
           </div>
