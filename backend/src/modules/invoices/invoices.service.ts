@@ -15,6 +15,7 @@ import { USER_FIELDS } from '../identity/constants/user-fields.constants';
 import { CommunicationService } from '../../integrations/communication/communication.service';
 import { FilesService } from '../files/files.service';
 import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
+import { FILE_FIELDS } from '../files/constants/file-fields.constants';
 
 const INVOICE_ALIAS = 'invoice';
 
@@ -249,6 +250,7 @@ export class InvoicesService {
     private detailQueryBuilder() {
         let qb = this.invoiceRepo.createQueryBuilder(INVOICE_ALIAS);
         qb = this.withQuotation(qb);
+        qb = this.withPdf(qb);
 
         return qb;
     }
@@ -261,5 +263,11 @@ export class InvoicesService {
         .addSelect(pick('customer', USER_FIELDS))
         .leftJoin(`quotation.items`, `quo_item`)
         .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
+    }
+
+    private withPdf(qb: SelectQueryBuilder<InvoiceEntity>) {
+        return qb
+        .leftJoin(`${INVOICE_ALIAS}.invoice_pdf`, 'invoice_pdf')
+        .addSelect(pick('thumbnail', FILE_FIELDS));
     }
 }
