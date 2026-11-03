@@ -138,11 +138,6 @@ export class ItemsService {
     }
 
     async updateData(item: SolarItemEntity, dto: UpdateSolarItemDto): Promise<SolarItemEntity> {
-        let code = item.code;
-        if (dto.title) {
-            code = await this.generateItemCode(dto.title);
-        }
-
         if (dto.category_id) {
             const category = await this.categoryService.findById(dto.category_id);
             if (!category.is_active) throw new BadRequestException(`Category not in active`);
@@ -159,7 +154,7 @@ export class ItemsService {
         }
 
         return await this.solarItemRepo.manager.transaction(async (manager: EntityManager) => {
-            await manager.update(SolarItemEntity, item.id, { ...dto, code });
+            await manager.update(SolarItemEntity, item.id, dto);
             return manager.findOneOrFail(SolarItemEntity, { where: { id: item.id } });
         });
     }
