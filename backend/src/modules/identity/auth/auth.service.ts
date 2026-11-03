@@ -171,6 +171,10 @@ export class AuthService {
             this.userEventService.emitUserRegistered(user);
         }
 
+        if (user.role === UserRole.USER) {
+            throw new BadRequestException(`User login not allowed yet`);
+        }
+
         try {
             this.authHelperService.validateLogin(user);
         } catch (error) {
