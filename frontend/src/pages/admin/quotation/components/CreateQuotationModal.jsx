@@ -294,23 +294,23 @@ export default function CreateQuotationModal({
       role="dialog"
       aria-modal="true"
       onClick={handleResetAndClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in text-left"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in text-left"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-xl max-w-2xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh]"
       >
         {/* Header - Fixed */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-2xs shrink-0">
               <FileText className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight truncate">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
                 Create Solar Quotation
               </h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              <p className="text-[11px] text-slate-500 truncate">
                 Generate a formal hardware quote proposal.
               </p>
             </div>
@@ -318,7 +318,7 @@ export default function CreateQuotationModal({
           <button
             type="button"
             onClick={handleResetAndClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0 ml-2"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer shrink-0 ml-2"
             title="Close"
           >
             <X size={18} />

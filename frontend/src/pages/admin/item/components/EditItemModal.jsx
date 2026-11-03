@@ -124,19 +124,19 @@ export default function EditItemModal({
   const activeCategories = categories.filter((c) => c.is_active);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in text-left">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in text-left">
+      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-2xs">
               <Package className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
+              <h3 className="text-sm font-bold text-slate-900 leading-tight">
                 Edit Solar Item
               </h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] text-slate-500">
                 Update item title, category, warranty, or specifications.
               </p>
             </div>
@@ -144,7 +144,7 @@ export default function EditItemModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
             title="Close"
           >
             <X size={16} />
@@ -154,22 +154,22 @@ export default function EditItemModal({
         {/* Form Body */}
         <form
           onSubmit={handleSubmit}
-          className="p-4 sm:p-5 space-y-3.5 overflow-y-auto custom-scrollbar flex-1"
+          className="p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1"
         >
           {/* Item Code Display */}
-          <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">
               Item Code:
             </span>
-            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+            <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
               {item.code}
             </span>
           </div>
 
           {/* Item Title */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Item Title <span className="text-red-500">*</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              Item Title <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -180,14 +180,14 @@ export default function EditItemModal({
               value={formData.title}
               onChange={handleChange}
               placeholder="e.g. 550W Monocrystalline Solar Panel"
-              className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
             />
           </div>
 
           {/* Category Dropdown */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Category <span className="text-red-500">*</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              Category <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <select
@@ -195,7 +195,7 @@ export default function EditItemModal({
                 required
                 value={formData.category_id}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition appearance-none cursor-pointer"
+                className="w-full pl-3.5 pr-8 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition appearance-none cursor-pointer font-semibold"
               >
                 <option value="">Select a category</option>
                 {activeCategories.map((cat) => (
@@ -211,12 +211,12 @@ export default function EditItemModal({
                     </option>
                   )}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
                 <Layers className="w-4 h-4" />
               </div>
             </div>
             {activeCategories.length === 0 && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1">
+              <p className="text-[11px] text-amber-600 flex items-center gap-1 mt-1">
                 <AlertCircle className="w-3.5 h-3.5" />
                 No active categories found. Please activate one first.
               </p>
@@ -225,8 +225,8 @@ export default function EditItemModal({
 
           {/* Warranty Period */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Warranty Period <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              Warranty Period <span className="text-slate-400 font-normal lowercase">(optional)</span>
             </label>
             <div className="relative">
               <input
@@ -237,21 +237,21 @@ export default function EditItemModal({
                 value={formData.warranty_period}
                 onChange={handleChange}
                 placeholder="e.g. 5 Years / 10 Years Replacement"
-                className="w-full pl-9 pr-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
               />
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
               </div>
             </div>
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-slate-400">
               Manufacturer or shop warranty coverage (3-255 characters if provided)
             </p>
           </div>
 
           {/* Warranty Details */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Warranty Terms & Coverage <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              Warranty Terms & Coverage <span className="text-slate-400 font-normal lowercase">(optional)</span>
             </label>
             <textarea
               name="warranty_details"
@@ -259,17 +259,17 @@ export default function EditItemModal({
               value={formData.warranty_details}
               onChange={handleChange}
               placeholder="e.g. Inverter repairs, cell degradation limits, or on-site replacement terms..."
-              className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+              className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 resize-none transition"
             />
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] text-slate-400">
               Detailed breakdown of warranty guarantee, inclusions, and claims terms
             </p>
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              Description <span className="text-gray-400 font-normal lowercase">(optional)</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              Description <span className="text-slate-400 font-normal lowercase">(optional)</span>
             </label>
             <textarea
               name="description"
@@ -277,23 +277,23 @@ export default function EditItemModal({
               value={formData.description}
               onChange={handleChange}
               placeholder="Technical specs, features, or description..."
-              className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+              className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 resize-none transition"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-gray-100 dark:border-gray-800">
+          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !formData.title.trim() || !formData.category_id}
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-blue-500/20 transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
             >
               {loading && <Loader2 size={14} className="animate-spin" />}
               <span>Save Changes</span>

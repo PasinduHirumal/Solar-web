@@ -89,19 +89,19 @@ export default function UpdatePriceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in text-left">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in text-left">
+      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full border border-slate-200/90 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-2xs">
               <DollarSign className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
+              <h3 className="text-sm font-bold text-slate-900 leading-tight">
                 Update Item Price
               </h3>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] text-slate-500">
                 Super Admin price adjustment.
               </p>
             </div>
@@ -109,7 +109,7 @@ export default function UpdatePriceModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
             title="Close"
           >
             <X size={16} />
@@ -117,15 +117,15 @@ export default function UpdatePriceModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Item Preview */}
-          <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              Product: <span className="font-semibold text-gray-900 dark:text-white">{item.title}</span>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 shadow-2xs">
+            <p className="text-[11px] text-slate-500">
+              Product: <span className="font-bold text-slate-900">{item.title}</span>
             </p>
             <div className="mt-1 flex items-center justify-between text-xs">
-              <span className="text-gray-500">Current Selling Price:</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="text-slate-500">Current Selling Price:</span>
+              <span className="font-extrabold text-emerald-600 tabular-nums">
                 {formatPrice(item.selling_price ?? item.marked_price)}
               </span>
             </div>
@@ -133,8 +133,8 @@ export default function UpdatePriceModal({
 
           {/* New Price Input */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-              New Price <span className="text-red-500">*</span>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              New Price <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -146,30 +146,30 @@ export default function UpdatePriceModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition tabular-nums"
               />
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 font-bold text-xs">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 font-bold text-xs">
                 {currencyType}
               </div>
             </div>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-slate-400">
               Between $0.01 and $1,000,000.00 (sets both marked & selling prices)
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-gray-100 dark:border-gray-800">
+          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !price || parseFloat(price) <= 0}
-              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-emerald-500/20 transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
             >
               {loading && <Loader2 size={14} className="animate-spin" />}
               <span>Update Price</span>

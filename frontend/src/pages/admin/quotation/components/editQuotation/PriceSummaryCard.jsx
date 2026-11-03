@@ -42,45 +42,45 @@ export default function PriceSummaryCard({ quotation, priceBreakdown }) {
       : Math.max(0, subtotal - discountAmount + taxAmount);
 
   return (
-    <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/50 space-y-1.5 text-xs">
-      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
-        <span>Subtotal ({quotation.items?.length || 0} line items):</span>
-        <span className="font-semibold text-gray-900 dark:text-white">
+    <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2 text-xs shadow-2xs">
+      <div className="flex items-center justify-between text-slate-600">
+        <span className="font-medium">Subtotal ({quotation.items?.length || 0} line items):</span>
+        <span className="font-mono font-semibold text-slate-900">
           {formatPrice(subtotal)}
         </span>
       </div>
 
       {discountAmount > 0 && (
-        <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
-          <span>
+        <div className="flex items-center justify-between text-emerald-700">
+          <span className="font-medium">
             Discount (
             {quotation.discount_type === "PERCENTAGE"
               ? `${quotation.discount}%`
               : "Fixed"}
             ):
           </span>
-          <span className="font-semibold">-{formatPrice(discountAmount)}</span>
+          <span className="font-mono font-semibold">-{formatPrice(discountAmount)}</span>
         </div>
       )}
 
       {taxAmount > 0 && (
-        <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-          <span>
+        <div className="flex items-center justify-between text-amber-700">
+          <span className="font-medium">
             Tax / VAT (
             {quotation.tax_type === "PERCENTAGE"
               ? `${quotation.tax}%`
               : "Fixed"}
             ):
           </span>
-          <span className="font-semibold">+{formatPrice(taxAmount)}</span>
+          <span className="font-mono font-semibold">+{formatPrice(taxAmount)}</span>
         </div>
       )}
 
-      <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between">
-        <span className="font-bold text-gray-800 dark:text-gray-200">
+      <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between">
+        <span className="font-bold text-slate-900 uppercase tracking-wider">
           Live Total Proposal:
         </span>
-        <span className="text-sm sm:text-base font-extrabold text-blue-600 dark:text-blue-400">
+        <span className="text-base sm:text-lg font-mono font-extrabold text-blue-600">
           {formatPrice(grandTotal)}
         </span>
       </div>

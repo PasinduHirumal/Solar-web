@@ -166,49 +166,62 @@ export default function ManageUsers() {
     const hasActiveFilters = Boolean(roleFilter || statusFilter || sortBy !== "created_at" || sortOrder !== "DESC");
 
     return (
-        <div className="p-2 md:p-3 max-w-7xl mx-auto w-full animate-fade-in">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+        <div className="max-w-7xl mx-auto w-full space-y-4">
+            {/* Page Header Toolbar */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_1px_3px_0_rgba(0,0,0,0.03)]">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Manage Users</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-xs">View, edit roles, and manage system user accounts.</p>
+                    <div className="flex items-center gap-2.5">
+                        <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                            Manage Users
+                        </h1>
+                        {!loading && (
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
+                                {totalItems} total
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-slate-500 text-xs mt-0.5">
+                        View, edit roles, credentials, and manage system user access accounts.
+                    </p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex items-center gap-2.5 w-full md:w-auto">
                     {/* Search Bar */}
-                    <div className="relative flex-1 sm:flex-initial sm:w-56 md:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
+                    <div className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search by name or email..."
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-shadow shadow-sm text-xs h-[34px]"
+                            className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 placeholder:text-slate-400 transition-all text-xs h-10"
                         />
                         {searchInput && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer"
                                 title="Clear search"
                             >
-                                <X className="w-3 h-3" />
+                                <X className="w-3.5 h-3.5" />
                             </button>
                         )}
                     </div>
 
-                    {/* Filter Drawer Button */}
+                    {/* Filter Drawer Toggle */}
                     <button
                         onClick={() => setIsFilterOpen(true)}
                         type="button"
-                        className={`flex items-center justify-center p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition shadow-sm h-[34px] w-[34px] cursor-pointer relative ${
-                            hasActiveFilters ? "ring-2 ring-blue-500/50 border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400" : ""
+                        className={`flex items-center justify-center p-2 rounded-xl border transition shadow-2xs h-10 w-10 cursor-pointer relative ${
+                            hasActiveFilters
+                                ? "bg-blue-50 border-blue-300 text-blue-600 font-semibold ring-2 ring-blue-500/20"
+                                : "bg-white border-slate-200/90 hover:bg-slate-50 text-slate-600 hover:text-slate-900"
                         }`}
                         title="Filter Users"
                     >
-                        <Filter className="w-3.5 h-3.5" />
+                        <Filter className="w-4 h-4" />
                         {hasActiveFilters && (
-                            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
                         )}
                     </button>
 
@@ -217,9 +230,9 @@ export default function ManageUsers() {
                         <button
                             type="button"
                             onClick={() => setIsRegisterModalOpen(true)}
-                            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm h-[34px] cursor-pointer shrink-0"
+                            className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm shadow-blue-500/20 h-10 cursor-pointer shrink-0"
                         >
-                            <UserPlus className="w-3.5 h-3.5" />
+                            <UserPlus className="w-4 h-4" />
                             <span className="hidden sm:inline">Register User</span>
                         </button>
                     )}
@@ -227,93 +240,105 @@ export default function ManageUsers() {
             </div>
 
             {/* Users Table Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                            <tr className="bg-slate-50/80 border-b border-slate-200/80">
+                                <th className="py-3 px-4 sm:px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    User
+                                </th>
+                                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Role
+                                </th>
+                                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th className="py-3 px-4 sm:px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="4" className="py-8 text-center">
-                                        <div className="flex justify-center items-center gap-2.5 text-gray-500 dark:text-gray-400">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                                            <span className="text-xs font-medium">Loading users...</span>
+                                    <td colSpan="4" className="py-12 text-center">
+                                        <div className="flex flex-col justify-center items-center gap-2 text-slate-500">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent" />
+                                            <span className="text-xs font-semibold">Loading user accounts...</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="py-8 text-center text-gray-500 dark:text-gray-400">
-                                        <div className="flex flex-col items-center gap-1.5">
-                                            <Search className="w-6 h-6 text-gray-300 dark:text-gray-600 mb-1" />
-                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">No users found</p>
-                                            <p className="text-xs">Try adjusting your search terms or filters.</p>
+                                    <td colSpan="4" className="py-12 text-center text-slate-500">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+                                                <Search className="w-6 h-6" />
+                                            </div>
+                                            <p className="text-sm font-bold text-slate-900">No users found</p>
+                                            <p className="text-xs text-slate-400 max-w-xs">
+                                                Try adjusting your search terms or filters to find system user accounts.
+                                            </p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (
                                 users.map((u) => (
-                                    <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                        <td className="py-2.5 px-4">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs shrink-0 shadow-inner">
-                                                    {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+                                    <tr key={u.id} className="hover:bg-blue-50/25 transition-colors group">
+                                        <td className="py-3 px-4 sm:px-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200/60 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0 shadow-2xs">
+                                                    {u.name ? u.name.charAt(0).toUpperCase() : "U"}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 text-xs">
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
                                                         {u.name}
                                                         {u.id === currentUser?.id && (
-                                                            <span className="text-[9px] uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-bold">
+                                                            <span className="text-[9px] uppercase tracking-wider bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-full font-bold">
                                                                 You
                                                             </span>
                                                         )}
                                                     </span>
-                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                                        <Mail className="w-2.5 h-2.5" />
+                                                    <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                                        <Mail className="w-3 h-3 text-slate-400" />
                                                         {u.email}
                                                     </span>
                                                     {u.phone && (
-                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                                            <Phone className="w-2.5 h-2.5 text-blue-500" />
+                                                        <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                                            <Phone className="w-3 h-3 text-blue-500" />
                                                             {u.phone}
                                                         </span>
                                                     )}
                                                     {u.address && (
-                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5 truncate max-w-xs" title={u.address}>
-                                                            <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                                                        <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5 truncate max-w-xs" title={u.address}>
+                                                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                                             {u.address}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="py-2.5 px-4">
+                                        <td className="py-3 px-4">
                                             {/* Backend restricts changing USER role to another role. Only ADMIN <-> SUPER_ADMIN can be changed. */}
                                             {isSuperAdmin(currentUser?.role) && u.id !== currentUser?.id && u.role !== UserRole.USER ? (
                                                 <select
                                                     value={u.role}
                                                     onChange={(e) => handleRoleChange(u.id, e.target.value)}
                                                     disabled={actionLoading === `${u.id}-role`}
-                                                    className="bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-xs rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block py-1 pl-2.5 pr-7 transition-colors cursor-pointer appearance-none disabled:opacity-50"
-                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.4rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
+                                                    className="bg-slate-50 hover:bg-white border border-slate-200 text-slate-900 text-xs rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 block py-1.5 pl-3 pr-7 transition-colors cursor-pointer appearance-none disabled:opacity-50 font-semibold"
+                                                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                                                 >
                                                     <option value={UserRole.ADMIN}>Admin</option>
                                                     <option value={UserRole.SUPER_ADMIN}>Super Admin</option>
                                                 </select>
                                             ) : (
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                                                     u.role === UserRole.SUPER_ADMIN
-                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 ring-1 ring-purple-600/10 dark:ring-purple-500/20'
+                                                        ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
                                                         : u.role === UserRole.ADMIN
-                                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 ring-1 ring-blue-600/10 dark:ring-blue-500/20'
-                                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-300 ring-1 ring-gray-600/10 dark:ring-gray-500/20'
+                                                            ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                                                            : 'bg-slate-100 text-slate-700 border border-slate-200/60'
                                                 }`}>
                                                     {u.role === UserRole.SUPER_ADMIN && <ShieldAlert className="w-3 h-3" />}
                                                     {u.role === UserRole.ADMIN && <ShieldCheck className="w-3 h-3" />}
@@ -322,17 +347,17 @@ export default function ManageUsers() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="py-2.5 px-4">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                                        <td className="py-3 px-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                                                 u.is_active
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-1 ring-emerald-600/10 dark:ring-emerald-500/20'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 ring-1 ring-red-600/10 dark:ring-red-500/20'
+                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                    : 'bg-rose-50 text-rose-700 border border-rose-200/60'
                                             }`}>
-                                                {u.is_active ? <CheckCircle className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                                                <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                                 {u.is_active ? "Active" : "Inactive"}
                                             </span>
                                         </td>
-                                        <td className="py-2.5 px-4 text-right">
+                                        <td className="py-3 px-4 sm:px-5 text-right">
                                             <ActionButton
                                                 user={u}
                                                 currentUser={currentUser}
@@ -349,22 +374,26 @@ export default function ManageUsers() {
 
                 {/* Pagination */}
                 {!loading && totalPages > 1 && (
-                    <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/30 dark:bg-gray-800/30">
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                            Showing <span className="text-gray-900 dark:text-white font-semibold">{page}</span> of <span className="text-gray-900 dark:text-white font-semibold">{totalPages}</span> ({totalItems} total users)
+                    <div className="border-t border-slate-100 px-4 sm:px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+                        <span className="text-xs text-slate-500 font-medium">
+                            Showing page <span className="text-slate-900 font-bold">{page}</span> of{" "}
+                            <span className="text-slate-900 font-bold">{totalPages}</span> ({totalItems} users total)
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                             <button
                                 disabled={page === 1}
                                 onClick={() => updateParams({ page: page - 1 })}
-                                className="px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+                                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
                             >
                                 Previous
                             </button>
+                            <span className="text-xs font-semibold px-2 text-slate-600">
+                                {page} / {totalPages}
+                            </span>
                             <button
                                 disabled={page === totalPages}
                                 onClick={() => updateParams({ page: page + 1 })}
-                                className="px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+                                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
                             >
                                 Next
                             </button>
@@ -377,6 +406,7 @@ export default function ManageUsers() {
             <AdminFilterMenu
                 isOpen={isFilterOpen}
                 onClose={() => setIsFilterOpen(false)}
+                title="Filter Users"
             >
                 <Filters
                     roleFilter={roleFilter}

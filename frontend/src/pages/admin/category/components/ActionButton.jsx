@@ -108,9 +108,9 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
 
     return (
         <>
-            <div className="flex items-center justify-end gap-1">
+            <div className="flex items-center justify-end gap-1.5">
                 {!canEdit && !canDelete && (
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 italic px-2 py-0.5">
+                    <span className="text-[10px] text-slate-400 italic px-2 py-0.5">
                         Read only
                     </span>
                 )}
@@ -118,7 +118,7 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                 {canEdit && (
                     <button
                         onClick={handleOpenEdit}
-                        className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-md ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                        className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all border border-blue-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
                         title="Edit Category"
                     >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -130,10 +130,10 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                     <button
                         onClick={() => handleToggleStatus(category.id, category.is_active)}
                         disabled={statusLoading}
-                        className={`p-1.5 transition-colors rounded-md ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${
+                        className={`w-7 h-7 transition-all rounded-lg border shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center ${
                             category.is_active
-                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20'
-                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20'
+                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white border-amber-200/60'
+                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border-emerald-200/60'
                         }`}
                         title={category.is_active ? "Deactivate Category" : "Activate Category"}
                     >
@@ -152,7 +152,7 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                     <button
                         onClick={() => handleDeleteCategory(category.id, category.title)}
                         disabled={deleteLoading}
-                        className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-md ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                        className="w-7 h-7 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all rounded-lg border border-rose-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
                         title="Delete Category"
                     >
                         {deleteLoading ? (
@@ -166,25 +166,29 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
 
             {/* EDIT CATEGORY MODAL */}
             {isEditOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in text-left">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 dark:border-gray-800 overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <FolderTree className="w-5 h-5 text-blue-600" />
-                                Edit Category
-                            </h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in text-left">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-slate-200/90 overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-2xs">
+                                    <FolderTree className="w-4 h-4" />
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900">
+                                    Edit Category
+                                </h3>
+                            </div>
                             <button
                                 onClick={handleCloseEdit}
-                                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                        <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                    Category Title <span className="text-red-500">*</span>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                    Category Title <span className="text-rose-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -194,37 +198,37 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                                     value={editTitle}
                                     onChange={(e) => setEditTitle(e.target.value)}
                                     placeholder="e.g. Solar Inverters"
-                                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                    Description <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                    Description <span className="text-slate-400 font-normal lowercase">(optional)</span>
                                 </label>
                                 <textarea
                                     rows={3}
                                     value={editDescription}
                                     onChange={(e) => setEditDescription(e.target.value)}
                                     placeholder="Brief description of items in this collection..."
-                                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 resize-none transition"
+                                    className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 resize-none transition"
                                 />
                             </div>
 
-                            <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-800">
+                            <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={handleCloseEdit}
-                                    className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-300 cursor-pointer"
+                                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={editLoading || !editTitle.trim()}
-                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-blue-500/20 transition disabled:opacity-50 cursor-pointer flex items-center gap-2"
                                 >
-                                    {editLoading && <Loader2 size={16} className="animate-spin" />}
+                                    {editLoading && <Loader2 size={14} className="animate-spin" />}
                                     <span>Save Changes</span>
                                 </button>
                             </div>
