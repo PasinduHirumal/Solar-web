@@ -64,7 +64,7 @@ export class CategoriesService {
             const escaped = search_term.replace(/[\\%_]/g, '\\$&');
 
             idQueryBuilder.andWhere(
-                `(${CATEGORY_ALIAS}.name    LIKE :search)`, { search: `%${escaped}%` }
+                `(${CATEGORY_ALIAS}.title    LIKE :search)`, { search: `%${escaped}%` }
             );
         }
 
