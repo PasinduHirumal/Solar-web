@@ -98,6 +98,22 @@ export class InvoicesService {
             }
         }
 
+        if (query.lowest_budget != null) {
+            idQueryBuilder.andWhere(`${INVOICE_ALIAS}.total >= :lowest_budget`, { lowest_budget: query.lowest_budget });
+        }
+            
+        if (query.maximum_budget != null) {
+            idQueryBuilder.andWhere(`${INVOICE_ALIAS}.total <= :maximum_budget`, { maximum_budget: query.maximum_budget });
+        }
+
+        if (query.start_date) {
+            idQueryBuilder.andWhere(`${INVOICE_ALIAS}.created_at >= :start_date`, { start_date: query.start_date });
+        }
+
+        if (query.end_date) {
+            idQueryBuilder.andWhere(`${INVOICE_ALIAS}.created_at <= :end_date`, { end_date: query.end_date });
+        }
+
         const totalItems = await idQueryBuilder.clone().getCount();
         const totalPages = Math.ceil(totalItems / limit);
 
