@@ -287,7 +287,7 @@ export class QuotationsService {
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
             if (locked.status !== QuotationStatus.SENT) {
-                throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
+                throw new BadRequestException(`Cannot accept quotation, please send invoice to customer first`);
             }
 
             await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.ACCEPTED });
@@ -307,7 +307,7 @@ export class QuotationsService {
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
             if (locked.status !== QuotationStatus.SENT) {
-                throw new BadRequestException(`Cannot update status for quotation in status: ${locked.status} `);
+                throw new BadRequestException(`Cannot reject quotation, please send invoice to customer first`);
             }
 
             await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.REJECTED });

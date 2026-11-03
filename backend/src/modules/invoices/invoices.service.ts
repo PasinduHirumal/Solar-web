@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
@@ -13,6 +13,8 @@ import { FindInvoicesQueryDto } from './dto/find-invoice-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
 import { USER_FIELDS } from '../identity/constants/user-fields.constants';
 import { CommunicationService } from '../../integrations/communication/communication.service';
+import { FilesService } from '../files/files.service';
+import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
 
 const INVOICE_ALIAS = 'invoice';
 
@@ -22,12 +24,15 @@ const EXACT_FILTER_MAP: Partial<Record<keyof FindInvoicesQueryDto, string>> = {
 
 @Injectable()
 export class InvoicesService {
+    private readonly logger = new  Logger(InvoicesService.name);
+    
     constructor(
         @InjectRepository(InvoiceEntity)
         private readonly invoiceRepo: Repository<InvoiceEntity>,
 
         private readonly quotationService: QuotationsService,
         private readonly mailService: CommunicationService,
+        private readonly fileUploadService: FilesService,
     ) {}
 
     async generate(quotation: QuotationEntity, dto: CreateInvoiceDto): Promise<InvoiceEntity> {
@@ -135,8 +140,40 @@ export class InvoicesService {
             throw new BadRequestException('Customer email not found for this invoice');
         }
 
-        if (invoice.quotation.status === QuotationStatus.REJECTED) {
+        if (invoice.quotation.status === QuotationStatus.ACCEPTED || invoice.quotation.status === QuotationStatus.REJECTED) {
             throw new BadRequestException(`Cannot send invoice: the quotation is already ${invoice.quotation.status}`);
+        }
+
+        const oldFileId = invoice.invoice_pdf_id;
+
+        const uploadedFile = await this.fileUploadService.uploadFile(pdf, 'invoice-pdf');
+
+        try {
+            await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
+                await manager.update(InvoiceEntity, invoice.id, { invoice_pdf_id: uploadedFile.id });
+            });
+        } catch (error) {
+            try {
+                await this.fileUploadService.deleteFile(uploadedFile.id);
+            } catch (rollbackError) {
+                this.logger.error(
+                    FILE_LOG_MESSAGES.UPDATE_ROLLBACK_FAILED(uploadedFile.id),
+                    rollbackError instanceof Error ? rollbackError.stack : rollbackError,
+                );
+            }
+
+            throw error;
+        }
+
+        if (oldFileId) {
+            try {
+                await this.fileUploadService.deleteFile(oldFileId);
+            } catch (cleanupError) {
+                this.logger.error(
+                    FILE_LOG_MESSAGES.OLD_FILE_CLEANUP_FAILED(`Invoice ${invoice.id}`, oldFileId),
+                    cleanupError instanceof Error ? cleanupError.stack : cleanupError,
+                );
+            }
         }
 
         await this.mailService.sendInvoiceEmail(

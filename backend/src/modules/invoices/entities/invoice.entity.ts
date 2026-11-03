@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { QuotationEntity } from "../../quotations/entities/quotation.entity";
+import { FileEntity } from "../../files/entities/file.entity";
 
 export enum PaymentStatus {
     NOT_PAID = 'NOT_PAID',
@@ -49,6 +50,13 @@ export class InvoiceEntity {
 
     @Column({ type: 'timestamp', nullable: true })
     paid_at!: Date | null;
+
+    @OneToOne(() => FileEntity, { eager: false, onDelete: 'RESTRICT', nullable: true })
+    @JoinColumn({ name: 'invoice_pdf_id' })
+    invoice_pdf!: FileEntity | null;
+
+    @Column({ name: 'invoice_pdf_id', type: 'uuid', nullable: true})
+    invoice_pdf_id!: string | null;
 
     @CreateDateColumn()
     created_at!: Date;

@@ -6,12 +6,14 @@ import { InvoiceEntity } from './entities/invoice.entity';
 import { QuotationsModule } from '../quotations/quotations.module';
 import { InvoiceExistsPipe } from './pipes/invoice-exists.pipe';
 import { CommunicationModule } from '../../integrations/communication/communication.module';
+import { FilesModule } from '../files/files.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([InvoiceEntity]),
     QuotationsModule,
     CommunicationModule,
+    FilesModule,
   ],
   controllers: [InvoicesController],
   providers: [InvoicesService, InvoiceExistsPipe]
