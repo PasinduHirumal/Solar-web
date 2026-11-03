@@ -153,11 +153,11 @@ export default function ActionButton({
 
   return (
     <>
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-end gap-1.5">
         {/* View Details Button (GET /quotations/:id - ADMIN, SUPER_ADMIN) */}
         <button
           onClick={() => setIsViewOpen(true)}
-          className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors rounded-md ring-1 ring-slate-600/10 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+          className="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all rounded-lg border border-slate-200/80 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
           title="View Quotation Details"
         >
           <Eye className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export default function ActionButton({
         {canEdit && (
           <button
             onClick={() => setIsEditOpen(true)}
-            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-md ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+            className="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all rounded-lg border border-blue-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
             title="Edit Quotation"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -179,9 +179,9 @@ export default function ActionButton({
           <button
             onClick={isSent ? handleAccept : undefined}
             disabled={!isSent || acceptLoading}
-            className={`p-1.5 transition-colors rounded-md ring-1 flex items-center justify-center ${isSent
-              ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20 cursor-pointer"
-              : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 ring-slate-200 dark:ring-slate-700 opacity-60 cursor-not-allowed"
+            className={`w-7 h-7 transition-all rounded-lg border shadow-2xs flex items-center justify-center ${isSent
+              ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border-emerald-200/60 cursor-pointer"
+              : "bg-slate-100 text-slate-400 border-slate-200/60 opacity-60 cursor-not-allowed"
               }`}
             title={
               isSent
@@ -202,9 +202,9 @@ export default function ActionButton({
           <button
             onClick={isSent ? handleReject : undefined}
             disabled={!isSent || rejectLoading}
-            className={`p-1.5 transition-colors rounded-md ring-1 flex items-center justify-center ${isSent
-              ? "bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20 cursor-pointer"
-              : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 ring-slate-200 dark:ring-slate-700 opacity-60 cursor-not-allowed"
+            className={`w-7 h-7 transition-all rounded-lg border shadow-2xs flex items-center justify-center ${isSent
+              ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white border-amber-200/60 cursor-pointer"
+              : "bg-slate-100 text-slate-400 border-slate-200/60 opacity-60 cursor-not-allowed"
               }`}
             title={
               isSent
@@ -225,7 +225,7 @@ export default function ActionButton({
           <button
             onClick={handleDelete}
             disabled={deleteLoading}
-            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-md ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+            className="w-7 h-7 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all rounded-lg border border-rose-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
             title="Delete Draft Quotation"
           >
             {deleteLoading ? (

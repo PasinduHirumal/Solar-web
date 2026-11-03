@@ -115,7 +115,7 @@ export default function EditTaxTab({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {!isDraft && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-2.5 text-xs text-amber-800 shadow-2xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
           <span>
             This quotation is in <strong>{quotation?.status}</strong> status. Tax rules can only be modified while in <strong>DRAFT</strong> status.
@@ -125,10 +125,10 @@ export default function EditTaxTab({
 
       {/* Tax Type Selector */}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
           Tax Type
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {[
             { id: "NON", title: "No Tax", desc: "Exempt from taxes" },
             { id: "PERCENTAGE", title: "Percentage (%)", desc: "VAT or percentage on balance" },
@@ -145,17 +145,17 @@ export default function EditTaxTab({
                   setErrorMsg("");
                   if (type.id === "NON") setTaxValue("");
                 }}
-                className={`p-2.5 text-left rounded-xl border transition-all cursor-pointer ${
+                className={`p-3 text-left rounded-xl border transition-all cursor-pointer shadow-2xs ${
                   isSelected
-                    ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-700 dark:text-emerald-300"
-                    : "bg-white dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300"
+                    ? "bg-emerald-50/70 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-800"
+                    : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold">{type.title}</span>
-                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                  {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
                   {type.desc}
                 </p>
               </button>
@@ -166,8 +166,8 @@ export default function EditTaxTab({
 
       {/* Tax Value Input */}
       {taxType !== "NON" && (
-        <div className="space-y-1.5 p-3 rounded-xl bg-gray-50/70 dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/60">
-          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+        <div className="space-y-2 p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 shadow-2xs">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
             {taxType === "PERCENTAGE" ? "Tax Percentage (%)" : `Tax Amount (${currencyType})`}
           </label>
           <div className="relative">
@@ -180,30 +180,30 @@ export default function EditTaxTab({
               value={taxValue}
               onChange={handleValueChange}
               placeholder={taxType === "PERCENTAGE" ? "e.g. 2.5" : "e.g. 5000"}
-              className="w-full pl-3 pr-12 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+              className="w-full pl-3.5 pr-12 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:opacity-50 shadow-2xs transition-all"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400 pointer-events-none">
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-medium text-slate-400 pointer-events-none">
               {taxType === "PERCENTAGE" ? "%" : currencyType}
             </span>
           </div>
 
-          <p className="text-[10px] text-gray-400">
+          <p className="text-[11px] text-slate-500">
             {taxType === "PERCENTAGE"
               ? "Must be greater than 0% and less than 100%."
               : "Must be a positive value greater than 0."}
           </p>
 
           {previewTaxAmount > 0 && (
-            <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center justify-between text-xs text-amber-600 dark:text-amber-400">
-              <span>Estimated addition:</span>
-              <span className="font-bold">+{formatPrice(previewTaxAmount)}</span>
+            <div className="mt-2.5 pt-2.5 border-t border-slate-200 flex items-center justify-between text-xs text-amber-700">
+              <span className="font-medium">Estimated addition:</span>
+              <span className="font-mono font-bold">+{formatPrice(previewTaxAmount)}</span>
             </div>
           )}
         </div>
       )}
 
       {errorMsg && (
-        <p className="text-xs text-rose-500 font-medium">{errorMsg}</p>
+        <p className="text-xs text-rose-600 font-semibold">{errorMsg}</p>
       )}
 
       {/* Save Button */}
@@ -212,7 +212,7 @@ export default function EditTaxTab({
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-emerald-500/20 transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
           >
             {loading && <Loader2 size={13} className="animate-spin" />}
             <span>Save Tax</span>

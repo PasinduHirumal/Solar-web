@@ -219,55 +219,62 @@ export default function ManageSolarItems() {
   const canCreate = isSuperAdmin(currentUser?.role);
 
   return (
-    <div className="p-2 md:p-3 max-w-7xl mx-auto w-full animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+    <div className="max-w-7xl mx-auto w-full space-y-4">
+      {/* Page Header Toolbar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_1px_3px_0_rgba(0,0,0,0.03)]">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Manage Solar Items
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-xs">
-            View, create, and manage solar hardware catalog items.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              Manage Solar Items
+            </h1>
+            {!loading && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
+                {totalItems} total
+              </span>
+            )}
+          </div>
+          <p className="text-slate-500 text-xs mt-0.5">
+            View, price, inventory stock, and manage solar hardware catalog items.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex items-center gap-2.5 w-full md:w-auto">
           {/* Search Bar */}
-          <div className="relative flex-1 sm:flex-initial sm:w-56 md:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
+          <div className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by code or title..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-shadow shadow-sm text-xs h-[34px]"
+              className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 placeholder:text-slate-400 transition-all text-xs h-10"
             />
             {searchInput && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer"
                 title="Clear search"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Filter Drawer Button */}
+          {/* Filter Drawer Toggle */}
           <button
             onClick={() => setIsFilterOpen(true)}
             type="button"
-            className={`flex items-center justify-center p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition shadow-sm h-[34px] w-[34px] cursor-pointer relative ${
+            className={`flex items-center justify-center p-2 rounded-xl border transition shadow-2xs h-10 w-10 cursor-pointer relative ${
               hasActiveFilters
-                ? "ring-2 ring-blue-500/50 border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-400"
-                : ""
+                ? "bg-blue-50 border-blue-300 text-blue-600 font-semibold ring-2 ring-blue-500/20"
+                : "bg-white border-slate-200/90 hover:bg-slate-50 text-slate-600 hover:text-slate-900"
             }`}
             title="Filter Solar Items"
           >
-            <Filter className="w-3.5 h-3.5" />
+            <Filter className="w-4 h-4" />
             {hasActiveFilters && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
             )}
           </button>
 
@@ -276,9 +283,9 @@ export default function ManageSolarItems() {
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm h-[34px] cursor-pointer shrink-0"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm shadow-blue-500/20 h-10 cursor-pointer shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Create Solar Item</span>
             </button>
           )}
@@ -286,53 +293,55 @@ export default function ManageSolarItems() {
       </div>
 
       {/* Items Table Card */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <tr className="bg-slate-50/80 border-b border-slate-200/80">
+                <th className="py-3 px-4 sm:px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Solar Item
                 </th>
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Price
                 </th>
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Stock
                 </th>
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="py-3 px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="py-2.5 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
+                <th className="py-3 px-4 sm:px-5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center">
-                    <div className="flex justify-center items-center gap-2.5 text-gray-500 dark:text-gray-400">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                      <span className="text-xs font-medium">
-                        Loading solar items...
+                  <td colSpan="6" className="py-12 text-center">
+                    <div className="flex flex-col justify-center items-center gap-2 text-slate-500">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent" />
+                      <span className="text-xs font-semibold">
+                        Loading solar hardware catalog...
                       </span>
                     </div>
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-500 dark:text-gray-400">
-                    <div className="flex flex-col items-center gap-1.5">
-                      <Package className="w-6 h-6 text-gray-300 dark:text-gray-600 mb-1" />
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <td colSpan="6" className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-900">
                         No solar items found
                       </p>
-                      <p className="text-xs">
-                        Try adjusting your search terms or filters.
+                      <p className="text-xs text-slate-400 max-w-xs">
+                        Try adjusting your search terms or filters to find items.
                       </p>
                     </div>
                   </td>
@@ -347,25 +356,25 @@ export default function ManageSolarItems() {
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                      className="hover:bg-blue-50/25 transition-colors group"
                     >
                       {/* Solar Item */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-3 px-4 sm:px-5">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs truncate max-w-xs sm:max-w-sm">
+                          <span className="font-bold text-slate-900 text-xs truncate max-w-xs sm:max-w-sm">
                             {item.title}
                           </span>
                           <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                            <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded font-semibold">
+                            <span className="font-mono text-[10px] text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded font-semibold">
                               {item.code}
                             </span>
                             {item.warranty_period && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded font-medium border border-emerald-200 dark:border-emerald-800/50">
-                                <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-semibold border border-emerald-200/60">
+                                <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
                                 {item.warranty_period}
                               </span>
                             )}
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-[10px] text-slate-400">
                               {new Date(item.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -373,23 +382,23 @@ export default function ManageSolarItems() {
                       </td>
 
                       {/* Category */}
-                      <td className="py-2.5 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                          <Layers className="w-3 h-3 text-gray-400" />
-                          <span className="truncate max-w-[120px]">{catTitle}</span>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
+                          <Layers className="w-3 h-3 text-slate-400" />
+                          <span className="truncate max-w-[130px]">{catTitle}</span>
                         </span>
                       </td>
 
                       {/* Price */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-3 px-4">
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                          <span className="text-xs font-extrabold text-slate-900 tabular-nums">
                             {formatPrice(item.selling_price ?? item.marked_price)}
                           </span>
                           {item.marked_price !== undefined &&
                             item.selling_price !== undefined &&
                             item.marked_price !== item.selling_price && (
-                              <span className="text-[10px] text-gray-400 line-through">
+                              <span className="text-[10px] text-slate-400 line-through tabular-nums">
                                 {formatPrice(item.marked_price)}
                               </span>
                             )}
@@ -397,32 +406,32 @@ export default function ManageSolarItems() {
                       </td>
 
                       {/* Stock */}
-                      <td className="py-2.5 px-4">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      <td className="py-3 px-4">
+                        <span className="text-xs font-bold text-slate-800 tabular-nums">
                           {item.quantity ?? 0}
                         </span>
                       </td>
 
                       {/* Status */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                             item.is_active
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-1 ring-emerald-600/10 dark:ring-emerald-500/20"
-                              : "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 ring-1 ring-red-600/10 dark:ring-red-500/20"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                              : "bg-rose-50 text-rose-700 border border-rose-200/60"
                           }`}
                         >
-                          {item.is_active ? (
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                          ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                          )}
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              item.is_active ? "bg-emerald-500" : "bg-rose-500"
+                            }`}
+                          />
                           {item.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-4 text-right">
+                      <td className="py-3 px-4 sm:px-5 text-right">
                         <ActionButton
                           item={item}
                           categoryName={catTitle}
@@ -442,30 +451,26 @@ export default function ManageSolarItems() {
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/30 dark:bg-gray-800/30">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              Showing{" "}
-              <span className="text-gray-900 dark:text-white font-semibold">
-                {page}
-              </span>{" "}
-              of{" "}
-              <span className="text-gray-900 dark:text-white font-semibold">
-                {totalPages}
-              </span>{" "}
-              ({totalItems} total items)
+          <div className="border-t border-slate-100 px-4 sm:px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+            <span className="text-xs text-slate-500 font-medium">
+              Showing page <span className="text-slate-900 font-bold">{page}</span> of{" "}
+              <span className="text-slate-900 font-bold">{totalPages}</span> ({totalItems} items total)
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 disabled={page === 1}
                 onClick={() => updateParams({ page: page - 1 })}
-                className="px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
               >
                 Previous
               </button>
+              <span className="text-xs font-semibold px-2 text-slate-600">
+                {page} / {totalPages}
+              </span>
               <button
                 disabled={page === totalPages}
                 onClick={() => updateParams({ page: page + 1 })}
-                className="px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
               >
                 Next
               </button>

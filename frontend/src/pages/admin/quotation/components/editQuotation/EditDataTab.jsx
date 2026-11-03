@@ -85,7 +85,7 @@ export default function EditDataTab({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {!isDraft && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-2.5 text-xs text-amber-800 shadow-2xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
           <span>
             This quotation is in <strong>{quotation?.status}</strong> status. Notes & terms can only be modified while in <strong>DRAFT</strong> status.
@@ -96,10 +96,10 @@ export default function EditDataTab({
       {/* Notes Textarea */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
             Internal & Customer Notes
           </label>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[10px] text-slate-400">
             Min 3 characters if provided
           </span>
         </div>
@@ -112,17 +112,17 @@ export default function EditDataTab({
             setErrorMsg("");
           }}
           placeholder="Delivery instructions, site specifications, special customer requests..."
-          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition disabled:opacity-50"
+          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all disabled:opacity-50 shadow-2xs placeholder:text-slate-400"
         />
       </div>
 
       {/* Terms Textarea */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
             Terms & Conditions
           </label>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[10px] text-slate-400">
             Min 3 characters if provided
           </span>
         </div>
@@ -135,12 +135,12 @@ export default function EditDataTab({
             setErrorMsg("");
           }}
           placeholder="Payment schedule, validity days (e.g. valid 30 days), installation and warranty clauses..."
-          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition disabled:opacity-50"
+          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all disabled:opacity-50 shadow-2xs placeholder:text-slate-400"
         />
       </div>
 
       {errorMsg && (
-        <p className="text-xs text-rose-500 font-medium">{errorMsg}</p>
+        <p className="text-xs text-rose-600 font-semibold">{errorMsg}</p>
       )}
 
       {/* Save Button */}
@@ -149,7 +149,7 @@ export default function EditDataTab({
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
           >
             {loading && <Loader2 size={13} className="animate-spin" />}
             <span>Save Notes & Terms</span>

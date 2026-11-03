@@ -175,7 +175,7 @@ export default function EditItemsTab({
   return (
     <div className="space-y-4">
       {!isEditable && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-2.5 text-xs text-amber-800 shadow-2xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
           <span>
             This quotation is in <strong>{quotation?.status}</strong> status. Line items cannot be modified.
@@ -187,17 +187,17 @@ export default function EditItemsTab({
       {isEditable && (
         <form
           onSubmit={handleAddItem}
-          className="p-2.5 sm:p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+          className="p-3 sm:p-4 rounded-xl bg-blue-50/50 border border-blue-200/80 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-2xs"
         >
           <div className="flex-1 min-w-0">
-            <label className="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1">
               Select Hardware Item from Catalog
             </label>
             <select
               value={selectedCatalogItemId}
               onChange={(e) => setSelectedCatalogItemId(e.target.value)}
               disabled={catalogLoading || actionLoading}
-              className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 truncate"
+              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:opacity-50 truncate shadow-2xs"
             >
               {catalogLoading ? (
                 <option value="">Loading catalog items...</option>
@@ -214,9 +214,9 @@ export default function EditItemsTab({
             </select>
           </div>
 
-          <div className="flex items-end gap-1.5 justify-end shrink-0">
+          <div className="flex items-end gap-2 justify-end shrink-0">
             <div>
-              <label className="block text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1 text-center">
+              <label className="block text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1 text-center">
                 Qty
               </label>
               <input
@@ -229,13 +229,13 @@ export default function EditItemsTab({
                   )
                 }
                 disabled={actionLoading}
-                className="w-16 px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                className="w-16 px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center shadow-2xs"
               />
             </div>
             <button
               type="submit"
               disabled={actionLoading || !selectedCatalogItemId || catalogLoading}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition disabled:opacity-50 cursor-pointer h-[33px]"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs shadow-blue-500/20 transition disabled:opacity-50 cursor-pointer h-[35px] active:scale-[0.98]"
             >
               <Plus size={14} />
               <span>Add</span>
@@ -246,12 +246,12 @@ export default function EditItemsTab({
 
       {/* Current Items List */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-300">
+        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-600">
           <span>Current Items ({items.length} of max 25)</span>
         </div>
 
         {items.length === 0 ? (
-          <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center text-xs text-gray-400">
+          <div className="p-8 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400 bg-slate-50/50">
             No items in this quotation yet.
           </div>
         ) : (
@@ -272,26 +272,26 @@ export default function EditItemsTab({
             return (
               <div
                 key={line.id}
-                className="p-2.5 sm:p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition-colors hover:border-blue-300 dark:hover:border-blue-800"
+                className="p-3 sm:p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-colors hover:border-slate-300 shadow-2xs"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  <p className="font-semibold text-slate-900 truncate">
                     {itemTitle}
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
+                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
                     {itemCode && (
-                      <span className="font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1 py-0.2 rounded font-semibold">
+                      <span className="font-mono text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded font-semibold text-[10px]">
                         {itemCode}
                       </span>
                     )}
-                    <span>{formatPrice(unitPrice)} each</span>
+                    <span className="font-mono">{formatPrice(unitPrice)} each</span>
                   </div>
                 </div>
 
                 {/* Quantity and Actions */}
-                <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-400 font-semibold uppercase">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">
                       Qty:
                     </span>
                     <input
@@ -306,7 +306,7 @@ export default function EditItemsTab({
                           [line.id]: Math.max(1, val),
                         }));
                       }}
-                      className="w-14 px-1.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-center disabled:opacity-50"
+                      className="w-16 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-center disabled:opacity-50 shadow-2xs"
                     />
 
                     {isEditable && hasQtyChanged && (
@@ -314,7 +314,7 @@ export default function EditItemsTab({
                         type="button"
                         onClick={() => handleUpdateQuantity(line.id)}
                         disabled={actionLoading}
-                        className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition cursor-pointer"
+                        className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition cursor-pointer shadow-2xs active:scale-[0.98]"
                         title="Save quantity change"
                       >
                         Save
@@ -322,7 +322,7 @@ export default function EditItemsTab({
                     )}
                   </div>
 
-                  <span className="font-bold text-gray-900 dark:text-white min-w-[80px] text-right">
+                  <span className="font-mono font-bold text-slate-900 min-w-[80px] text-right">
                     {formatPrice(lineTotal)}
                   </span>
 
@@ -331,7 +331,7 @@ export default function EditItemsTab({
                       type="button"
                       onClick={() => handleDeleteItem(line.id)}
                       disabled={actionLoading}
-                      className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer disabled:opacity-50"
+                      className="w-7 h-7 flex items-center justify-center text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-100 transition cursor-pointer disabled:opacity-50"
                       title="Remove Item"
                     >
                       <Trash2 size={14} />

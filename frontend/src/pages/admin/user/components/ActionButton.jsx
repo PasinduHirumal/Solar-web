@@ -82,13 +82,13 @@ export default function ActionButton({ user, currentUser, onUpdateUser, onDelete
     };
 
     return (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-1.5">
             {/* Send Reset Password Link (Available to SuperAdmin/Admin for any user, or self) */}
             {(isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role) || user.id === currentUser?.id) && (
                 <button
                     onClick={() => handleSendResetLink(user.email)}
                     disabled={resetLoading}
-                    className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors rounded-md ring-1 ring-blue-600/10 dark:ring-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all rounded-lg border border-blue-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
                     title="Send Password Reset Link"
                 >
                     {resetLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
@@ -100,9 +100,9 @@ export default function ActionButton({ user, currentUser, onUpdateUser, onDelete
                 <button
                     onClick={() => handleToggleStatus(user.id, user.is_active)}
                     disabled={statusLoading}
-                    className={`p-1.5 transition-colors rounded-md ring-1 disabled:opacity-50 cursor-pointer flex items-center justify-center ${user.is_active
-                        ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 ring-amber-600/10 dark:ring-amber-500/20'
-                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 ring-emerald-600/10 dark:ring-emerald-500/20'
+                    className={`w-7 h-7 transition-all rounded-lg border shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center ${user.is_active
+                        ? 'bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white border-amber-200/60'
+                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border-emerald-200/60'
                         }`}
                     title={user.is_active ? "Deactivate User" : "Activate User"}
                 >
@@ -115,7 +115,7 @@ export default function ActionButton({ user, currentUser, onUpdateUser, onDelete
                 <button
                     onClick={() => handleDeleteUser(user.id, user.name)}
                     disabled={deleteLoading}
-                    className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors rounded-md ring-1 ring-red-600/10 dark:ring-red-500/20 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+                    className="w-7 h-7 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all rounded-lg border border-rose-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
                     title="Delete User"
                 >
                     {deleteLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}

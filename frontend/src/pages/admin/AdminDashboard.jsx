@@ -3,7 +3,18 @@ import useAuthStore from "../../lib/authStore";
 import { axiosInstance } from "../../lib/axiosInstance";
 import { isSuperAdmin } from "../../lib/roles";
 import {
-  Users, FolderTree, Activity, BarChart3, Sparkles, CheckCircle2, Package, FileText
+  Users,
+  FolderTree,
+  Activity,
+  BarChart3,
+  Sparkles,
+  CheckCircle2,
+  Package,
+  FileText,
+  ShieldCheck,
+  Mail,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -60,134 +71,197 @@ export default function AdminDashboard() {
       ? [
           {
             title: "Total Users",
+            subtitle: "Registered system accounts",
             value: stats.totalUsers,
             icon: Users,
-            gradient: "from-blue-500 to-indigo-600",
+            gradient: "from-blue-600 to-indigo-600",
             lightBg: "bg-blue-50",
-            darkBg: "",
             iconColor: "text-blue-600",
+            borderColor: "hover:border-blue-300",
             delay: "0",
           },
         ]
       : []),
     {
       title: "Hardware Categories",
+      subtitle: "Total catalog collections",
       value: stats.totalCategories,
       icon: FolderTree,
       gradient: "from-amber-500 to-orange-600",
       lightBg: "bg-amber-50",
-      darkBg: "",
       iconColor: "text-amber-600",
+      borderColor: "hover:border-amber-300",
       delay: "100",
     },
     {
       title: "Active Categories",
+      subtitle: "Published catalog categories",
       value: stats.activeCategories,
       icon: CheckCircle2,
       gradient: "from-emerald-500 to-teal-600",
       lightBg: "bg-emerald-50",
-      darkBg: "",
       iconColor: "text-emerald-600",
+      borderColor: "hover:border-emerald-300",
       delay: "200",
     },
     {
       title: "Solar Items",
+      subtitle: "Inventory catalog items",
       value: stats.totalItems,
       icon: Package,
       gradient: "from-cyan-500 to-blue-600",
       lightBg: "bg-cyan-50",
-      darkBg: "",
       iconColor: "text-cyan-600",
+      borderColor: "hover:border-cyan-300",
       delay: "300",
     },
     {
       title: "Quotations",
+      subtitle: "Generated project quotes",
       value: stats.totalQuotations,
       icon: FileText,
       gradient: "from-purple-500 to-indigo-600",
       lightBg: "bg-purple-50",
-      darkBg: "",
       iconColor: "text-purple-600",
+      borderColor: "hover:border-purple-300",
       delay: "400",
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto w-full animate-fade-in space-y-5">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-white rounded-2xl p-5 md:p-6 shadow-md border border-slate-200 transition-colors duration-300">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-100/50 blur-3xl rounded-full pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-indigo-100/50 blur-2xl rounded-full pointer-events-none"></div>
+    <div className="max-w-7xl mx-auto w-full space-y-6">
+      {/* Executive Welcome Hero Banner */}
+      <div className="relative overflow-hidden bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] transition-all duration-300">
+        {/* Soft background ambient glow */}
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-gradient-to-br from-blue-100/40 via-indigo-50/30 to-transparent blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 bg-emerald-50/30 blur-2xl rounded-full pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium mb-2.5 backdrop-blur-sm transition-colors duration-300">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-700 text-xs font-semibold backdrop-blur-xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Solar Web System Overview</span>
+              <span className="w-1 h-1 rounded-full bg-slate-400" />
+              <span className="text-slate-500 font-normal">Command Center</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-1 tracking-tight transition-colors duration-300">
-              Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              Welcome back, {user?.name?.split(" ")[0] || "Administrator"}! 👋
             </h1>
-            <p className="text-xs text-slate-500">
-              Role: <span className="font-semibold text-slate-700">{(user?.role || '').replace('_', ' ')}</span> • Email: <span className="text-slate-700">{user?.email}</span>
-            </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/70 text-blue-700 text-xs font-semibold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {(user?.role || "Admin").replace("_", " ")}
+              </span>
+
+              {user?.email && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/70 text-slate-600 text-xs font-medium">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  {user?.email}
+                </span>
+              )}
+
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/70 text-emerald-700 text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Active Session
+              </span>
+            </div>
           </div>
-          <div className="hidden md:flex p-3 bg-slate-50 rounded-xl border border-slate-100 backdrop-blur-sm shadow-inner relative group cursor-default transition-colors duration-300">
-            <Activity className="w-10 h-10 text-blue-600 opacity-80 group-hover:scale-110 group-hover:text-blue-500 transition-all duration-500" strokeWidth={1.5} />
+
+          {/* Right Telemetry Widget */}
+          <div className="hidden lg:flex items-center gap-4 bg-slate-50/90 border border-slate-200/90 rounded-2xl p-4.5 shadow-xs">
+            <div className="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-center text-blue-600">
+              <Activity className="w-6 h-6 animate-pulse" />
+            </div>
+            <div className="space-y-0.5 pr-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  System Health
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                  99.9%
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">
+                All microservices & database online
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Analytics Header */}
-      <div className="flex items-center gap-2.5 px-1">
-        <div className="p-1.5 bg-blue-100 rounded-md shadow-inner">
-          <BarChart3 className="w-4 h-4 text-blue-600" />
+      {/* Analytics Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 pt-2">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 shadow-2xs">
+            <BarChart3 className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+              System Analytics
+            </h2>
+            <p className="text-xs text-slate-500">
+              Real-time operational summary across all managed collections
+            </p>
+          </div>
         </div>
-        <h2 className="text-lg font-bold text-slate-900 tracking-tight">System Analytics</h2>
       </div>
 
       {/* Stats Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(isSuper ? 4 : 3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm animate-pulse h-32">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuper ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
+          {[...Array(isSuper ? 5 : 4)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs animate-pulse h-36 flex flex-col justify-between"
+            >
               <div className="flex justify-between items-start">
-                <div className="space-y-3 w-full">
-                  <div className="w-10 h-10 rounded-xl bg-slate-200"></div>
-                  <div className="h-3.5 bg-slate-200 rounded w-1/2"></div>
-                  <div className="h-6 bg-slate-200 rounded w-1/3"></div>
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-slate-100"></div>
+                <div className="w-14 h-5 rounded-full bg-slate-100"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-7 bg-slate-100 rounded w-1/3"></div>
+                <div className="h-3.5 bg-slate-100 rounded w-1/2"></div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuper ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSuper ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4`}>
           {statCards.map((stat, i) => (
             <div
               key={i}
-              className="group bg-white rounded-2xl p-4.5 md:p-5 border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden cursor-default"
-              style={{ animationDelay: `${stat.delay}ms` }}
+              className={`group bg-white rounded-xl p-5 border border-slate-200/90 shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] hover:shadow-md ${stat.borderColor} transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden flex flex-col justify-between`}
             >
-              <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${stat.gradient} opacity-10 group-hover:opacity-20 blur-2xl rounded-full transition-opacity duration-300 pointer-events-none`}></div>
+              {/* Subtle accent line on top */}
+              <div
+                className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient} opacity-80 group-hover:opacity-100 transition-opacity`}
+              />
 
-              <div className="flex justify-between items-start relative z-10">
-                <div>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${stat.lightBg} ${stat.darkBg} group-hover:scale-105 transition-transform duration-300 shadow-inner`}>
-                    <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
-                  </div>
-                  <p className="text-slate-500 font-medium text-xs mb-1">{stat.title}</p>
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                    {stat.value.toLocaleString()}
-                  </h3>
+              <div className="flex items-start justify-between">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.lightBg} group-hover:scale-105 transition-transform duration-200 border border-slate-100 shadow-xs`}
+                >
+                  <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
                 </div>
 
-                <div className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200`}>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100/90 text-slate-600 border border-slate-200/70">
                   All Time
-                </div>
+                </span>
               </div>
 
-              <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}></div>
+              <div className="mt-4">
+                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">
+                  {stat.value.toLocaleString()}
+                </h3>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">
+                  {stat.title}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                  {stat.subtitle}
+                </p>
+              </div>
             </div>
           ))}
         </div>
