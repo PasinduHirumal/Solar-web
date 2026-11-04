@@ -50,7 +50,7 @@ export class InvoicesController {
     @Post(':quotation_id')
     @Roles(UserRole.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
-    async createQuotation(
+    async createInvoice(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
         @Body() dto: CreateInvoiceDto,
     ): Promise<InvoiceEntity> {

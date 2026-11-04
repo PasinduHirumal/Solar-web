@@ -306,6 +306,6 @@ export class InvoicesService {
     private withPdf(qb: SelectQueryBuilder<InvoiceEntity>) {
         return qb
         .leftJoin(`${INVOICE_ALIAS}.invoice_pdf`, 'invoice_pdf')
-        .addSelect(pick('thumbnail', FILE_FIELDS));
+        .addSelect(pick('invoice_pdf', FILE_FIELDS));
     }
 }
