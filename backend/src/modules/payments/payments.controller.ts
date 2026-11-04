@@ -10,6 +10,8 @@ import { PaymentEntity } from './entities/payment.entity';
 import { InvoiceExistsPipe } from '../invoices/pipes/invoice-exists.pipe';
 import { InvoiceEntity } from '../invoices/entities/invoice.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CurrentUser } from '../identity/auth/decorators/current-user.decorator';
+import { UserEntity } from '../identity/entities/user.entity';
 
 @Controller('payments')
 export class PaymentsController {
@@ -32,7 +34,8 @@ export class PaymentsController {
     async addPaymentToInvoice(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
         @Body() dto: CreatePaymentDto,
+        @CurrentUser() admin: UserEntity,
     ): Promise<PaymentEntity> {
-        return this.paymentService.payToInvoice(invoice, dto);
+        return this.paymentService.payToInvoice(invoice, dto, admin);
     }
 }

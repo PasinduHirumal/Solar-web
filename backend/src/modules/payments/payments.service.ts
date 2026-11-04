@@ -8,6 +8,7 @@ import { QuotationStatus } from '../quotations/entities/quotation.entity';
 import { round } from '../../utils/math.round.util';
 import { FindPaymentsQueryDto } from './dto/find-payment-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
+import { UserEntity } from '../identity/entities/user.entity';
 
 const PAYMENT_ALIAS = 'payment';
 
@@ -18,7 +19,7 @@ export class PaymentsService {
         private readonly paymentRepo: Repository<PaymentEntity>,
     ) {}
 
-    async payToInvoice(invoice: InvoiceEntity, dto: CreatePaymentDto): Promise<PaymentEntity> {
+    async payToInvoice(invoice: InvoiceEntity, dto: CreatePaymentDto, authorized_admin: UserEntity): Promise<PaymentEntity> {
         if (invoice.quotation.status !== QuotationStatus.ACCEPTED) {
             throw new BadRequestException(`Invoice quotation not approved yet`);
         }
@@ -69,6 +70,7 @@ export class PaymentsService {
                 ...dto,
                 invoice_id: locked.id,
                 payment_type: paymentType,
+                authorized_admin_id: authorized_admin.id,
             });
 
             await manager.update(InvoiceEntity, locked.id, {

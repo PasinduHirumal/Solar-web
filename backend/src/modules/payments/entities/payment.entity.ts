@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { InvoiceEntity } from "../../invoices/entities/invoice.entity";
+import { UserEntity } from "../../identity/entities/user.entity";
 
 export enum PaymentType {
     ADVANCE = 'ADVANCE',
@@ -26,6 +27,13 @@ export class PaymentEntity {
 
     @Column({ type: 'enum', enum: PaymentType })
     payment_type!: PaymentType;
+
+    @ManyToOne(() => UserEntity, { eager: false, onDelete: 'RESTRICT' })
+    @JoinColumn({ name: 'authorized_admin_id' })
+    authorized_admin!: UserEntity;
+    
+    @Column({ name: 'authorized_admin_id', type: 'uuid' })
+    authorized_admin_id!: string;
 
     @CreateDateColumn()
     created_at!: Date;
