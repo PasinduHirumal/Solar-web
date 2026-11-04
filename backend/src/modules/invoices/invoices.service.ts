@@ -79,15 +79,12 @@ export class InvoicesService {
         if (!invoice) throw new NotFoundException(`Invoice Not Found`);
 
         if (is_latest) {
-            if (!invoice.price_updated_at) {
-                throw new BadRequestException('Please update invoice first');
-            }
-            
-            const updatedAt = invoice.price_updated_at?.getTime() ?? 0;
-            const age = Date.now() - updatedAt;
+            const isStale =
+                !invoice.price_updated_at ||
+                Date.now() - invoice.price_updated_at.getTime() > FRESHNESS_WINDOW_MS;
 
-            if (age > FRESHNESS_WINDOW_MS) {
-                throw new BadRequestException('Please update invoice first');
+            if (isStale) {
+                throw new BadRequestException('Invoice prices are out of date. Please update the invoice before continuing');
             }
         }
 
@@ -198,6 +195,14 @@ export class InvoicesService {
 
         if (invoice.payment_status === PaymentStatus.PAID) {
             throw new BadRequestException(`${invoice.invoice_number} have completed full payment)}`);
+        }
+
+       const isStale =
+            !invoice.price_updated_at ||
+            Date.now() - invoice.price_updated_at.getTime() > FRESHNESS_WINDOW_MS;
+
+        if (isStale) {
+            throw new BadRequestException('Invoice prices are out of date. Please update the invoice before continuing');
         }
 
         const oldFileId = invoice.invoice_pdf_id;
