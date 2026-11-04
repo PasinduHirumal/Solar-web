@@ -58,6 +58,9 @@ export class InvoiceEntity {
     @Column({ name: 'invoice_pdf_id', type: 'uuid', nullable: true})
     invoice_pdf_id!: string | null;
 
+    @Column({ type: 'timestamp', nullable: true })
+    price_updated_at!: Date | null;
+
     @CreateDateColumn()
     created_at!: Date;
 

@@ -65,6 +65,10 @@ export class InvoicesService {
     async updateToLatestPrices(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<void> {
         await this.quotationService.updateSnapQuotation(quotation.id);
         await this.updatePriceBreakdown(quotation, invoice.id);
+
+        await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
+            await manager.update(InvoiceEntity, invoice.id, { price_updated_at: Date.now() })
+        });
     }
 
     async findById(invoice_id: string, is_latest: boolean = false): Promise<InvoiceEntity> {
@@ -75,7 +79,7 @@ export class InvoicesService {
         if (!invoice) throw new NotFoundException(`Invoice Not Found`);
 
         if (is_latest) {
-            const updatedAt = invoice.updated_at?.getTime() ?? 0;
+            const updatedAt = invoice.price_updated_at?.getTime() ?? 0;
             const age = Date.now() - updatedAt;
 
             if (age > FRESHNESS_WINDOW_MS) {
