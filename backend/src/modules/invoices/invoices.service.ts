@@ -79,6 +79,10 @@ export class InvoicesService {
         if (!invoice) throw new NotFoundException(`Invoice Not Found`);
 
         if (is_latest) {
+            if (!invoice.price_updated_at) {
+                throw new BadRequestException('Please update invoice first');
+            }
+            
             const updatedAt = invoice.price_updated_at?.getTime() ?? 0;
             const age = Date.now() - updatedAt;
 
