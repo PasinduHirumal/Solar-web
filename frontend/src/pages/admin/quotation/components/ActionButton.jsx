@@ -191,7 +191,7 @@ export default function ActionButton({
           <button
             onClick={() => setIsCreateInvoiceOpen(true)}
             className="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all rounded-lg border border-blue-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
-            title="Create & Save Invoice in Database (POST /invoices/:id)"
+            title="Create & Save Invoice"
           >
             <FilePlus className="w-3.5 h-3.5" />
           </button>
