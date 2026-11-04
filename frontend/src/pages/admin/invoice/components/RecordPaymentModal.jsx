@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
   X,
@@ -32,6 +33,7 @@ export default function RecordPaymentModal({
   quotation: fallbackQuotation,
   onPaymentSuccess,
 }) {
+  const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [paymentsList, setPaymentsList] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -124,7 +126,7 @@ export default function RecordPaymentModal({
     setErrorMessage("");
 
     if (!isQuotationAccepted) {
-      const msg = `Cannot record payment: Quotation is currently in "${currentQuotation.status || "DRAFT"}" status. System requires quotation to be ACCEPTED first.`;
+      const msg = `Please approve quotation ${currentQuotation.quotation_number || ""} in Manage Quotations before recording payments.`;
       setErrorMessage(msg);
       toast.error(msg);
       return;
@@ -262,7 +264,7 @@ export default function RecordPaymentModal({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                Record customer transactions & verify settlement history (payments.controller.ts)
+                Record customer payments and view settlement history
               </p>
             </div>
           </div>
@@ -382,21 +384,33 @@ export default function RecordPaymentModal({
 
           {/* Quotation Status Check Notice if not Accepted */}
           {!isQuotationAccepted && (
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <span className="font-bold block">
-                  Quotation Approval Required (Backend Validation)
-                </span>
-                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  The backend service enforces that an invoice's linked quotation must be in{" "}
-                  <strong>ACCEPTED</strong> status before recording payments. Currently quotation{" "}
-                  <code className="font-mono font-semibold px-1 rounded bg-amber-100">
-                    {currentQuotation.quotation_number}
-                  </code>{" "}
-                  is in <strong>{currentQuotation.status || "DRAFT"}</strong> status. Please have a Super Admin accept the quotation in Manage Quotations to enable payment transactions.
-                </p>
+            <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200/80 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="font-bold block text-amber-950">
+                    Quotation Approval Required
+                  </span>
+                  <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                    Payments can only be added after the quotation is accepted. Please approve quotation{" "}
+                    <span className="font-mono font-bold text-amber-950 bg-amber-100/70 px-1.5 py-0.5 rounded border border-amber-200/60">
+                      {currentQuotation.quotation_number || "this quotation"}
+                    </span>{" "}
+                    first.
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigate("/admin/quotations");
+                }}
+                className="shrink-0 self-start sm:self-center px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+              >
+                <span>Manage Quotations</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -541,8 +555,8 @@ export default function RecordPaymentModal({
                 <History className="w-3.5 h-3.5 text-blue-600" />
                 <span>Transaction History ({paymentsList.length})</span>
               </h4>
-              <span className="text-[10px] text-slate-400 font-mono">
-                GET /payments?invoice_id=:id
+              <span className="text-[10px] text-slate-400 font-medium">
+                Settlement Ledger
               </span>
             </div>
 
