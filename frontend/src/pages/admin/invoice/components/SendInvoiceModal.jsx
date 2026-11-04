@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
-  X,
-  FileText,
-  Mail,
-  Send,
-  Loader2,
-  Calendar,
-  CheckCircle2,
-  Eye,
-  Download,
-  Receipt,
-  AlertCircle,
-  FileCheck,
-  RefreshCw,
+  X, FileText, Mail, Send, Loader2, Calendar, Eye, Download, Receipt, FileCheck, RefreshCw,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
@@ -493,20 +481,6 @@ export default function SendInvoiceModal({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Email Transmission Details */}
-          <div className="p-3 sm:p-3.5 rounded-xl bg-blue-50/50 border border-blue-100 flex items-start gap-2.5 text-xs text-slate-600">
-            <Mail className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="font-semibold text-slate-800 break-words">
-                Recipient Email: <span className="font-mono text-blue-700">{customerEmail || "No email available"}</span>
-              </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Sending will dispatch the attached PDF to the customer and automatically transition this quotation to{" "}
-                <strong className="text-blue-700 font-semibold">SENT</strong> status in real time.
-              </p>
-            </div>
           </div>
         </div>
 

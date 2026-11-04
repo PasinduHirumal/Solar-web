@@ -1,13 +1,20 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-  Eye, Edit3, Trash2, CheckCircle, XCircle, Loader2,
+  Eye,
+  Edit3,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  FilePlus,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { confirmAction } from "../../../../lib/confirmAction";
 import { isAdmin, isSuperAdmin } from "../../../../lib/roles";
 import ViewQuotationModal from "./ViewQuotationModal";
 import EditQuotationModal from "./editQuotation/EditQuotationModal";
+import CreateInvoiceModal from "./CreateInvoiceModal";
 
 export default function ActionButton({
   quotation,
@@ -22,12 +29,16 @@ export default function ActionButton({
   // Modal open states
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
 
   const isSuper = isSuperAdmin(currentUser?.role);
   const isAdm = isAdmin(currentUser?.role);
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
   const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
+
+  // Create Invoice in Database (POST /invoices/:quotation_id - ADMIN, SUPER_ADMIN)
+  const canCreateInvoice = (isAdm || isSuper) && quotation.status !== "REJECTED";
 
   /*
    * Role & status validation according to backend quotations.service.ts & quotations.controller.ts:
@@ -175,6 +186,17 @@ export default function ActionButton({
           </button>
         )}
 
+        {/* Create Invoice in Database Button (POST /invoices/:quotation_id - ADMIN, SUPER_ADMIN) */}
+        {canCreateInvoice && (
+          <button
+            onClick={() => setIsCreateInvoiceOpen(true)}
+            className="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all rounded-lg border border-blue-200/60 shadow-2xs disabled:opacity-50 cursor-pointer flex items-center justify-center"
+            title="Create & Save Invoice in Database (POST /invoices/:id)"
+          >
+            <FilePlus className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         {/* SuperAdmin Accept Button (SENT status only - PUT /quotations/:id/status/accept) */}
         {canAcceptReject && (
           <button
@@ -254,6 +276,22 @@ export default function ActionButton({
         onClose={() => setIsEditOpen(false)}
         quotation={quotation}
         onQuotationUpdated={onUpdateQuotation}
+      />
+
+      {/* Create Invoice in Database Modal (POST /invoices/:quotation_id) */}
+      <CreateInvoiceModal
+        isOpen={isCreateInvoiceOpen}
+        onClose={() => setIsCreateInvoiceOpen(false)}
+        quotation={quotation}
+        onInvoiceCreated={(createdInv) => {
+          if (onUpdateQuotation) {
+            onUpdateQuotation({
+              ...quotation,
+              invoice_id: createdInv?.id,
+              invoice_number: createdInv?.invoice_number,
+            });
+          }
+        }}
       />
     </>
   );

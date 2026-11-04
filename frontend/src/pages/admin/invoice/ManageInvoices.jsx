@@ -2,16 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search,
-  Filter,
-  X,
-  Receipt,
-  Clock,
-  Calendar,
-  Mail,
-  Phone,
-  RefreshCw,
-  FileText,
+  Search, Filter, X, Receipt, Clock, Calendar, Mail, Phone, RefreshCw, FileText,
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { formatPrice } from "../../../lib/formatPrice";
@@ -19,7 +10,7 @@ import useAuthStore from "../../../lib/authStore";
 import AdminFilterMenu from "../../../common/AdminFilterMenu";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
-import SendInvoiceModal from "../quotation/components/SendInvoiceModal";
+import SendInvoiceModal from "./components/SendInvoiceModal";
 
 export default function ManageInvoices() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -133,8 +124,8 @@ export default function ManageInvoices() {
               inv.customer?.name
                 ? inv.customer
                 : inv.quotation_id && customerCache.current[inv.quotation_id]
-                ? customerCache.current[inv.quotation_id]
-                : cachedQuo?.customer;
+                  ? customerCache.current[inv.quotation_id]
+                  : cachedQuo?.customer;
 
             return {
               ...inv,
@@ -192,10 +183,10 @@ export default function ManageInvoices() {
 
                     return resolvedQuo || resolvedCust
                       ? {
-                          ...inv,
-                          quotation: resolvedQuo || inv.quotation,
-                          customer: resolvedCust || inv.customer,
-                        }
+                        ...inv,
+                        quotation: resolvedQuo || inv.quotation,
+                        customer: resolvedCust || inv.customer,
+                      }
                       : inv;
                   })
                 );
@@ -318,11 +309,10 @@ export default function ManageInvoices() {
           {/* Filter Toggle */}
           <button
             onClick={() => setIsFilterOpen(true)}
-            className={`flex items-center justify-center p-2 rounded-xl border transition shadow-2xs h-10 w-10 cursor-pointer relative shrink-0 ${
-              hasActiveFilters
+            className={`flex items-center justify-center p-2 rounded-xl border transition shadow-2xs h-10 w-10 cursor-pointer relative shrink-0 ${hasActiveFilters
                 ? "bg-blue-50 border-blue-300 text-blue-600 font-semibold ring-2 ring-blue-500/20"
                 : "bg-white border-slate-200/90 hover:bg-slate-50 text-slate-600 hover:text-slate-900"
-            }`}
+              }`}
             title="Filters"
           >
             <Filter size={14} />

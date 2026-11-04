@@ -1,19 +1,6 @@
 import React from "react";
 import {
-  FileText,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Receipt,
-  Download,
-  Eye,
-  FileCheck,
-  CreditCard,
-  ShieldCheck,
-  Building2,
-  Clock,
+  FileText, User, Phone, Mail, MapPin, Calendar, Download, Eye, CreditCard, ShieldCheck, Building2, Clock,
 } from "lucide-react";
 import { formatPrice } from "../../../../lib/formatPrice";
 import { paymentDetails } from "../../../../data/dataset";
