@@ -197,9 +197,13 @@ export class InvoicesService {
             throw new BadRequestException(`${invoice.invoice_number} have completed full payment)}`);
         }
 
-       const isStale =
+        let isStale =
             !invoice.price_updated_at ||
             Date.now() - invoice.price_updated_at.getTime() > FRESHNESS_WINDOW_MS;
+
+        if (invoice.price_updated_at && quotation.status === QuotationStatus.ACCEPTED) {
+            isStale = false;
+        }
 
         if (isStale) {
             throw new BadRequestException('Invoice prices are out of date. Please update the invoice before continuing');
