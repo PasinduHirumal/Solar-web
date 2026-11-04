@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Receipt, Loader2, Download, Eye, Mail } from "lucide-react";
+import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard } from "lucide-react";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
 import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
 import InvoiceDetails from "./InvoiceDetails";
@@ -9,7 +9,9 @@ export default function InvoiceDetailViewModal({
   isOpen,
   onClose,
   invoice,
+  quotation,
   onOpenSendModal,
+  onOpenPaymentModal,
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function InvoiceDetailViewModal({
 
         const { enrichedInvoice } = await enrichInvoiceAndQuotation(
           invoice,
-          invoice.quotation
+          quotation || invoice.quotation
         );
 
         if (active) {
@@ -59,12 +61,12 @@ export default function InvoiceDetailViewModal({
     return () => {
       active = false;
     };
-  }, [isOpen, invoice]);
+  }, [isOpen, invoice, quotation]);
 
   if (!isOpen || !invoice) return null;
 
   const currentInvoice = data || invoice;
-  const currentQuotation = currentInvoice.quotation || {};
+  const currentQuotation = currentInvoice.quotation || quotation || {};
 
   const handleDownloadPdf = () => {
     try {
@@ -163,6 +165,7 @@ export default function InvoiceDetailViewModal({
             quotation={currentQuotation}
             onDownloadPdf={handleDownloadPdf}
             onPreviewPdf={handlePreviewPdf}
+            onOpenPaymentModal={onOpenPaymentModal}
             onOpenSendModal={
               onOpenSendModal
                 ? () => {
@@ -193,6 +196,16 @@ export default function InvoiceDetailViewModal({
               <Download className="w-3.5 h-3.5" />
               <span>Download PDF</span>
             </button>
+            {onOpenPaymentModal && (
+              <button
+                type="button"
+                onClick={onOpenPaymentModal}
+                className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Record Payment</span>
+              </button>
+            )}
             {onOpenSendModal && (
               <button
                 type="button"

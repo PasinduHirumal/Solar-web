@@ -226,7 +226,14 @@ export default function ManageInvoices() {
     setIsSendModalOpen(true);
   };
 
-  const handleInvoiceUpdated = () => {
+  const handleInvoiceUpdated = (updatedInv) => {
+    if (updatedInv?.id) {
+      setInvoices((prev) =>
+        prev.map((i) =>
+          i.id === updatedInv.id ? { ...i, ...updatedInv } : i
+        )
+      );
+    }
     refetchInvoices();
   };
 
@@ -474,9 +481,31 @@ export default function ManageInvoices() {
                           <span className="font-mono font-bold text-slate-900">
                             {formatPrice(inv.total)}
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            Paid: <strong className="text-emerald-700 font-mono">{formatPrice(inv.paid_amount || 0)}</strong>
+                          <span className="text-[10px] text-slate-500">
+                            Paid:{" "}
+                            <strong className="text-emerald-700 font-mono">
+                              {formatPrice(inv.paid_amount || 0)}
+                            </strong>
                           </span>
+                          {Number(inv.total) > 0 && (
+                            <div className="w-24 bg-slate-100 rounded-full h-1 overflow-hidden mt-0.5">
+                              <div
+                                className={`h-1 rounded-full ${
+                                  inv.payment_status === "PAID"
+                                    ? "bg-emerald-600"
+                                    : "bg-blue-600"
+                                }`}
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.round(
+                                      ((inv.paid_amount || 0) / Number(inv.total)) * 100
+                                    )
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </td>
 

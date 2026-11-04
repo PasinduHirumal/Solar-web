@@ -347,14 +347,6 @@ export default function CreateInvoiceModal({
                       {items.length > 0 ? `${items.length} items` : "Included in quotation"}
                     </span>
                   </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <span className="text-slate-400 block text-[10px] uppercase tracking-wider">
-                      Action Target
-                    </span>
-                    <span className="font-mono text-[10px] text-indigo-700 font-semibold truncate block">
-                      POST /invoices/:id
-                    </span>
-                  </div>
                 </div>
               </div>
 

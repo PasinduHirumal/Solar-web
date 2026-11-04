@@ -12,6 +12,7 @@ export default function InvoiceDetails({
   onDownloadPdf,
   onPreviewPdf,
   onOpenSendModal,
+  onOpenPaymentModal,
 }) {
   if (!invoice) return null;
 
@@ -236,9 +237,22 @@ export default function InvoiceDetails({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Settlement Status Card & Bank Details */}
         <div className="p-4 rounded-xl bg-slate-50/60 border border-slate-200/80 shadow-2xs space-y-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-            Payment & Settlement Overview
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+              Payment & Settlement Overview
+            </span>
+            {onOpenPaymentModal && (
+              <button
+                type="button"
+                onClick={onOpenPaymentModal}
+                className="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200/80 rounded-md text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Record customer payment or view transactions"
+              >
+                <CreditCard className="w-3 h-3" />
+                <span>Record Payment</span>
+              </button>
+            )}
+          </div>
           <div className="space-y-1.5 text-xs text-slate-600">
             <div className="flex justify-between">
               <span>Paid to Date:</span>
@@ -252,6 +266,18 @@ export default function InvoiceDetails({
                 {formatPrice(balanceDue)}
               </span>
             </div>
+            {total > 0 && (
+              <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden my-1">
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    balanceDue <= 0 ? "bg-emerald-600" : "bg-blue-600"
+                  }`}
+                  style={{
+                    width: `${Math.min(100, Math.round((paidAmount / total) * 100))}%`,
+                  }}
+                />
+              </div>
+            )}
             <div className="pt-2 border-t border-slate-200 space-y-1 text-[11px] text-slate-600">
               <span className="flex items-center gap-1.5 font-semibold text-slate-700">
                 <CreditCard className="w-3.5 h-3.5 text-blue-600" />
