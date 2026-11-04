@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InvoiceEntity } from './entities/invoice.entity';
+import { InvoiceEntity, PaymentStatus } from './entities/invoice.entity';
 import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { QuotationEntity, QuotationStatus } from '../quotations/entities/quotation.entity';
 import { randomUUID } from 'crypto';
@@ -18,6 +18,8 @@ import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
 import { FILE_FIELDS } from '../files/constants/file-fields.constants';
 
 const INVOICE_ALIAS = 'invoice';
+
+const FRESHNESS_WINDOW_MS = 60_000;
 
 const EXACT_FILTER_MAP: Partial<Record<keyof FindInvoicesQueryDto, string>> = {
     payment_status:     `${INVOICE_ALIAS}.payment_status`,
@@ -60,13 +62,28 @@ export class InvoicesService {
         });
     }
 
-    async findWithPriceBreakdown(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<InvoiceEntity> {
-        if (quotation.status !== QuotationStatus.ACCEPTED && quotation.status !== QuotationStatus.REJECTED) {
-            await this.quotationService.updateSnapQuotation(quotation.id);
-            await this.updatePriceBreakdown(quotation, invoice.id);
+    async updateToLatestPrices(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<void> {
+        await this.quotationService.updateSnapQuotation(quotation.id);
+        await this.updatePriceBreakdown(quotation, invoice.id);
+    }
+
+    async findById(invoice_id: string, is_latest: boolean = false): Promise<InvoiceEntity> {
+        const invoice = await this.detailQueryBuilder()
+            .where(`${INVOICE_ALIAS}.id = :id`, { id: invoice_id})
+            .getOne();
+
+        if (!invoice) throw new NotFoundException(`Invoice Not Found`);
+
+        if (is_latest) {
+            const updatedAt = invoice.updated_at?.getTime() ?? 0;
+            const age = Date.now() - updatedAt;
+
+            if (age > FRESHNESS_WINDOW_MS) {
+                throw new BadRequestException('Please update invoice first');
+            }
         }
-        
-        return await this.findById(invoice.id);
+
+        return invoice;
     }
 
     async findAllInvoices(query: FindInvoicesQueryDto): Promise<PaginatedResponse<InvoiceEntity>> {
@@ -156,17 +173,22 @@ export class InvoicesService {
     }
 
     async sendToCustomer(invoice: InvoiceEntity, pdf: Express.Multer.File): Promise<void> {
-        const customer = invoice.quotation?.customer;
+        const quotation = invoice.quotation;
+        const customer = quotation?.customer;
+
+        if (!quotation) {
+            throw new BadRequestException('Quotation not found for this invoice');
+        }
 
         if (!customer.email) {
             throw new BadRequestException('Customer email not found for this invoice');
         }
 
-        if (invoice.quotation.status === QuotationStatus.REJECTED) {
+        if (quotation.status === QuotationStatus.REJECTED) {
             throw new BadRequestException(`Cannot send invoice: the quotation is ${invoice.quotation.status}`);
         }
 
-        if (invoice.total === invoice.paid_amount) {
+        if (invoice.payment_status === PaymentStatus.PAID) {
             throw new BadRequestException(`${invoice.invoice_number} have completed full payment)}`);
         }
 
@@ -210,18 +232,6 @@ export class InvoicesService {
         );
 
         await this.quotationService.sentQuotation(invoice.quotation_id);
-    }
-
-
-    // helper methods
-    async findById(invoice_id: string): Promise<InvoiceEntity> {
-        const invoice = await this.detailQueryBuilder()
-            .where(`${INVOICE_ALIAS}.id = :id`, { id: invoice_id})
-            .getOne();
-
-        if (!invoice) throw new NotFoundException(`Invoice Not Found`);
-
-        return invoice;
     }
 
 

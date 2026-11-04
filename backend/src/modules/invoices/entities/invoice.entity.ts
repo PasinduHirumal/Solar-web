@@ -30,7 +30,7 @@ export class InvoiceEntity {
     payment_status!: PaymentStatus;
 
 
-    // Frozen at accepted
+    // Frozen at sent
     @Column({ type: 'float' })
     subtotal!: number;
 
@@ -43,6 +43,8 @@ export class InvoiceEntity {
     @Column({ type: 'float' })
     total!: number;
 
+
+    // rest
     @Column({ type: 'timestamp' })
     due_date!: Date;
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseFilePipeBuilder, ParseUUIDPipe, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseFilePipeBuilder, ParseUUIDPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { Roles } from '../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../identity/enums/user.enum';
@@ -57,13 +57,22 @@ export class InvoicesController {
         return this.invoiceService.generate(quotation, dto);
     }
 
-    @Get(':quotation_id/:invoice_id')
+    @Put(':invoice_id/:quotation_id')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async updateToLatestPrices(
+        @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
+        @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
+    ): Promise<void> {
+        return this.invoiceService.updateToLatestPrices(quotation, invoice);
+    }
+
+    @Get(':invoice_id')
     @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async getInvoiceWithPriceBreakdown(
-        @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
-        @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
+        @Param('invoice_id', new ParseUUIDPipe({ version: '4'})) invoice_id: string,
     ): Promise<InvoiceEntity> {
-        return this.invoiceService.findWithPriceBreakdown(quotation, invoice);
+        return this.invoiceService.findById(invoice_id, true);
     }
 }
