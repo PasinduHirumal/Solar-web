@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Roles } from '../identity/auth/decorators/roles.decorator';
 import { UserRole } from '../identity/enums/user.enum';
@@ -12,6 +12,8 @@ import { InvoiceEntity } from '../invoices/entities/invoice.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CurrentUser } from '../identity/auth/decorators/current-user.decorator';
 import { UserEntity } from '../identity/entities/user.entity';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { PaymentExistsPipe } from './pipes/payment-exists.pipe';
 
 @Controller('payments')
 export class PaymentsController {
@@ -34,8 +36,29 @@ export class PaymentsController {
     async addPaymentToInvoice(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
         @Body() dto: CreatePaymentDto,
-        @CurrentUser() admin: UserEntity,
+        @CurrentUser() authorized_admin: UserEntity,
     ): Promise<PaymentEntity> {
-        return this.paymentService.payToInvoice(invoice, dto, admin);
+        return this.paymentService.payToInvoice(invoice, dto, authorized_admin);
+    }
+
+    @Put(':invoice_id/:payment_id/revoke')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async revokePayment(
+        @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
+        @Param('payment_id', new ParseUUIDPipe({ version: '4'}), PaymentExistsPipe) payment: PaymentEntity,
+        @Body() dto: UpdatePaymentDto,
+        @CurrentUser() revoked_admin: UserEntity,
+    ): Promise<PaymentEntity> {
+        return this.paymentService.revokePayment(payment, invoice, dto, revoked_admin);
+    }
+
+    @Get(':payment_id')
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    async getPaymentById(
+        @Param('payment_id', new ParseUUIDPipe({ version: '4'})) payment_id: string,
+    ): Promise<PaymentEntity> {
+        return this.paymentService.findById(payment_id);
     }
 }

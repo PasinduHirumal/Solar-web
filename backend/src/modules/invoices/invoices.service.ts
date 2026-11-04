@@ -322,17 +322,17 @@ export class InvoicesService {
 
     private withQuotation(qb: SelectQueryBuilder<InvoiceEntity>) {
         return qb
-        .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
-        .addSelect(pick('quotation', Quotation_FIELDS))
-        .innerJoin('quotation.customer', 'customer')
-        .addSelect(pick('customer', USER_FIELDS))
-        .leftJoin(`quotation.items`, `quo_item`)
-        .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
+            .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
+            .addSelect(pick('quotation', Quotation_FIELDS))
+            .innerJoin('quotation.customer', 'customer')
+            .addSelect(pick('customer', USER_FIELDS))
+            .leftJoin(`quotation.items`, `quo_item`)
+            .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
     }
 
     private withPdf(qb: SelectQueryBuilder<InvoiceEntity>) {
         return qb
-        .leftJoin(`${INVOICE_ALIAS}.invoice_pdf`, 'invoice_pdf')
-        .addSelect(pick('invoice_pdf', FILE_FIELDS));
+            .leftJoin(`${INVOICE_ALIAS}.invoice_pdf`, 'invoice_pdf')
+            .addSelect(pick('invoice_pdf', FILE_FIELDS));
     }
 }

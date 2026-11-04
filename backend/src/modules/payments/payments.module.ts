@@ -4,6 +4,7 @@ import { PaymentsService } from './payments.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { InvoicesModule } from '../invoices/invoices.module';
+import { PaymentExistsPipe } from './pipes/payment-exists.pipe';
 
 @Module({
   imports: [
@@ -11,6 +12,6 @@ import { InvoicesModule } from '../invoices/invoices.module';
     InvoicesModule,
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService]
+  providers: [PaymentsService, PaymentExistsPipe]
 })
 export class PaymentsModule {}
