@@ -225,6 +225,7 @@ export const contactDetails = {
   companyName: "Shree Energy (Pvt) Ltd",
   tagline: "Powering Sri Lanka with Smart Energy Solutions",
   motto: "Reliable. Sustainable. Affordable.",
+  website: "https://shreenergy.com/",
   phones: [
     { label: "Hotline 1", number: "+94760332537", display: "+94 76 033 2537" },
     { label: "Hotline 2", number: "+94713332537", display: "+94 71 333 2537" },
@@ -249,8 +250,25 @@ export const contactDetails = {
     telemetry: "24/7 Smart Telemetry & Emergency Support",
   },
   social: {
+    website: "https://shreenergy.com/",
     facebook: "https://www.facebook.com/share/18rhjKdgkX",
     instagram: "https://instagram.com",
     youtube: "https://youtube.com",
   },
 };
+
+/* Payment Instructions & Bank Settlement Details */
+export const paymentDetails = {
+  title: "PAYMENT INSTRUCTIONS & BANK DETAILS",
+  bankName: "Commercial Bank of Ceylon PLC",
+  accountName: "Shree Energy (Pvt) Ltd",
+  accountNumber: "1000 4829 3920",
+  branch: "Colombo Corporate Branch",
+  swiftCode: "CCEYLKLX",
+  currency: "LKR",
+  paymentReferenceNote: "Please cite your Invoice No when transferring funds.",
+  chequeNote: "Cheques should be drawn in favor of 'Shree Energy (Pvt) Ltd'.",
+};
+
+export const bankDetails = paymentDetails;
+

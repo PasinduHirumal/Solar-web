@@ -15,6 +15,7 @@ import {
   Mail,
   Zap,
   TrendingUp,
+  Receipt,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -26,6 +27,7 @@ export default function AdminDashboard() {
     activeCategories: 0,
     totalItems: 0,
     totalQuotations: 0,
+    totalInvoices: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +35,7 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const canFetchUsers = isSuperAdmin(user?.role);
-        const [usersRes, categoriesRes, activeCatsRes, itemsRes, quotationsRes] = await Promise.all([
+        const [usersRes, categoriesRes, activeCatsRes, itemsRes, quotationsRes, invoicesRes] = await Promise.all([
           canFetchUsers
             ? axiosInstance.get("/users", { params: { limit: 1 } }).catch(() => null)
             : Promise.resolve(null),
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
           axiosInstance.get("/categories", { params: { limit: 1, is_active: true } }),
           axiosInstance.get("/items", { params: { limit: 1 } }),
           axiosInstance.get("/quotations", { params: { limit: 1 } }).catch(() => null),
+          axiosInstance.get("/invoices", { params: { limit: 1 } }).catch(() => null),
         ]);
 
         const extractTotal = (res) => {
@@ -53,6 +56,7 @@ export default function AdminDashboard() {
           activeCategories: extractTotal(activeCatsRes),
           totalItems: extractTotal(itemsRes),
           totalQuotations: quotationsRes ? extractTotal(quotationsRes) : 0,
+          totalInvoices: invoicesRes ? extractTotal(invoicesRes) : 0,
         });
       } catch (error) {
         console.error("Failed to fetch analytics", error);
@@ -125,6 +129,17 @@ export default function AdminDashboard() {
       iconColor: "text-purple-600",
       borderColor: "hover:border-purple-300",
       delay: "400",
+    },
+    {
+      title: "Invoices",
+      subtitle: "Issued customer bills",
+      value: stats.totalInvoices,
+      icon: Receipt,
+      gradient: "from-emerald-600 to-teal-700",
+      lightBg: "bg-emerald-50",
+      iconColor: "text-emerald-700",
+      borderColor: "hover:border-emerald-300",
+      delay: "500",
     },
   ];
 

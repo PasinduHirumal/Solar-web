@@ -6,6 +6,7 @@ import {
   FolderTree,
   Package,
   FileText,
+  Receipt,
   Menu,
   X,
   LogOut,
@@ -46,6 +47,7 @@ export default function AdminLayout() {
     { name: "Manage Categories", path: "/admin/categories", icon: <FolderTree size={18} /> },
     { name: "Manage Solar Items", path: "/admin/items", icon: <Package size={18} /> },
     { name: "Manage Quotations", path: "/admin/quotations", icon: <FileText size={18} /> },
+    { name: "Manage Invoices", path: "/admin/invoices", icon: <Receipt size={18} /> },
   ];
 
   const currentPage = useMemo(() => {
