@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin, Receipt
+  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { isAdmin } from "../../../lib/roles";
@@ -390,15 +390,6 @@ export default function ManageQuotations() {
                           <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
                             {quo.quotation_number}
                           </span>
-                          {quo.invoice_number && (
-                            <span
-                              title={`Invoice reference: ${quo.invoice_number}`}
-                              className="mt-1 font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded w-fit flex items-center gap-1 shadow-2xs"
-                            >
-                              <Receipt className="w-2.5 h-2.5 text-emerald-600" />
-                              <span>{quo.invoice_number}</span>
-                            </span>
-                          )}
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
                             <Clock className="w-3 h-3" />
                             <span>

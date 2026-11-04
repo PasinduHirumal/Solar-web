@@ -10,10 +10,8 @@ import {
   Calendar,
   Mail,
   Phone,
-  ArrowUpDown,
-  FileCheck,
-  CreditCard,
   RefreshCw,
+  FileText,
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { formatPrice } from "../../../lib/formatPrice";
@@ -29,17 +27,22 @@ export default function ManageInvoices() {
   // Read URL search params
   const searchTerm = searchParams.get("search") || "";
   const paymentStatusFilter = searchParams.get("payment_status") || "";
+  const sortBy = searchParams.get("sort_by") || "created_at";
   const sortOrder = searchParams.get("sort") || "DESC";
   const page = parseInt(searchParams.get("page") || "1", 10) || 1;
 
   const [searchInput, setSearchInput] = useState(searchTerm);
+  const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
   const [invoices, setInvoices] = useState([]);
-  const [quotationsMap, setQuotationsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Client-side cache to persist resolved customer & quotation profiles by quotation_id
+  const customerCache = useRef({});
+  const quotationCache = useRef({});
 
   // Send Invoice Modal state
   const [sendModalQuotation, setSendModalQuotation] = useState(null);
@@ -48,14 +51,30 @@ export default function ManageInvoices() {
 
   const currentUser = useAuthStore((s) => s.user);
 
+  const refetchInvoices = useCallback(() => {
+    setRefreshTrigger((prev) => prev + 1);
+  }, []);
+
+  if (prevSearchTerm !== searchTerm) {
+    setPrevSearchTerm(searchTerm);
+    setSearchInput(searchTerm);
+  }
+
   // Helper to update search params
   const updateParams = useCallback(
-    (newParams) => {
+    (updates) => {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          Object.entries(newParams).forEach(([key, val]) => {
-            if (val === undefined || val === null || val === "") {
+          Object.entries(updates).forEach(([key, val]) => {
+            if (
+              val === undefined ||
+              val === null ||
+              val === "" ||
+              (key === "sort_by" && val === "created_at") ||
+              (key === "sort" && val === "DESC") ||
+              (key === "page" && Number(val) <= 1)
+            ) {
               next.delete(key);
             } else {
               next.set(key, String(val));
@@ -85,36 +104,7 @@ export default function ManageInvoices() {
     updateParams({ search: undefined, page: 1 });
   };
 
-  // Fetch quotations map so we have complete customer and quotation details
-  useEffect(() => {
-    let active = true;
-
-    const loadQuotations = async () => {
-      try {
-        const res = await axiosInstance.get("/quotations", {
-          params: { limit: 100 },
-        });
-        if (active) {
-          const list = res.data?.data?.items || res.data?.items || [];
-          const map = {};
-          list.forEach((q) => {
-            if (q.id) map[q.id] = q;
-          });
-          setQuotationsMap(map);
-        }
-      } catch (err) {
-        console.warn("Could not load quotation map for invoices", err);
-      }
-    };
-
-    loadQuotations();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Fetch invoices data
+  // Fetch invoices data with asynchronous customer and quotation enrichment
   useEffect(() => {
     let active = true;
 
@@ -134,10 +124,84 @@ export default function ManageInvoices() {
 
         if (active) {
           const data = response.data?.data || response.data;
-          setInvoices(data.items || []);
+          const rawItems = data.items || [];
+
+          // Immediately attach any previously cached quotation & customer profiles
+          const initialItems = rawItems.map((inv) => {
+            const cachedQuo = inv.quotation_id ? quotationCache.current[inv.quotation_id] : null;
+            const cachedCust =
+              inv.customer?.name
+                ? inv.customer
+                : inv.quotation_id && customerCache.current[inv.quotation_id]
+                ? customerCache.current[inv.quotation_id]
+                : cachedQuo?.customer;
+
+            return {
+              ...inv,
+              quotation: cachedQuo || inv.quotation,
+              customer: cachedCust || inv.customer,
+            };
+          });
+
+          setInvoices(initialItems);
           setTotalPages(data.meta?.totalPages || 1);
           setTotalItems(data.meta?.totalItems || 0);
           setLoading(false);
+
+          // Asynchronously enrich full customer and quotation details for rows on active page
+          const itemsNeedingDetails = initialItems.filter(
+            (inv) => (!inv.customer?.name || !inv.quotation?.quotation_number) && inv.quotation_id
+          );
+          const uniqueQuoIds = [...new Set(itemsNeedingDetails.map((inv) => inv.quotation_id))];
+
+          if (uniqueQuoIds.length > 0) {
+            Promise.allSettled(
+              uniqueQuoIds.map((quoId) => axiosInstance.get(`/quotations/${quoId}`))
+            ).then((results) => {
+              if (!active) return;
+              const freshMap = {};
+              results.forEach((res) => {
+                if (res.status === "fulfilled") {
+                  const fullQuo =
+                    res.value.data?.data?.quotation ||
+                    res.value.data?.data ||
+                    res.value.data?.quotation ||
+                    res.value.data;
+
+                  if (fullQuo?.id) {
+                    quotationCache.current[fullQuo.id] = fullQuo;
+                    if (fullQuo.customer) {
+                      freshMap[fullQuo.id] = fullQuo;
+                      customerCache.current[fullQuo.id] = fullQuo.customer;
+                      if (fullQuo.customer_id) {
+                        customerCache.current[fullQuo.customer_id] = fullQuo.customer;
+                      }
+                    }
+                  }
+                }
+              });
+
+              if (Object.keys(freshMap).length > 0) {
+                setInvoices((prev) =>
+                  prev.map((inv) => {
+                    const resolvedQuo =
+                      freshMap[inv.quotation_id] || quotationCache.current[inv.quotation_id];
+                    const resolvedCust =
+                      resolvedQuo?.customer ||
+                      (inv.quotation_id ? customerCache.current[inv.quotation_id] : null);
+
+                    return resolvedQuo || resolvedCust
+                      ? {
+                          ...inv,
+                          quotation: resolvedQuo || inv.quotation,
+                          customer: resolvedCust || inv.customer,
+                        }
+                      : inv;
+                  })
+                );
+              }
+            });
+          }
         }
       } catch (error) {
         if (active) {
@@ -161,7 +225,7 @@ export default function ManageInvoices() {
 
   const handleOpenSendModal = (quotation, invoice) => {
     const targetQuo =
-      quotation || (invoice?.quotation_id ? quotationsMap[invoice.quotation_id] : null);
+      quotation || (invoice?.quotation_id ? quotationCache.current[invoice.quotation_id] : null);
     if (!targetQuo) {
       toast.error("Could not locate quotation associated with this invoice.");
       return;
@@ -171,8 +235,8 @@ export default function ManageInvoices() {
     setIsSendModalOpen(true);
   };
 
-  const handleInvoiceUpdated = (updatedQuotation) => {
-    setRefreshTrigger((prev) => prev + 1);
+  const handleInvoiceUpdated = () => {
+    refetchInvoices();
   };
 
   const hasActiveFilters = Boolean(
@@ -183,25 +247,25 @@ export default function ManageInvoices() {
     switch (status) {
       case "PAID":
         return {
-          pill: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          pill: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
           dot: "bg-emerald-500",
           text: "Paid in Full",
         };
       case "PARTIAL":
         return {
-          pill: "bg-purple-50 text-purple-700 border-purple-200",
+          pill: "bg-purple-50 text-purple-700 border-purple-200/60",
           dot: "bg-purple-500",
           text: "Partial",
         };
       case "ADVANCED":
         return {
-          pill: "bg-blue-50 text-blue-700 border-blue-200",
+          pill: "bg-blue-50 text-blue-700 border-blue-200/60",
           dot: "bg-blue-500",
           text: "Advance",
         };
       default:
         return {
-          pill: "bg-amber-50 text-amber-700 border-amber-200",
+          pill: "bg-amber-50 text-amber-700 border-amber-200/60",
           dot: "bg-amber-500",
           text: "Pending",
         };
@@ -209,26 +273,28 @@ export default function ManageInvoices() {
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 font-sans">
-      {/* Header Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+    <div className="max-w-7xl mx-auto w-full space-y-4 font-sans">
+      {/* Header Toolbar - Identical to Manage Quotations */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-[0_1px_3px_0_rgba(0,0,0,0.03)]">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Manage Invoices
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-              {totalItems} total
-            </span>
+            {!loading && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
+                {totalItems} total
+              </span>
+            )}
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
+          <p className="text-slate-500 text-xs mt-0.5">
             Review, track, and send customer invoices, payment statuses, and settlement documents.
           </p>
         </div>
 
-        {/* Search & Filter Actions */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-64 md:w-72">
+        {/* Search & Actions */}
+        <div className="flex items-center gap-2.5 w-full md:w-auto">
+          <div className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
             <input
               type="text"
@@ -267,7 +333,7 @@ export default function ManageInvoices() {
 
           {/* Refresh Action */}
           <button
-            onClick={() => setRefreshTrigger((p) => p + 1)}
+            onClick={() => refetchInvoices()}
             className="flex items-center justify-center p-2 rounded-xl border border-slate-200/90 hover:bg-slate-50 text-slate-600 hover:text-slate-900 shadow-2xs h-10 w-10 cursor-pointer shrink-0"
             title="Refresh Invoices"
           >
@@ -311,16 +377,20 @@ export default function ManageInvoices() {
                         No invoices found
                       </p>
                       <p className="text-xs text-slate-400 max-w-xs">
-                        Invoices are generated when sending formal proposals from the Manage Quotations screen.
+                        Try adjusting your search terms or filters to find invoices.
                       </p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 invoices.map((inv) => {
-                  const matchingQuo =
-                    inv.quotation || (inv.quotation_id ? quotationsMap[inv.quotation_id] : null) || {};
-                  const customer = matchingQuo.customer || {};
+                  const quotation =
+                    inv.quotation || (inv.quotation_id ? quotationCache.current[inv.quotation_id] : null) || {};
+                  const customer =
+                    inv.customer ||
+                    quotation.customer ||
+                    (inv.quotation_id ? customerCache.current[inv.quotation_id] : null) ||
+                    {};
                   const badge = getPaymentStatusBadge(inv.payment_status);
 
                   return (
@@ -329,7 +399,7 @@ export default function ManageInvoices() {
                       className="hover:bg-blue-50/25 transition-colors group"
                     >
                       {/* Invoice Number & Date */}
-                      <td className="py-3.5 px-4 sm:px-5">
+                      <td className="py-3 px-4 sm:px-5">
                         <div className="flex flex-col min-w-0">
                           <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
                             {inv.invoice_number}
@@ -346,10 +416,10 @@ export default function ManageInvoices() {
                       </td>
 
                       {/* Quotation Reference */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <div className="flex flex-col min-w-0">
                           <span className="font-mono text-xs font-semibold text-slate-800">
-                            {matchingQuo.quotation_number || (inv.quotation_id ? `ID: ${inv.quotation_id.substring(0, 8)}...` : "—")}
+                            {quotation.quotation_number || (inv.quotation_id ? `Ref: ${inv.quotation_id.substring(0, 8)}...` : "—")}
                           </span>
                           {inv.due_date && (
                             <span className="text-[10px] text-amber-600 font-medium mt-0.5">
@@ -359,30 +429,33 @@ export default function ManageInvoices() {
                         </div>
                       </td>
 
-                      {/* Customer Info */}
-                      <td className="py-3.5 px-4">
+                      {/* Customer Info - Exactly matching Manage Quotations */}
+                      <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                            {(customer.name || "C").charAt(0).toUpperCase()}
+                            {(customer.name || quotation.quotation_number?.split("-")[2] || inv.invoice_number?.split("-")[2] || "C")
+                              .charAt(0)
+                              .toUpperCase()}
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span
-                              className="font-bold text-slate-900 text-xs truncate max-w-[200px]"
-                              title={customer.name}
+                              className="font-bold text-slate-900 text-xs truncate max-w-[220px]"
+                              title={customer.name || (inv.quotation_id ? `Customer ID: ${inv.quotation_id}` : "Customer")}
                             >
-                              {customer.name || "Customer"}
+                              {customer.name || (
+                                <span className="inline-flex items-center gap-1.5 text-slate-400 font-normal">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                                  Loading...
+                                </span>
+                              )}
                             </span>
-                            {customer.email ? (
+                            {customer.email && (
                               <span
-                                className="text-[11px] text-slate-500 truncate max-w-[200px] flex items-center gap-1 mt-0.5"
+                                className="text-[11px] text-slate-500 truncate max-w-[220px] flex items-center gap-1 mt-0.5"
                                 title={customer.email}
                               >
                                 <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="truncate">{customer.email}</span>
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                Ref ID: {inv.quotation_id?.substring(0, 8)}...
                               </span>
                             )}
                             {customer.phone && (
@@ -396,9 +469,9 @@ export default function ManageInvoices() {
                       </td>
 
                       {/* Payment Status */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs ${badge.pill}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shadow-2xs ${badge.pill}`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                           {badge.text}
@@ -406,7 +479,7 @@ export default function ManageInvoices() {
                       </td>
 
                       {/* Financials */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <div className="flex flex-col gap-0.5 text-xs">
                           <span className="font-mono font-bold text-slate-900">
                             {formatPrice(inv.total)}
@@ -418,10 +491,10 @@ export default function ManageInvoices() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-4 sm:px-5 text-right">
+                      <td className="py-3 px-4 sm:px-5 text-right">
                         <ActionButton
                           invoice={inv}
-                          quotation={matchingQuo}
+                          quotation={quotation}
                           onOpenSendModal={handleOpenSendModal}
                           onUpdateInvoice={handleInvoiceUpdated}
                         />
@@ -434,28 +507,28 @@ export default function ManageInvoices() {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - Matching Manage Quotations */}
         {!loading && totalPages > 1 && (
           <div className="border-t border-slate-100 px-4 sm:px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
             <span className="text-xs text-slate-500 font-medium">
               Showing page <span className="text-slate-900 font-bold">{page}</span> of{" "}
-              <span className="text-slate-900 font-bold">{totalPages}</span>
+              <span className="text-slate-900 font-bold">{totalPages}</span> ({totalItems} invoices total)
             </span>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={() => updateParams({ page: Math.max(1, page - 1) })}
-                disabled={page <= 1}
-                className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition cursor-pointer"
+                disabled={page === 1}
+                onClick={() => updateParams({ page: page - 1 })}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
               >
                 Previous
               </button>
+              <span className="text-xs font-semibold px-2 text-slate-600">
+                {page} / {totalPages}
+              </span>
               <button
-                type="button"
-                onClick={() => updateParams({ page: Math.min(totalPages, page + 1) })}
-                disabled={page >= totalPages}
-                className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition cursor-pointer"
+                disabled={page === totalPages}
+                onClick={() => updateParams({ page: page + 1 })}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-2xs cursor-pointer"
               >
                 Next
               </button>
@@ -464,7 +537,7 @@ export default function ManageInvoices() {
         )}
       </div>
 
-      {/* Filter Side Drawer */}
+      {/* FILTER DRAWER */}
       <AdminFilterMenu
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
