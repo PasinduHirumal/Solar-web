@@ -20,7 +20,7 @@ export class PaymentEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @ManyToOne(() => InvoiceEntity, { eager: false, onDelete: 'RESTRICT' })
+    @ManyToOne(() => InvoiceEntity, (invoice) => invoice.payments, { eager: false, onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'invoice_id' })
     invoice!: InvoiceEntity;
     

@@ -1,6 +1,8 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { QuotationEntity } from "../../quotations/entities/quotation.entity";
 import { FileEntity } from "../../files/entities/file.entity";
+import { UserEntity } from "../../identity/entities/user.entity";
+import { PaymentEntity } from "../../payments/entities/payment.entity";
 
 export enum PaymentStatus {
     PENDING = 'PENDING',
@@ -26,6 +28,13 @@ export class InvoiceEntity {
     @Column({ name: 'quotation_id', type: 'uuid' })
     quotation_id!: string;
 
+    @ManyToOne(() => UserEntity, { eager: false, onDelete: 'RESTRICT' })
+    @JoinColumn({ name: 'customer_id' })
+    customer!: UserEntity;
+    
+    @Column({ name: 'customer_id', type: 'uuid' })
+    customer_id!: string;
+
     @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
     payment_status!: PaymentStatus;
 
@@ -50,6 +59,9 @@ export class InvoiceEntity {
 
     @Column({ type: 'float', default: 0 })
     paid_amount!: number;
+
+    @OneToMany(() => PaymentEntity, (payment) => payment.invoice, { eager: false, cascade: true })
+    payments!: PaymentEntity[];
 
     @OneToOne(() => FileEntity, { eager: false, onDelete: 'RESTRICT', nullable: true })
     @JoinColumn({ name: 'invoice_pdf_id' })

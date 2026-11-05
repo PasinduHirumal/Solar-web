@@ -481,6 +481,8 @@ export class QuotationsService {
     // query-builders
     private cardQueryBuilder() {
         let qb = this.quotationRepo.createQueryBuilder(QUOTATION_ALIAS);
+        qb = this.withCustomer(qb);
+        
         return qb;
     }
 

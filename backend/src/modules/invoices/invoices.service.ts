@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 import { QuotationsService } from '../quotations/quotations.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { pick } from '../../utils/pick-fields.util';
-import { Quotation_FIELDS } from '../quotations/constants/quotation-fields.constants';
+import { QUOTATION_DETAIL_FIELDS, QUOTATION_CARD_FIELDS } from '../quotations/constants/quotation-fields.constants';
 import { QUOTATION_ITEM_SNAP_FIELDS } from '../quotations/quotation-items/constants/quotation-item-snap-fields.constants';
 import { FindInvoicesQueryDto } from './dto/find-invoice-query.dto';
 import { PaginatedResponse } from '../../common/interfaces/paginated-response.interface';
@@ -48,14 +48,14 @@ export class InvoicesService {
 
         return await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
             const invoice = manager.create(InvoiceEntity, {
-                ...dto,
                 invoice_number: invoiceNumber,
                 quotation_id: quotation.id,
-                is_need_to_re_generate: true,
+                customer_id: quotation.customer.id,
                 subtotal: priceBreakdown.subtotal,
                 discount: priceBreakdown.discount,
                 tax: priceBreakdown.tax,
                 total: priceBreakdown.total,
+                due_date: dto.due_date,
             });
 
             return await manager.save(InvoiceEntity, invoice);
@@ -309,30 +309,55 @@ export class InvoicesService {
     // query-builders
     private cardQueryBuilder() {
         let qb = this.invoiceRepo.createQueryBuilder(INVOICE_ALIAS);
+        qb = this.withQuotationCard(qb);
+        qb = this.withCustomer(qb);
+
         return qb;
     }
 
     private detailQueryBuilder() {
         let qb = this.invoiceRepo.createQueryBuilder(INVOICE_ALIAS);
-        qb = this.withQuotation(qb);
+        qb = this.withQuotationDetails(qb);
+        qb = this.withPayments(qb);
         qb = this.withPdf(qb);
 
         return qb;
     }
 
-    private withQuotation(qb: SelectQueryBuilder<InvoiceEntity>) {
+    private withQuotationDetails(qb: SelectQueryBuilder<InvoiceEntity>) {
         return qb
             .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
-            .addSelect(pick('quotation', Quotation_FIELDS))
+            .addSelect(pick('quotation', QUOTATION_DETAIL_FIELDS))
             .innerJoin('quotation.customer', 'customer')
             .addSelect(pick('customer', USER_FIELDS))
             .leftJoin(`quotation.items`, `quo_item`)
             .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
     }
 
+    private withQuotationCard(qb: SelectQueryBuilder<InvoiceEntity>) {
+        return qb
+            .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
+            .addSelect(pick('quotation', QUOTATION_CARD_FIELDS));
+    }
+
+    private withCustomer(qb: SelectQueryBuilder<InvoiceEntity>) {
+        return qb
+            .innerJoin(`${INVOICE_ALIAS}.customer`, 'customer')
+            .addSelect(pick('customer', USER_FIELDS));
+    }
+
     private withPdf(qb: SelectQueryBuilder<InvoiceEntity>) {
         return qb
             .leftJoin(`${INVOICE_ALIAS}.invoice_pdf`, 'invoice_pdf')
             .addSelect(pick('invoice_pdf', FILE_FIELDS));
+    }
+
+    private withPayments(qb: SelectQueryBuilder<InvoiceEntity>) {
+        return qb
+            .leftJoinAndSelect(`${INVOICE_ALIAS}.payments`, 'payment')
+            .innerJoin(`payment.authorized_admin`, 'authorized_admin')
+            .addSelect(pick('authorized_admin', USER_FIELDS))
+            .leftJoin(`payment.revoked_by_admin`, 'revoked_by_admin')
+            .addSelect(pick('revoked_by_admin', USER_FIELDS));
     }
 }
