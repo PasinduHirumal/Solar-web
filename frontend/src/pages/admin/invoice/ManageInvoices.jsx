@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
@@ -32,10 +32,6 @@ export default function ManageInvoices() {
   const [totalItems, setTotalItems] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  // Client-side cache to persist resolved customer & quotation profiles by quotation_id
-  const customerCache = useRef({});
-  const quotationCache = useRef({});
 
   // Send Invoice Modal state
   const [sendModalQuotation, setSendModalQuotation] = useState(null);
@@ -119,85 +115,12 @@ export default function ManageInvoices() {
 
         if (active) {
           const data = response.data?.data || response.data;
-          const rawItems = data.items || [];
-
-          // Immediately attach any previously cached quotation & customer profiles
-          const initialItems = rawItems.map((inv) => {
-            const cachedQuo = inv.quotation_id ? quotationCache.current[inv.quotation_id] : null;
-            const cachedCust =
-              inv.customer?.name
-                ? inv.customer
-                : inv.quotation_id && customerCache.current[inv.quotation_id]
-                  ? customerCache.current[inv.quotation_id]
-                  : cachedQuo?.customer;
-
-            return {
-              ...inv,
-              quotation: cachedQuo || inv.quotation,
-              customer: cachedCust || inv.customer,
-            };
-          });
-
-          setInvoices(initialItems);
+          setInvoices(data.items || []);
           setTotalPages(data.meta?.totalPages || 1);
           setTotalItems(data.meta?.totalItems || 0);
           setLoading(false);
-
-          // Asynchronously enrich full customer and quotation details for rows on active page
-          const itemsNeedingDetails = initialItems.filter(
-            (inv) => (!inv.customer?.name || !inv.quotation?.quotation_number) && inv.quotation_id
-          );
-          const uniqueQuoIds = [...new Set(itemsNeedingDetails.map((inv) => inv.quotation_id))];
-
-          if (uniqueQuoIds.length > 0) {
-            Promise.allSettled(
-              uniqueQuoIds.map((quoId) => axiosInstance.get(`/quotations/${quoId}`))
-            ).then((results) => {
-              if (!active) return;
-              const freshMap = {};
-              results.forEach((res) => {
-                if (res.status === "fulfilled") {
-                  const fullQuo =
-                    res.value.data?.data?.quotation ||
-                    res.value.data?.data ||
-                    res.value.data?.quotation ||
-                    res.value.data;
-
-                  if (fullQuo?.id) {
-                    quotationCache.current[fullQuo.id] = fullQuo;
-                    if (fullQuo.customer) {
-                      freshMap[fullQuo.id] = fullQuo;
-                      customerCache.current[fullQuo.id] = fullQuo.customer;
-                      if (fullQuo.customer_id) {
-                        customerCache.current[fullQuo.customer_id] = fullQuo.customer;
-                      }
-                    }
-                  }
-                }
-              });
-
-              if (Object.keys(freshMap).length > 0) {
-                setInvoices((prev) =>
-                  prev.map((inv) => {
-                    const resolvedQuo =
-                      freshMap[inv.quotation_id] || quotationCache.current[inv.quotation_id];
-                    const resolvedCust =
-                      resolvedQuo?.customer ||
-                      (inv.quotation_id ? customerCache.current[inv.quotation_id] : null);
-
-                    return resolvedQuo || resolvedCust
-                      ? {
-                        ...inv,
-                        quotation: resolvedQuo || inv.quotation,
-                        customer: resolvedCust || inv.customer,
-                      }
-                      : inv;
-                  })
-                );
-              }
-            });
-          }
         }
+
       } catch (error) {
         if (active) {
           const msg = error.response?.data?.message;
@@ -219,8 +142,7 @@ export default function ManageInvoices() {
   }, [page, searchTerm, paymentStatusFilter, sortOrder, lowestBudget, maximumBudget, refreshTrigger]);
 
   const handleOpenSendModal = (quotation, invoice) => {
-    const targetQuo =
-      quotation || (invoice?.quotation_id ? quotationCache.current[invoice.quotation_id] : null);
+    const targetQuo = quotation || invoice?.quotation || null;
     if (!targetQuo) {
       toast.error("Could not locate quotation associated with this invoice.");
       return;
@@ -385,13 +307,8 @@ export default function ManageInvoices() {
                 </tr>
               ) : (
                 invoices.map((inv) => {
-                  const quotation =
-                    inv.quotation || (inv.quotation_id ? quotationCache.current[inv.quotation_id] : null) || {};
-                  const customer =
-                    inv.customer ||
-                    quotation.customer ||
-                    (inv.quotation_id ? customerCache.current[inv.quotation_id] : null) ||
-                    {};
+                  const quotation = inv.quotation || {};
+                  const customer = inv.customer || quotation.customer || {};
                   const badge = getPaymentStatusBadge(inv.payment_status);
 
                   return (

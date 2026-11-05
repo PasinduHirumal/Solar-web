@@ -106,9 +106,19 @@ export async function enrichInvoiceAndQuotation(invoice, quotation) {
   const quoId = quotation?.id || quotation?.quotation_id || invoice?.quotation_id || invoice?.quotation?.id;
   const invId = invoice?.id;
 
-  // 1. Fetch full quotation with items, relations, and solar_item.category
-  let fullQuo = quotation;
-  if (quoId) {
+  // 1. Fetch invoice details if available (GET /invoices/:invoice_id returns quotation, customer, items, and payments)
+  let fullInv = invoice || {};
+  if (invId && (!fullInv.subtotal || !fullInv.invoice_number || !fullInv.quotation?.items)) {
+    try {
+      fullInv = await fetchInvoiceWithBreakdown(invId, quoId, fullInv);
+    } catch (err) {
+      console.warn(`Could not load invoice ${invId}`, err);
+    }
+  }
+
+  // 2. Reuse quotation from full invoice, or fetch if items are not yet present
+  let fullQuo = fullInv.quotation || quotation;
+  if (quoId && (!fullQuo?.items || fullQuo.items.length === 0)) {
     if (quotationsDetailCache.has(quoId)) {
       fullQuo = quotationsDetailCache.get(quoId);
     } else {
@@ -126,16 +136,6 @@ export async function enrichInvoiceAndQuotation(invoice, quotation) {
       } catch (err) {
         console.warn(`Could not load quotation ${quoId}`, err);
       }
-    }
-  }
-
-  // 2. Fetch invoice details if available (GET /invoices/:invoice_id with auto-refresh)
-  let fullInv = invoice || {};
-  if (invId && (!fullInv.subtotal || !fullInv.invoice_number || !fullInv.quotation)) {
-    try {
-      fullInv = await fetchInvoiceWithBreakdown(invId, quoId, fullInv);
-    } catch (err) {
-      console.warn(`Could not load invoice ${invId}`, err);
     }
   }
 

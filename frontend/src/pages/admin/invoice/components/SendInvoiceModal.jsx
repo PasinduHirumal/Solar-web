@@ -193,7 +193,7 @@ export default function SendInvoiceModal({
           const createRes = await axiosInstance.post(
             `/invoices/${quotation.id}`,
             {
-              due_date: new Date(dueDate).toISOString(),
+              due_date: new Date(`${dueDate}T12:00:00`).toISOString(),
             }
           );
           freshInvoice = createRes.data?.data || createRes.data;
@@ -203,10 +203,15 @@ export default function SendInvoiceModal({
           // If already exists, retrieve it
           if (createErr.response?.status === 409) {
             const listRes = await axiosInstance.get("/invoices", {
-              params: { limit: 100 },
+              params: {
+                search_term: quotation.quotation_number,
+                limit: 5,
+              },
             });
             const all = listRes.data?.data?.items || listRes.data?.items || [];
-            const found = all.find((i) => i.quotation_id === quotation.id);
+            const found = all.find(
+              (i) => i.quotation_id === quotation.id || i.quotation?.id === quotation.id
+            );
             if (found) {
               invoiceId = found.id;
               freshInvoice = found;

@@ -75,7 +75,7 @@ export default function CreateInvoiceModal({
     return () => {
       active = false;
     };
-  }, [isOpen, quotation]);
+  }, [isOpen]);
 
   // Escape key handler
   useEffect(() => {
@@ -140,22 +140,13 @@ export default function CreateInvoiceModal({
       setErrorMessage("");
 
       // Endpoint: POST /invoices/:quotation_id
+      // Send selected dueDate with midday anchor to prevent timezone day-shift
       const payload = {
-        due_date: new Date(dueDate).toISOString(),
+        due_date: new Date(`${dueDate}T12:00:00`).toISOString(),
       };
 
       const response = await axiosInstance.post(`/invoices/${quotation.id}`, payload);
       const newInvoice = response.data?.data || response.data;
-
-      // Initialize price freshness timestamp in database (PUT /invoices/:invoice_id/:quotation_id)
-      if (newInvoice?.id && quotation?.id) {
-        try {
-          await axiosInstance.put(`/invoices/${newInvoice.id}/${quotation.id}`);
-          newInvoice.price_updated_at = new Date().toISOString();
-        } catch (syncErr) {
-          console.warn("Could not set initial price_updated_at:", syncErr);
-        }
-      }
 
       setCreatedInvoice(newInvoice);
       toast.success(
