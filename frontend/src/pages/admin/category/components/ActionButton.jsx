@@ -103,13 +103,14 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
         }
     };
 
-    const canEdit = isSuperAdmin(currentUser?.role);
+    const canEdit = isSuperAdmin(currentUser?.role) || isAdmin(currentUser?.role);
+    const canToggle = isSuperAdmin(currentUser?.role);
     const canDelete = isSuperAdmin(currentUser?.role);
 
     return (
         <>
             <div className="flex items-center justify-end gap-1.5">
-                {!canEdit && !canDelete && (
+                {!canEdit && !canToggle && !canDelete && (
                     <span className="text-[10px] text-slate-400 italic px-2 py-0.5">
                         Read only
                     </span>
@@ -126,7 +127,7 @@ export default function ActionButton({ category, currentUser, onUpdateCategory, 
                 )}
 
                 {/* Toggle Status Button */}
-                {canEdit && (
+                {canToggle && (
                     <button
                         onClick={() => handleToggleStatus(category.id, category.is_active)}
                         disabled={statusLoading}

@@ -5,7 +5,7 @@ import {
   Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
-import { isAdmin } from "../../../lib/roles";
+import { isAdmin, isSuperAdmin } from "../../../lib/roles";
 import useAuthStore from "../../../lib/authStore";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
@@ -156,8 +156,8 @@ export default function ManageQuotations() {
     statusFilter || sortBy !== "created_at" || sortOrder !== "DESC"
   );
 
-  // POST /quotations has @Roles(UserRole.ADMIN) only in quotations.controller.ts
-  const canCreate = isAdmin(currentUser?.role);
+  // POST /quotations has @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN) in quotations.controller.ts
+  const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
 
   const getStatusBadge = (status) => {
     switch (status) {

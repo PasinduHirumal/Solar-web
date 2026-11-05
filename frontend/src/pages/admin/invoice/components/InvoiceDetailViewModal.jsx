@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard, RefreshCw } from "lucide-react";
+import { X, Receipt, Loader2 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
 import { updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
@@ -17,6 +17,7 @@ export default function InvoiceDetailViewModal({
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState("");
   const [updatingPrices, setUpdatingPrices] = useState(false);
 
   // Escape key handler
@@ -32,16 +33,14 @@ export default function InvoiceDetailViewModal({
 
   // Fetch full invoice directly from backend @Get(':invoice_id')
   useEffect(() => {
-    if (!isOpen || !invoice?.id) {
-      setData(null);
-      return;
-    }
+    if (!isOpen || !invoice?.id) return;
 
     let active = true;
 
     const fetchInvoiceDetails = async () => {
       try {
         setLoading(true);
+        setSyncStatusText("Loading invoice specifications and price breakdown...");
         const res = await axiosInstance.get(`/invoices/${invoice.id}`);
         const inv = res.data?.data || res.data;
         if (active) {
@@ -60,12 +59,17 @@ export default function InvoiceDetailViewModal({
           const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
           if (quoId) {
             try {
+              if (active) {
+                setSyncStatusText("Catalog prices updated. Synchronizing latest price breakdown...");
+              }
               await axiosInstance.put(`/invoices/${invoice.id}/${quoId}`);
               const retryRes = await axiosInstance.get(`/invoices/${invoice.id}`);
               const retryInv = retryRes.data?.data || retryRes.data;
               if (active) {
                 setData(retryInv);
-                if (onInvoiceUpdated) onInvoiceUpdated(retryInv);
+                if (onInvoiceUpdated) {
+                  onInvoiceUpdated(retryInv);
+                }
               }
               return;
             } catch (syncErr) {
@@ -76,7 +80,10 @@ export default function InvoiceDetailViewModal({
 
         if (active) setData(invoice);
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setSyncStatusText("");
+        }
       }
     };
 
@@ -91,6 +98,7 @@ export default function InvoiceDetailViewModal({
 
   const currentInvoice = data || invoice;
   const currentQuotation = currentInvoice.quotation || quotation || {};
+  const isFinalized = currentQuotation.status === "ACCEPTED" || currentQuotation.status === "REJECTED";
 
   const handleDownloadPdf = () => {
     try {
@@ -165,7 +173,7 @@ export default function InvoiceDetailViewModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl sm:max-w-3xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
       >
         {/* Header - Fixed */}
         <div className="flex items-start justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 bg-slate-50/70 shrink-0 gap-2">
@@ -204,7 +212,7 @@ export default function InvoiceDetailViewModal({
           {loading && (
             <div className="flex items-center justify-center gap-2 py-3 text-xs font-medium text-blue-600 bg-blue-50/50 rounded-xl border border-blue-100">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading invoice specifications and price breakdown...</span>
+              <span>{syncStatusText || "Loading invoice specifications and price breakdown..."}</span>
             </div>
           )}
 
@@ -227,64 +235,8 @@ export default function InvoiceDetailViewModal({
           />
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleUpdatePrices}
-              disabled={updatingPrices}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-              title="Sync latest prices from equipment catalog (PUT /invoices/:invoice_id/:quotation_id)"
-            >
-              {updatingPrices ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
-              )}
-              <span>Sync Prices</span>
-            </button>
-            <button
-              type="button"
-              onClick={handlePreviewPdf}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Preview PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-            </button>
-            {onOpenPaymentModal && (
-              <button
-                type="button"
-                onClick={onOpenPaymentModal}
-                className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Record Payment</span>
-              </button>
-            )}
-            {onOpenSendModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenSendModal(currentQuotation, currentInvoice);
-                }}
-                className="w-full sm:w-auto text-center justify-center px-3.5 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                <span>Send Email</span>
-              </button>
-            )}
-          </div>
-
+        {/* Sticky Footer */}
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}

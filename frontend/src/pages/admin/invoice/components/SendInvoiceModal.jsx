@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
-  X, FileText, Mail, Send, Loader2, Calendar, Eye, Download, Receipt, FileCheck, RefreshCw,
+  X, FileText, Mail, Send, Loader2, Calendar, Eye, Download, Receipt, FileCheck, RefreshCw, AlertCircle,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
@@ -129,6 +129,7 @@ export default function SendInvoiceModal({
   const customer = fullQuotation?.customer || quotation.customer || {};
   const items = fullQuotation?.items || quotation.items || [];
   const customerEmail = customer.email;
+  const isFinalized = fullQuotation?.status === "ACCEPTED" || fullQuotation?.status === "REJECTED";
 
   // Calculate pricing
   const subtotal = items.reduce((sum, line) => {
@@ -367,6 +368,15 @@ export default function SendInvoiceModal({
             </div>
           )}
 
+          {isFinalized && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2 shadow-2xs">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                Quotation status is already <strong>{fullQuotation?.status}</strong>. Invoices can only be transmitted when quotation is in Draft or Sent status.
+              </span>
+            </div>
+          )}
+
           {/* Customer & Quotation Summary Card */}
           <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
@@ -554,7 +564,7 @@ export default function SendInvoiceModal({
           <button
             type="button"
             onClick={handleSendInvoice}
-            disabled={!generatedPdf?.file || sendingEmail || !customerEmail}
+            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isFinalized}
             className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-[0.98] text-center"
           >
             {sendingEmail ? (

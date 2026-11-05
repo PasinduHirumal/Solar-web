@@ -371,19 +371,6 @@ export default function CreateInvoiceModal({
                   Required by backend DTO. Stored as invoice due timestamp in database.
                 </p>
               </div>
-
-              {/* Informational Notice */}
-              <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-[11px] text-slate-600 flex items-start gap-2">
-                <Receipt className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-slate-800">
-                    Database Snapshots & Freezing
-                  </p>
-                  <p className="text-slate-500 mt-0.5">
-                    Executing this action saves an immutable invoice row in the database, locks the equipment snapshots, and generates an official invoice number.
-                  </p>
-                </div>
-              </div>
             </>
           )}
         </div>
