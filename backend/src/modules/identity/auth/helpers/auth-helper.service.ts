@@ -32,16 +32,29 @@ export class AuthHelperService {
         });;
     }
 
+    async findEntityByPhone(phone: string): Promise<UserEntity | null> {
+        return await this.authRepo.findOne({
+            where: { phone: phone }
+        });;
+    }
+
     async createUserBySystem(dto: RegisterUserDto | RegisterUserAnonymous, options: CreateUserOptions): Promise<UserEntity> {
         const role = 'role' in dto ? dto.role : UserRole.USER;
         const phone = 'phone' in dto ? dto.phone : null;
         const address = 'address' in dto ? dto.address : null;
         
-        const exists = await this.authRepo.existsBy({ email: dto.email, ...(phone ? [{ phone }] : []), });
+        const exists = await this.authRepo.existsBy({ email: dto.email });
         if (exists) {
             throw new ConflictException(
-                `Email or Phone already in use, if you forgot your password or don't know, click 'Forgot password' and reset your password`
+                `Email already in use, if you forgot your password or don't know, click 'Forgot password' and reset your password`
             );
+        }
+
+        if (phone) {
+            const exists = await this.authRepo.existsBy({ phone: phone });
+            if (exists) {
+                throw new ConflictException('Phone number already in use');
+            }
         }
 
         const password = 'password' in dto ? dto.password : this.passwordService.generateRandom();
