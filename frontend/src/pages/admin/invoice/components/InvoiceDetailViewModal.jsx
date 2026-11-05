@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Receipt, Loader2 } from "lucide-react";
+import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard, RefreshCw } from "lucide-react";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
+import { enrichInvoiceAndQuotation, updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
 import InvoiceDetails from "./InvoiceDetails";
 import { toast } from "react-hot-toast";
 
@@ -11,9 +11,12 @@ export default function InvoiceDetailViewModal({
   invoice,
   quotation,
   onOpenSendModal,
+  onOpenPaymentModal,
+  onInvoiceUpdated,
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [updatingPrices, setUpdatingPrices] = useState(false);
 
   // Escape key handler
   useEffect(() => {
@@ -107,6 +110,40 @@ export default function InvoiceDetailViewModal({
     }
   };
 
+  const handleUpdatePrices = async () => {
+    const quoId = currentQuotation?.id || invoice?.quotation_id;
+    if (!invoice?.id || !quoId) {
+      toast.error("Quotation reference missing. Cannot update prices.");
+      return;
+    }
+
+    try {
+      setUpdatingPrices(true);
+      const updated = await updateInvoicePrices(invoice.id, quoId);
+      toast.success("Invoice prices updated to latest catalog prices!");
+
+      const { enrichedInvoice } = await enrichInvoiceAndQuotation(
+        updated || invoice,
+        currentQuotation
+      );
+      setData(enrichedInvoice);
+
+      if (onInvoiceUpdated) {
+        onInvoiceUpdated(enrichedInvoice);
+      }
+    } catch (err) {
+      console.error("Failed to update invoice prices:", err);
+      const msg = err.response?.data?.message;
+      toast.error(
+        Array.isArray(msg)
+          ? msg.join(", ")
+          : msg || err.message || "Failed to update prices"
+      );
+    } finally {
+      setUpdatingPrices(false);
+    }
+  };
+
   return (
     <div
       role="dialog"
@@ -116,7 +153,7 @@ export default function InvoiceDetailViewModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl sm:max-w-3xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[88vh]"
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
       >
         {/* Header - Fixed */}
         <div className="flex items-start justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 bg-slate-50/70 shrink-0 gap-2">
@@ -151,7 +188,7 @@ export default function InvoiceDetailViewModal({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-3.5 sm:p-5 pb-6 space-y-3.5 sm:space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+        <div className="p-3.5 sm:p-5 pb-8 sm:pb-8 space-y-3.5 sm:space-y-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-3 text-xs font-medium text-blue-600 bg-blue-50/50 rounded-xl border border-blue-100">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -164,6 +201,9 @@ export default function InvoiceDetailViewModal({
             quotation={currentQuotation}
             onDownloadPdf={handleDownloadPdf}
             onPreviewPdf={handlePreviewPdf}
+            onOpenPaymentModal={onOpenPaymentModal}
+            onUpdatePrices={handleUpdatePrices}
+            updatingPrices={updatingPrices}
             onOpenSendModal={
               onOpenSendModal
                 ? () => {
@@ -173,6 +213,73 @@ export default function InvoiceDetailViewModal({
                 : undefined
             }
           />
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleUpdatePrices}
+              disabled={updatingPrices}
+              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              title="Sync latest prices from equipment catalog (PUT /invoices/:invoice_id/:quotation_id)"
+            >
+              {updatingPrices ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              <span>Sync Prices</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePreviewPdf}
+              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Preview PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download PDF</span>
+            </button>
+            {onOpenPaymentModal && (
+              <button
+                type="button"
+                onClick={onOpenPaymentModal}
+                className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Record Payment</span>
+              </button>
+            )}
+            {onOpenSendModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSendModal(currentQuotation, currentInvoice);
+                }}
+                className="w-full sm:w-auto text-center justify-center px-3.5 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Send Email</span>
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs hover:border-slate-300 transition cursor-pointer active:scale-[0.98] text-center"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
