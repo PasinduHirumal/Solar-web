@@ -67,7 +67,7 @@ export class InvoicesService {
         await this.updatePriceBreakdown(quotation, invoice.id);
 
         await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
-            await manager.update(InvoiceEntity, invoice.id, { price_updated_at: Date.now() })
+            await manager.update(InvoiceEntity, invoice.id, { price_updated_at: new Date() })
         });
     }
 
