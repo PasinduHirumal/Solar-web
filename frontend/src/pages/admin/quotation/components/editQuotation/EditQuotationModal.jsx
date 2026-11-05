@@ -5,7 +5,6 @@ import {
 import { axiosInstance } from "../../../../../lib/axiosInstance";
 import useAuthStore from "../../../../../lib/authStore";
 import { isAdmin, isSuperAdmin } from "../../../../../lib/roles";
-import { syncInvoiceForQuotation } from "../../../../../lib/invoicePdfEnricher";
 
 import EditDiscountTab from "./EditDiscountTab";
 import EditTaxTab from "./EditTaxTab";
@@ -148,7 +147,6 @@ export default function EditQuotationModal({
   const handleQuotationUpdated = (updatedQuotation, updatedBreakdown) => {
     if (updatedQuotation) {
       setLatestQuotation(updatedQuotation);
-      syncInvoiceForQuotation(updatedQuotation.id, updatedQuotation.invoice_id);
       if (onQuotationUpdated) {
         onQuotationUpdated(updatedQuotation);
       }

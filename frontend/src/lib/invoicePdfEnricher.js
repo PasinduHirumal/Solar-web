@@ -5,42 +5,6 @@ import { generateInvoicePdf } from "./generateInvoicePdf";
 let solarItemsCatalogCache = null;
 let solarItemsCatalogPromise = null;
 const quotationsDetailCache = new Map();
-const quotationInvoiceMap = new Map();
-
-/**
- * Automatically sync invoice price when quotation price/items change.
- * Calls backend PUT /invoices/:invoice_id/:quotation_id
- *
- * @param {string} quotationId
- * @param {string} [invoiceId]
- * @returns {Promise<string|null>}
- */
-export async function syncInvoiceForQuotation(quotationId, invoiceId = null) {
-  if (!quotationId) return null;
-  try {
-    let targetInvoiceId = invoiceId || quotationInvoiceMap.get(quotationId);
-
-    if (!targetInvoiceId) {
-      const res = await axiosInstance.get("/invoices", { params: { limit: 100 } });
-      const items = res.data?.data?.items || res.data?.items || [];
-      items.forEach((inv) => {
-        if (inv.quotation_id && inv.id) {
-          quotationInvoiceMap.set(inv.quotation_id, inv.id);
-        }
-      });
-      targetInvoiceId = quotationInvoiceMap.get(quotationId);
-    }
-
-    if (targetInvoiceId) {
-      await axiosInstance.put(`/invoices/${targetInvoiceId}/${quotationId}`);
-      return targetInvoiceId;
-    }
-    return null;
-  } catch (err) {
-    console.warn(`[InvoiceSync] Could not sync invoice prices for quotation ${quotationId}:`, err);
-    return null;
-  }
-}
 
 /**
  * Update an invoice's prices to the latest catalog prices in the backend database.
