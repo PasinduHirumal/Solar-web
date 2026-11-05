@@ -78,6 +78,10 @@ export class QuotationsService {
 
         let customer = await this.authService.findEntityByEmail(dto.email);
 
+        if (customer && customer.role !== UserRole.USER) {
+            throw new BadRequestException(`${customer.name} is an admin, Cannot add admin as customer`);
+        }
+
         if (!customer) {
             customer = await this.authService.createUserBySystem(
                 {

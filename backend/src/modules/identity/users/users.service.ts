@@ -117,8 +117,8 @@ export class UsersService {
             throw new BadRequestException('You cannot change your own account role');
         }
 
-        if (user.role === UserRole.USER) {
-            throw new BadRequestException(`Cannot change role:${user.role} to another role`);
+        if (user.role === UserRole.USER || dto.role === UserRole.USER) {
+            throw new BadRequestException(`Cannot change role: ${user.role} to ${dto.role}`);
         }
 
         await this.userRepo.manager.transaction(async (manager: EntityManager) => {

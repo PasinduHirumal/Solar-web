@@ -33,19 +33,19 @@ export class AuthHelperService {
     }
 
     async createUserBySystem(dto: RegisterUserDto | RegisterUserAnonymous, options: CreateUserOptions): Promise<UserEntity> {
-        const exists = await this.authRepo.existsBy({ email: dto.email });
+        const role = 'role' in dto ? dto.role : UserRole.USER;
+        const phone = 'phone' in dto ? dto.phone : null;
+        const address = 'address' in dto ? dto.address : null;
+        
+        const exists = await this.authRepo.existsBy({ email: dto.email, ...(phone ? [{ phone }] : []), });
         if (exists) {
             throw new ConflictException(
-                `Email already in use, if you forgot your password or don't know, click 'Forgot password' and reset your password`
+                `Email or Phone already in use, if you forgot your password or don't know, click 'Forgot password' and reset your password`
             );
         }
 
         const password = 'password' in dto ? dto.password : this.passwordService.generateRandom();
         const hashedPassword = await this.passwordService.hash(password);
-
-        const role = 'role' in dto ? dto.role : UserRole.USER;
-        const phone = 'phone' in dto ? dto.phone : null;
-        const address = 'address' in dto ? dto.address : null;
 
         try {
             return await this.authRepo.manager.transaction(async (manager) => {
