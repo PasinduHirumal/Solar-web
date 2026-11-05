@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { Layers, Plus, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { axiosInstance } from "../../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../../lib/formatPrice";
+import { syncInvoiceForQuotation } from "../../../../../lib/invoicePdfEnricher";
 
 export default function EditItemsTab({
   quotation,
@@ -67,6 +68,10 @@ export default function EditItemsTab({
         res.data?.data?.price_breakdown || res.data?.price_breakdown;
       if (freshQuo) {
         setItems(freshQuo.items || []);
+
+        // Automatically sync invoice prices if an invoice exists for this quotation
+        await syncInvoiceForQuotation(quotation.id, quotation.invoice_id);
+
         if (onQuotationUpdated) {
           onQuotationUpdated(freshQuo, freshBreakdown);
         }
