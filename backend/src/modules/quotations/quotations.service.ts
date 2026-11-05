@@ -402,6 +402,7 @@ export class QuotationsService {
 
             for (const item of items) {
                 await manager.update(QuotationItemEntity, item.id, {
+                    snap_code: item.solar_item.code,
                     snap_title: item.solar_item.title,
                     snap_warranty_period: item.solar_item.warranty_period,
                     snap_warranty_details: item.solar_item.warranty_details,

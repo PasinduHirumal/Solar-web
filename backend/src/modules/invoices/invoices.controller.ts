@@ -17,8 +17,8 @@ import { CustomFileTypeValidator } from '../../common/validators/custom-file-typ
 import { DOCUMENT_MIME_TYPES } from '../../common/constants/file-types.constant';
 
 @Controller('invoices')
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class InvoicesController {
     constructor(
         private readonly invoiceService: InvoicesService,
