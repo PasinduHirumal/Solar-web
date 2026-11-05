@@ -5,5 +5,5 @@ export const QUOTATION_DETAIL_FIELDS: (keyof QuotationEntity)[] = [
 ];
 
 export const QUOTATION_CARD_FIELDS: (keyof QuotationEntity)[] = [
-    'id', 'quotation_number',
+    'id', 'quotation_number', 'status',
 ];

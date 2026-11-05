@@ -30,6 +30,9 @@ export class QuotationItemEntity {
 
     // snap of solar-item
     @Column({ type: 'varchar', length: 255, nullable: true })
+    snap_code!: string | null;
+
+    @Column({ type: 'varchar', length: 255, nullable: true })
     snap_title!: string | null;
 
     @Column({ type: 'varchar', length: 255, nullable: true })

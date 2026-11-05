@@ -32,7 +32,17 @@ export class AuthHelperService {
         });;
     }
 
+    async findEntityByPhone(phone: string): Promise<UserEntity | null> {
+        return await this.authRepo.findOne({
+            where: { phone: phone }
+        });;
+    }
+
     async createUserBySystem(dto: RegisterUserDto | RegisterUserAnonymous, options: CreateUserOptions): Promise<UserEntity> {
+        const role = 'role' in dto ? dto.role : UserRole.USER;
+        const phone = 'phone' in dto ? dto.phone : null;
+        const address = 'address' in dto ? dto.address : null;
+        
         const exists = await this.authRepo.existsBy({ email: dto.email });
         if (exists) {
             throw new ConflictException(
@@ -40,12 +50,15 @@ export class AuthHelperService {
             );
         }
 
+        if (phone) {
+            const exists = await this.authRepo.existsBy({ phone: phone });
+            if (exists) {
+                throw new ConflictException('Phone number already in use');
+            }
+        }
+
         const password = 'password' in dto ? dto.password : this.passwordService.generateRandom();
         const hashedPassword = await this.passwordService.hash(password);
-
-        const role = 'role' in dto ? dto.role : UserRole.USER;
-        const phone = 'phone' in dto ? dto.phone : null;
-        const address = 'address' in dto ? dto.address : null;
 
         try {
             return await this.authRepo.manager.transaction(async (manager) => {

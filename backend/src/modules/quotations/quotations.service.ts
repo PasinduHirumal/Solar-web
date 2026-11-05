@@ -78,7 +78,11 @@ export class QuotationsService {
 
         let customer = await this.authService.findEntityByEmail(dto.email);
 
-        if (!customer) {
+        if (customer && customer.role !== UserRole.USER) {
+            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
+        }
+
+        if (!customer || !customer.phone || customer.phone !== dto.phone) {
             customer = await this.authService.createUserBySystem(
                 {
                     email: dto.email,
@@ -398,6 +402,7 @@ export class QuotationsService {
 
             for (const item of items) {
                 await manager.update(QuotationItemEntity, item.id, {
+                    snap_code: item.solar_item.code,
                     snap_title: item.solar_item.title,
                     snap_warranty_period: item.solar_item.warranty_period,
                     snap_warranty_details: item.solar_item.warranty_details,

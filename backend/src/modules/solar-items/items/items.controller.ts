@@ -11,6 +11,8 @@ import { PaginatedResponse } from '../../../common/interfaces/paginated-response
 import { SolarItemExistsPipe } from './pipes/solar-item-exists.pipe';
 import { UpdateSolarItemDto } from './dto/update-solar-item.dto';
 import { UpdatePriceDto } from '../../../common/dto/inventory/update-price.dto';
+import { CurrentUser } from '../../identity/auth/decorators/current-user.decorator';
+import { UserEntity } from '../../identity/entities/user.entity';
 
 @Controller('items')
 export class ItemsController {
@@ -28,12 +30,13 @@ export class ItemsController {
     }
 
     @Post()
-    @Roles(UserRole.SUPER_ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async createSolarItem(
         @Body() dto: CreateSolarItemDto,
+        @CurrentUser() admin: UserEntity,
     ): Promise<SolarItemEntity> {
-        return this.itemsService.create(dto);
+        return this.itemsService.create(dto, admin);
     }
 
     @Put(':item_id/toggle/status')

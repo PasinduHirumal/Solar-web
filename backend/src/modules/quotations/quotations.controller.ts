@@ -21,7 +21,7 @@ export class QuotationsController {
     ) {}
 
     @Post()
-    @Roles(UserRole.ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async createQuotation(
         @Body() dto: CreateQuotationDto,

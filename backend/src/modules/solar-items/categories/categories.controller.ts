@@ -27,7 +27,7 @@ export class CategoriesController {
     }
 
     @Post()
-    @Roles(UserRole.SUPER_ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async createCategory(
         @Body() dto: CreateCategoryDto,
@@ -45,7 +45,7 @@ export class CategoriesController {
     }
 
     @Put(':category_id/update/data')
-    @Roles(UserRole.SUPER_ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async updateCategoryData(
         @Param('category_id', new ParseUUIDPipe({ version: '4' }), ItemCategoryExistsPipe) category: ItemCategoryEntity,

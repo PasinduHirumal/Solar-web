@@ -16,14 +16,14 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentExistsPipe } from './pipes/payment-exists.pipe';
 
 @Controller('payments')
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class PaymentsController {
     constructor(
         private readonly paymentService: PaymentsService,
     ) {}
 
     @Get()
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async getAllPaymentsForInvoice(
         @Query() query: FindPaymentsQueryDto,
     ): Promise<PaginatedResponse<PaymentEntity>> {
@@ -31,8 +31,6 @@ export class PaymentsController {
     }
 
     @Post(':invoice_id/add/payment')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async addPaymentToInvoice(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
         @Body() dto: CreatePaymentDto,
@@ -42,8 +40,6 @@ export class PaymentsController {
     }
 
     @Put(':invoice_id/:payment_id/revoke')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async revokePayment(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
         @Param('payment_id', new ParseUUIDPipe({ version: '4'}), PaymentExistsPipe) payment: PaymentEntity,
@@ -54,8 +50,6 @@ export class PaymentsController {
     }
 
     @Get(':payment_id')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async getPaymentById(
         @Param('payment_id', new ParseUUIDPipe({ version: '4'})) payment_id: string,
     ): Promise<PaymentEntity> {

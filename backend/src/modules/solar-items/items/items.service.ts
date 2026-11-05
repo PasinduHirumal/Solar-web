@@ -11,6 +11,8 @@ import { pick } from '../../../utils/pick-fields.util';
 import { CATEGORY_FIELDS } from '../categories/constants/item-category-fields.constants';
 import { UpdateSolarItemDto } from './dto/update-solar-item.dto';
 import { UpdatePriceDto } from '../../../common/dto/inventory/update-price.dto';
+import { UserEntity } from '../../identity/entities/user.entity';
+import { UserRole } from '../../identity/enums/user.enum';
 
 const SOLAR_ITEMS_ALIAS = 'solar_items';
 
@@ -28,7 +30,7 @@ export class ItemsService {
         private readonly categoryService: CategoriesService,
     ) {}
 
-    async create(dto: CreateSolarItemDto): Promise<SolarItemEntity> {
+    async create(dto: CreateSolarItemDto, admin: UserEntity): Promise<SolarItemEntity> {
         const category = await this.categoryService.findById(dto.category_id);
         if (!category.is_active) throw new BadRequestException(`Category not in active`);
 
@@ -44,6 +46,7 @@ export class ItemsService {
                     code: solarItemCode,
                     category_id: category.id,
                     selling_price: dto.marked_price,
+                    is_active: admin.role === UserRole.SUPER_ADMIN ? true : false,
                 });
 
                 return await manager.save(SolarItemEntity, solarItem);

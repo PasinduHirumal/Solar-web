@@ -7,6 +7,7 @@ import { UserRole } from "../enums/user.enum";
 @Index('UQ_user_email',         ['email'],      { unique: true })
 @Index('UQ_user_google_id',     ['google_id'],  { unique: true })
 @Index('UQ_user_temp_token',    ['temp_token'], { unique: true })
+@Index('UQ_user_phone',         ['phone'],      { unique: true })
 export class UserEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;

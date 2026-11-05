@@ -17,14 +17,14 @@ import { CustomFileTypeValidator } from '../../common/validators/custom-file-typ
 import { DOCUMENT_MIME_TYPES } from '../../common/constants/file-types.constant';
 
 @Controller('invoices')
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class InvoicesController {
     constructor(
         private readonly invoiceService: InvoicesService,
     ) {}
 
     @Get()
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async getAllInvoices(
         @Query() query: FindInvoicesQueryDto,
     ): Promise<PaginatedResponse<InvoiceEntity>> {
@@ -32,8 +32,6 @@ export class InvoicesController {
     }
 
     @Post(':invoice_id/send/email')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     @UseInterceptors(FileInterceptor('pdf'))
     async sendInvoiceToCustomer(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
@@ -48,8 +46,6 @@ export class InvoicesController {
     }
 
     @Post(':quotation_id')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async createInvoice(
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
         @Body() dto: CreateInvoiceDto,
@@ -58,8 +54,6 @@ export class InvoicesController {
     }
 
     @Put(':invoice_id/:quotation_id')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async updateToLatestPrices(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'}), InvoiceExistsPipe) invoice: InvoiceEntity,
         @Param('quotation_id', new ParseUUIDPipe({ version: '4'}), QuotationExistsPipe) quotation: QuotationEntity,
@@ -68,8 +62,6 @@ export class InvoicesController {
     }
 
     @Get(':invoice_id')
-    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-    @UseGuards(JwtAuthGuard, RolesGuard)
     async getInvoiceWithPriceBreakdown(
         @Param('invoice_id', new ParseUUIDPipe({ version: '4'})) invoice_id: string,
     ): Promise<InvoiceEntity> {
