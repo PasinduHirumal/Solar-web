@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard, RefreshCw } from "lucide-react";
+import { axiosInstance } from "../../../../lib/axiosInstance";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation, updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
+import { updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
 import InvoiceDetails from "./InvoiceDetails";
 import { toast } from "react-hot-toast";
 
@@ -29,7 +30,7 @@ export default function InvoiceDetailViewModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Fetch full invoice with price breakdown, enriched line items, and solar item categories
+  // Fetch full invoice directly from backend @Get(':invoice_id')
   useEffect(() => {
     if (!isOpen || !invoice?.id) {
       setData(null);
@@ -41,17 +42,38 @@ export default function InvoiceDetailViewModal({
     const fetchInvoiceDetails = async () => {
       try {
         setLoading(true);
-
-        const { enrichedInvoice } = await enrichInvoiceAndQuotation(
-          invoice,
-          quotation || invoice.quotation
-        );
-
+        const res = await axiosInstance.get(`/invoices/${invoice.id}`);
+        const inv = res.data?.data || res.data;
         if (active) {
-          setData(enrichedInvoice);
+          setData(inv);
         }
       } catch (err) {
-        console.error("Failed to load invoice details", err);
+        console.error("Failed to load invoice details from @Get(':invoice_id'):", err);
+        const msg = err.response?.data?.message;
+        const isStale =
+          err.response?.status === 400 &&
+          typeof msg === "string" &&
+          (msg.toLowerCase().includes("out of date") || msg.toLowerCase().includes("update the invoice"));
+
+        // If backend reports prices are out of date, auto-sync and retry once
+        if (isStale) {
+          const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
+          if (quoId) {
+            try {
+              await axiosInstance.put(`/invoices/${invoice.id}/${quoId}`);
+              const retryRes = await axiosInstance.get(`/invoices/${invoice.id}`);
+              const retryInv = retryRes.data?.data || retryRes.data;
+              if (active) {
+                setData(retryInv);
+                if (onInvoiceUpdated) onInvoiceUpdated(retryInv);
+              }
+              return;
+            } catch (syncErr) {
+              console.warn("Could not auto-sync prices:", syncErr);
+            }
+          }
+        }
+
         if (active) setData(invoice);
       } finally {
         if (active) setLoading(false);
@@ -63,7 +85,7 @@ export default function InvoiceDetailViewModal({
     return () => {
       active = false;
     };
-  }, [isOpen, invoice, quotation]);
+  }, [isOpen, invoice?.id]);
 
   if (!isOpen || !invoice) return null;
 
@@ -74,10 +96,6 @@ export default function InvoiceDetailViewModal({
     try {
       const result = generateInvoicePdf({
         invoice: currentInvoice,
-        quotation: currentQuotation,
-        customer: currentQuotation.customer,
-        items: currentQuotation.items || [],
-        dueDate: currentInvoice.due_date,
       });
 
       const a = document.createElement("a");
@@ -97,10 +115,6 @@ export default function InvoiceDetailViewModal({
     try {
       const result = generateInvoicePdf({
         invoice: currentInvoice,
-        quotation: currentQuotation,
-        customer: currentQuotation.customer,
-        items: currentQuotation.items || [],
-        dueDate: currentInvoice.due_date,
       });
 
       window.open(result.url, "_blank");
@@ -119,17 +133,15 @@ export default function InvoiceDetailViewModal({
 
     try {
       setUpdatingPrices(true);
-      const updated = await updateInvoicePrices(invoice.id, quoId);
+      await updateInvoicePrices(invoice.id, quoId);
       toast.success("Invoice prices updated to latest catalog prices!");
 
-      const { enrichedInvoice } = await enrichInvoiceAndQuotation(
-        updated || invoice,
-        currentQuotation
-      );
-      setData(enrichedInvoice);
+      const res = await axiosInstance.get(`/invoices/${invoice.id}`);
+      const freshInv = res.data?.data || res.data;
+      setData(freshInv);
 
       if (onInvoiceUpdated) {
-        onInvoiceUpdated(enrichedInvoice);
+        onInvoiceUpdated(freshInv);
       }
     } catch (err) {
       console.error("Failed to update invoice prices:", err);

@@ -6,7 +6,6 @@ import {
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
 
 export default function SendInvoiceModal({
   isOpen,
@@ -76,22 +75,43 @@ export default function SendInvoiceModal({
       try {
         setLoadingInitial(true);
 
-        const { enrichedInvoice, enrichedQuotation } =
-          await enrichInvoiceAndQuotation(propInvoice || existingInvoice, quotation);
-
-        if (active) {
-          if (enrichedQuotation && enrichedQuotation.id) {
-            setFullQuotation(enrichedQuotation);
-          }
-          if (enrichedInvoice && enrichedInvoice.id) {
-            setExistingInvoice(enrichedInvoice);
-            if (enrichedInvoice.due_date) {
-              setDueDate(new Date(enrichedInvoice.due_date).toISOString().split("T")[0]);
+        let inv = propInvoice || existingInvoice;
+        if (inv?.id) {
+          try {
+            const invRes = await axiosInstance.get(`/invoices/${inv.id}`);
+            const freshInv = invRes.data?.data || invRes.data;
+            if (active && freshInv?.id) {
+              inv = freshInv;
+              setExistingInvoice(freshInv);
+              if (freshInv.due_date) {
+                setDueDate(new Date(freshInv.due_date).toISOString().split("T")[0]);
+              }
+              if (freshInv.quotation) {
+                setFullQuotation(freshInv.quotation);
+              }
             }
+          } catch (e) {
+            console.warn("Could not load invoice by id:", e);
+          }
+        }
+
+        if (active && (!inv?.quotation?.items || inv.quotation.items.length === 0)) {
+          try {
+            const quoRes = await axiosInstance.get(`/quotations/${quoId}`);
+            const loadedQuo =
+              quoRes.data?.data?.quotation ||
+              quoRes.data?.quotation ||
+              quoRes.data?.data ||
+              quoRes.data;
+            if (active && loadedQuo?.id) {
+              setFullQuotation(loadedQuo);
+            }
+          } catch (e) {
+            console.warn("Could not load quotation by id:", e);
           }
         }
       } catch (err) {
-        console.error("Failed to load full quotation and invoice", err);
+        console.error("Failed to load invoice and quotation", err);
       } finally {
         if (active) setLoadingInitial(false);
       }
@@ -145,18 +165,18 @@ export default function SendInvoiceModal({
     try {
       setGeneratingPdf(true);
 
-      const result = generateInvoicePdf({
+      const targetInvoice = existingInvoice || {
         quotation: fullQuotation,
-        invoice: existingInvoice,
-        customer,
-        items,
-        priceBreakdown: {
-          subtotal,
-          discount: discountAmount,
-          tax: taxAmount,
-          total: grandTotal,
-        },
-        dueDate,
+        due_date: dueDate,
+        subtotal,
+        discount: discountAmount,
+        tax: taxAmount,
+        total: grandTotal,
+      };
+
+      const result = generateInvoicePdf({
+        invoice: targetInvoice,
+        quotation: fullQuotation,
       });
 
       setGeneratedPdf(result);

@@ -191,17 +191,9 @@ export default function InvoiceDetails({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((line, idx) => {
-                  const itemTitle = line.snap_title || line.solar_item?.title || "Solar Equipment";
-                  const itemCode = line.solar_item?.code || line.code;
-                  const itemCat =
-                    line.solar_item?.category?.title ||
-                    line.category?.title ||
-                    (typeof line.category === "string" ? line.category : null) ||
-                    (typeof line.solar_item?.category === "string" ? line.solar_item?.category : null);
-                  const unitPrice =
-                    line.snap_selling_price !== null && line.snap_selling_price !== undefined
-                      ? Number(line.snap_selling_price)
-                      : Number(line.solar_item?.selling_price || 0);
+                  const itemTitle = line.snap_title || "Solar Equipment";
+                  const warranty = line.snap_warranty_period;
+                  const unitPrice = Number(line.snap_selling_price || 0);
                   const qty = Number(line.quantity || 1);
                   const lineTotal = unitPrice * qty;
 
@@ -209,20 +201,14 @@ export default function InvoiceDetails({
                     <tr key={line.id || idx} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-2.5 px-3.5">
                         <p className="font-semibold text-slate-900">{itemTitle}</p>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
-                          {itemCode && (
-                            <span className="font-mono text-blue-700 bg-blue-50 border border-blue-100 px-1.5 py-0.2 rounded font-semibold">
-                              {itemCode}
-                            </span>
-                          )}
-                          {itemCat && <span className="text-slate-400">• {itemCat}</span>}
-                          {(line.snap_warranty_period || line.solar_item?.warranty_period) && (
-                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.2 rounded font-medium flex items-center gap-0.5">
+                        {warranty && (
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-medium flex items-center gap-0.5">
                               <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
-                              {line.snap_warranty_period || line.solar_item?.warranty_period}
+                              {warranty}
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3.5 text-right font-mono text-slate-700">
                         {formatPrice(unitPrice)}

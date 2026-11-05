@@ -16,68 +16,33 @@ import { contactDetails, paymentDetails } from "../data/dataset";
  * @returns {{ doc: jsPDF, blob: Blob, file: File, url: string, invoiceNumber: string }}
  */
 export function generateInvoicePdf({
-  quotation,
   invoice,
+  quotation: fallbackQuotation,
   customer: overrideCustomer,
   items: overrideItems,
-  priceBreakdown,
   dueDate: overrideDueDate,
 }) {
-  const currentQuo = quotation || {};
-  const currentCustomer = overrideCustomer || currentQuo.customer || {};
+  const currentInvoice = invoice || {};
+  const currentQuo = currentInvoice.quotation || fallbackQuotation || {};
+  const currentCustomer = overrideCustomer || currentQuo.customer || currentInvoice.customer || {};
   const currentItems = overrideItems || currentQuo.items || [];
 
   // Generate or determine invoice number
-  let invoiceNumber =
-    invoice?.invoice_number ||
+  const invoiceNumber =
+    currentInvoice.invoice_number ||
     (currentQuo.quotation_number
       ? currentQuo.quotation_number.replace(/^SO-QU-/, "SO-INV-")
       : `SO-INV-${Date.now().toString(36).toUpperCase()}`);
 
   const quotationNumber = currentQuo.quotation_number || null;
 
-  // Calculate pricing breakdown
-  const subtotal =
-    priceBreakdown?.subtotal !== undefined
-      ? Number(priceBreakdown.subtotal)
-      : currentItems.reduce((sum, line) => {
-          const unitPrice =
-            line.snap_selling_price !== null && line.snap_selling_price !== undefined
-              ? Number(line.snap_selling_price)
-              : Number(line.solar_item?.selling_price || line.solar_item?.marked_price || 0);
-          return sum + unitPrice * (Number(line.quantity) || 1);
-        }, 0);
-
-  let discountAmount =
-    priceBreakdown?.discount !== undefined
-      ? Number(priceBreakdown.discount)
-      : 0;
-
-  if (!discountAmount && currentQuo.discount && currentQuo.discount_type !== "NON") {
-    if (currentQuo.discount_type === "PERCENTAGE") {
-      discountAmount = (subtotal * Number(currentQuo.discount)) / 100;
-    } else if (currentQuo.discount_type === "FIXED") {
-      discountAmount = Number(currentQuo.discount);
-    }
-  }
-
-  const taxableBase = Math.max(0, subtotal - discountAmount);
-
-  let taxAmount =
-    priceBreakdown?.tax !== undefined ? Number(priceBreakdown.tax) : 0;
-
-  if (!taxAmount && currentQuo.tax && currentQuo.tax_type !== "NON") {
-    if (currentQuo.tax_type === "PERCENTAGE") {
-      taxAmount = (taxableBase * Number(currentQuo.tax)) / 100;
-    } else if (currentQuo.tax_type === "FIXED") {
-      taxAmount = Number(currentQuo.tax);
-    }
-  }
-
-  const grandTotal =
-    priceBreakdown?.total !== undefined
-      ? Number(priceBreakdown.total)
-      : Math.max(0, subtotal - discountAmount + taxAmount);
+  // Extract pricing directly from @Get(':invoice_id')
+  const subtotal = Number(currentInvoice.subtotal || 0);
+  const discountAmount = Number(currentInvoice.discount || 0);
+  const taxAmount = Number(currentInvoice.tax || 0);
+  const grandTotal = Number(currentInvoice.total || 0);
+  const paidAmount = Number(currentInvoice.paid_amount || 0);
+  const balance = Math.max(0, grandTotal - paidAmount);
 
   // Dates
   const issueDateStr = new Date().toLocaleDateString("en-US", {
@@ -282,31 +247,19 @@ export function generateInvoicePdf({
   let finalTableY = cursorY;
   if (currentItems.length > 0) {
     const tableRows = currentItems.map((line, idx) => {
-      const itemTitle = line.snap_title || line.solar_item?.title || "Solar Equipment";
-      const itemCode = line.solar_item?.code || line.code;
-      const itemCat =
-        line.solar_item?.category?.title ||
-        line.category?.title ||
-        (typeof line.category === "string" ? line.category : null) ||
-        (typeof line.solar_item?.category === "string" ? line.solar_item?.category : null) ||
-        "-";
-      const warranty = line.snap_warranty_period || line.solar_item?.warranty_period;
-      const unitPrice =
-        line.snap_selling_price !== null && line.snap_selling_price !== undefined
-          ? Number(line.snap_selling_price)
-          : Number(line.solar_item?.selling_price || 0);
+      const itemTitle = line.snap_title || "Solar Equipment";
+      const warranty = line.snap_warranty_period;
+      const unitPrice = Number(line.snap_selling_price || 0);
       const qty = Number(line.quantity || 1);
       const lineTotal = unitPrice * qty;
 
-      const metaParts = [];
-      if (itemCode) metaParts.push(`Code: ${itemCode}`);
-      if (warranty) metaParts.push(`Warranty: ${warranty}`);
-      const description = metaParts.length > 0 ? `${itemTitle}\n${metaParts.join(" | ")}` : itemTitle;
+      const description = warranty
+        ? `${itemTitle}\nWarranty: ${warranty}`
+        : itemTitle;
 
       return [
         idx + 1,
         description,
-        itemCat,
         qty,
         formatPrice(unitPrice).replace(/^[A-Z]+\s*/, ""),
         formatPrice(lineTotal).replace(/^[A-Z]+\s*/, ""),
@@ -316,7 +269,7 @@ export function generateInvoicePdf({
     autoTable(doc, {
       startY: cursorY,
       margin: { left: margin, right: margin },
-      head: [["#", "Item Description & Warranty", "Category", "Qty", `Unit Price (${currencyType})`, `Total (${currencyType})`]],
+      head: [["#", "Solar Equipment & Warranty Details", "Qty", `Unit Price (${currencyType})`, `Total (${currencyType})`]],
       body: tableRows,
       theme: "striped",
       headStyles: {
@@ -324,7 +277,7 @@ export function generateInvoicePdf({
         textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 8,
-        cellPadding: 2.2,
+        cellPadding: 2.5,
         halign: "left",
       },
       styles: {
@@ -340,12 +293,11 @@ export function generateInvoicePdf({
         fillColor: [248, 250, 252],
       },
       columnStyles: {
-        0: { halign: "center", cellWidth: 8 },
-        1: { cellWidth: 72 },
-        2: { cellWidth: 28 },
-        3: { halign: "center", cellWidth: 12 },
+        0: { halign: "center", cellWidth: 10 },
+        1: { cellWidth: 98 },
+        2: { halign: "center", cellWidth: 16 },
+        3: { halign: "right", cellWidth: 28 },
         4: { halign: "right", cellWidth: 30 },
-        5: { halign: "right", cellWidth: 32 },
       },
     });
 
@@ -595,5 +547,6 @@ export function generateInvoicePdf({
     invoiceNumber,
     grandTotal,
     subtotal,
+    balance,
   };
 }

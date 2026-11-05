@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Eye, Mail, Loader2, CreditCard } from "lucide-react";
-import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
+import { Eye, Mail, CreditCard } from "lucide-react";
 import InvoiceDetailViewModal from "./InvoiceDetailViewModal";
 import RecordPaymentModal from "./RecordPaymentModal";
 
@@ -12,21 +11,10 @@ export default function ActionButton({
 }) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [sendLoading, setSendLoading] = useState(false);
 
-  const handleSendEmail = async () => {
+  const handleSendEmail = () => {
     if (!onOpenSendModal) return;
-    try {
-      setSendLoading(true);
-      const { enrichedInvoice, enrichedQuotation } =
-        await enrichInvoiceAndQuotation(invoice, quotation);
-      onOpenSendModal(enrichedQuotation, enrichedInvoice);
-    } catch (err) {
-      console.error("Send modal preparation error", err);
-      onOpenSendModal(quotation || invoice.quotation, invoice);
-    } finally {
-      setSendLoading(false);
-    }
+    onOpenSendModal(invoice.quotation || quotation, invoice);
   };
 
   const isPaidInFull =
@@ -66,15 +54,10 @@ export default function ActionButton({
         {onOpenSendModal && (
           <button
             onClick={handleSendEmail}
-            disabled={sendLoading}
-            className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all rounded-lg border border-indigo-200/60 shadow-2xs cursor-pointer flex items-center justify-center disabled:opacity-50"
+            className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all rounded-lg border border-indigo-200/60 shadow-2xs cursor-pointer flex items-center justify-center"
             title="Send Invoice to Customer Email"
           >
-            {sendLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Mail className="w-3.5 h-3.5" />
-            )}
+            <Mail className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
