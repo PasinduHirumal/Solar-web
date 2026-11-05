@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
-import { fetchInvoiceWithBreakdown } from "../../../../lib/invoicePdfEnricher";
 
 /**
  * RecordPaymentModal

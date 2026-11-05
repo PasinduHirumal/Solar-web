@@ -77,21 +77,43 @@ export default function SendInvoiceModal({
 
         let inv = propInvoice || existingInvoice;
         if (inv?.id) {
-          try {
-            const invRes = await axiosInstance.get(`/invoices/${inv.id}`);
-            const freshInv = invRes.data?.data || invRes.data;
-            if (active && freshInv?.id) {
-              inv = freshInv;
-              setExistingInvoice(freshInv);
-              if (freshInv.due_date) {
-                setDueDate(new Date(freshInv.due_date).toISOString().split("T")[0]);
-              }
-              if (freshInv.quotation) {
-                setFullQuotation(freshInv.quotation);
-              }
+          const isStale =
+            !inv.price_updated_at ||
+            Date.now() - new Date(inv.price_updated_at).getTime() > 50000;
+
+          let canFetchDirectly = !isStale;
+
+          // Proactively synchronize prices before calling GET /invoices/:id to avoid backend 400 error
+          if (isStale && quoId) {
+            try {
+              await axiosInstance.put(`/invoices/${inv.id}/${quoId}`);
+              canFetchDirectly = true;
+            } catch (syncErr) {
+              console.warn("Could not pre-sync prices in SendInvoiceModal:", syncErr);
+              canFetchDirectly = false;
             }
-          } catch (e) {
-            console.warn("Could not load invoice by id:", e);
+          }
+
+          if (canFetchDirectly) {
+            try {
+              const invRes = await axiosInstance.get(`/invoices/${inv.id}`);
+              const freshInv = invRes.data?.data || invRes.data;
+              if (active && freshInv?.id) {
+                inv = freshInv;
+                setExistingInvoice(freshInv);
+                if (freshInv.due_date) {
+                  setDueDate(new Date(freshInv.due_date).toISOString().split("T")[0]);
+                }
+                if (freshInv.quotation) {
+                  setFullQuotation(freshInv.quotation);
+                }
+                if (isStale && onQuotationUpdated) {
+                  onQuotationUpdated(freshInv);
+                }
+              }
+            } catch (e) {
+              console.warn("Could not load invoice by id:", e);
+            }
           }
         }
 
@@ -122,7 +144,7 @@ export default function SendInvoiceModal({
     return () => {
       active = false;
     };
-  }, [isOpen, quotation?.id, propInvoice?.id, propInvoice?.quotation_id]);
+  }, [isOpen, quotation?.id, propInvoice?.id, propInvoice?.quotation_id, propInvoice?.price_updated_at]);
 
   if (!isOpen || !quotation) return null;
 

@@ -31,53 +31,73 @@ export default function InvoiceDetailViewModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Fetch full invoice directly from backend @Get(':invoice_id')
+  // Fetch full invoice specifications and price breakdown safely
   useEffect(() => {
     if (!isOpen || !invoice?.id) return;
 
     let active = true;
 
     const fetchInvoiceDetails = async () => {
+      const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
+      const isStale =
+        !invoice.price_updated_at ||
+        Date.now() - new Date(invoice.price_updated_at).getTime() > 50000;
+
       try {
         setLoading(true);
-        setSyncStatusText("Loading invoice specifications and price breakdown...");
-        const res = await axiosInstance.get(`/invoices/${invoice.id}`);
-        const inv = res.data?.data || res.data;
-        if (active) {
-          setData(inv);
-        }
-      } catch (err) {
-        console.error("Failed to load invoice details from @Get(':invoice_id'):", err);
-        const msg = err.response?.data?.message;
-        const isStale =
-          err.response?.status === 400 &&
-          typeof msg === "string" &&
-          (msg.toLowerCase().includes("out of date") || msg.toLowerCase().includes("update the invoice"));
 
-        // If backend reports prices are out of date, auto-sync and retry once
-        if (isStale) {
-          const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
-          if (quoId) {
-            try {
-              if (active) {
-                setSyncStatusText("Catalog prices updated. Synchronizing latest price breakdown...");
-              }
-              await axiosInstance.put(`/invoices/${invoice.id}/${quoId}`);
-              const retryRes = await axiosInstance.get(`/invoices/${invoice.id}`);
-              const retryInv = retryRes.data?.data || retryRes.data;
-              if (active) {
-                setData(retryInv);
-                if (onInvoiceUpdated) {
-                  onInvoiceUpdated(retryInv);
-                }
-              }
-              return;
-            } catch (syncErr) {
-              console.warn("Could not auto-sync prices:", syncErr);
-            }
+        let canFetchDirectly = !isStale;
+
+        // Proactively synchronize prices before calling GET /invoices/:id to avoid backend 400 BadRequestException
+        if (isStale && quoId) {
+          try {
+            setSyncStatusText("Synchronizing latest price breakdown with catalog...");
+            await axiosInstance.put(`/invoices/${invoice.id}/${quoId}`);
+            canFetchDirectly = true;
+          } catch (syncErr) {
+            console.warn("Could not pre-sync prices via PUT /invoices/:id/:quoId:", syncErr);
+            canFetchDirectly = false;
           }
         }
 
+        if (canFetchDirectly) {
+          setSyncStatusText("Loading invoice specifications and price breakdown...");
+          const res = await axiosInstance.get(`/invoices/${invoice.id}`);
+          const inv = res.data?.data || res.data;
+          if (active && inv) {
+            setData(inv);
+            if (isStale && onInvoiceUpdated) {
+              onInvoiceUpdated(inv);
+            }
+            return;
+          }
+        }
+
+        // If prices were stale and could not be pre-synced, do NOT call GET /invoices/:id (prevents backend 400).
+        // Instead, load quotation details to ensure line items and customer information are available.
+        if (active && quoId) {
+          try {
+            const quoRes = await axiosInstance.get(`/quotations/${quoId}`);
+            const quo =
+              quoRes.data?.data?.quotation ||
+              quoRes.data?.quotation ||
+              quoRes.data?.data ||
+              quoRes.data;
+            if (active && quo) {
+              setData({
+                ...invoice,
+                quotation: quo,
+              });
+              return;
+            }
+          } catch (quoErr) {
+            console.warn("Could not load quotation details:", quoErr);
+          }
+        }
+
+        if (active) setData(invoice);
+      } catch (err) {
+        console.error("Failed to load invoice details:", err);
         if (active) setData(invoice);
       } finally {
         if (active) {
@@ -92,7 +112,7 @@ export default function InvoiceDetailViewModal({
     return () => {
       active = false;
     };
-  }, [isOpen, invoice?.id]);
+  }, [isOpen, invoice?.id, invoice?.price_updated_at]);
 
   if (!isOpen || !invoice) return null;
 
@@ -141,11 +161,8 @@ export default function InvoiceDetailViewModal({
 
     try {
       setUpdatingPrices(true);
-      await updateInvoicePrices(invoice.id, quoId);
+      const freshInv = await updateInvoicePrices(invoice.id, quoId);
       toast.success("Invoice prices updated to latest catalog prices!");
-
-      const res = await axiosInstance.get(`/invoices/${invoice.id}`);
-      const freshInv = res.data?.data || res.data;
       setData(freshInv);
 
       if (onInvoiceUpdated) {

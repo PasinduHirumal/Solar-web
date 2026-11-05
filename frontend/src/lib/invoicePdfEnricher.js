@@ -3,15 +3,35 @@ import { axiosInstance } from "./axiosInstance";
 /**
  * Fetch an invoice with full price breakdown and relations directly from GET /invoices/:invoice_id.
  * If backend reports that prices are out of date (due to 60s freshness window),
- * automatically calls PUT /invoices/:invoice_id/:quotation_id and retries.
+ * or if invoiceObj indicates stale prices, proactively synchronizes via PUT /invoices/:invoice_id/:quotation_id.
  *
  * @param {string} invoiceId
  * @param {string} [quotationId]
  * @param {Object} [fallback={}]
+ * @param {Object} [invoiceObj=null]
  * @returns {Promise<Object>}
  */
-export async function fetchInvoiceById(invoiceId, quotationId, fallback = {}) {
+export async function fetchInvoiceById(
+  invoiceId,
+  quotationId,
+  fallback = {},
+  invoiceObj = null
+) {
   if (!invoiceId) return fallback;
+
+  // Proactive freshness check if invoiceObj is provided
+  if (invoiceObj?.price_updated_at && quotationId) {
+    const isStale =
+      Date.now() - new Date(invoiceObj.price_updated_at).getTime() > 50000;
+    if (isStale) {
+      try {
+        await axiosInstance.put(`/invoices/${invoiceId}/${quotationId}`);
+      } catch (syncErr) {
+        console.warn(`Could not pre-sync invoice prices for ${invoiceId}:`, syncErr);
+      }
+    }
+  }
+
   try {
     const res = await axiosInstance.get(`/invoices/${invoiceId}`);
     return res.data?.data || res.data || fallback;
