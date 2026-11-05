@@ -195,6 +195,7 @@ export default function SendInvoiceModal({
         discount: discountAmount,
         tax: taxAmount,
         total: grandTotal,
+        paid_amount: Number(existingInvoice?.paid_amount || 0),
       };
 
       const result = generateInvoicePdf({

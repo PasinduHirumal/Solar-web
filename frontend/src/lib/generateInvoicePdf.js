@@ -36,13 +36,47 @@ export function generateInvoicePdf({
 
   const quotationNumber = currentQuo.quotation_number || null;
 
-  // Extract pricing directly from @Get(':invoice_id')
-  const subtotal = Number(currentInvoice.subtotal || 0);
-  const discountAmount = Number(currentInvoice.discount || 0);
-  const taxAmount = Number(currentInvoice.tax || 0);
-  const grandTotal = Number(currentInvoice.total || 0);
-  const paidAmount = Number(currentInvoice.paid_amount || 0);
-  const balance = Math.max(0, grandTotal - paidAmount);
+  // Extract pricing directly from invoice entity or calculate from quotation
+  let subtotal = Number(currentInvoice.subtotal || 0);
+  if (!subtotal && currentItems.length > 0) {
+    subtotal = currentItems.reduce((sum, line) => {
+      const price = Number(line.snap_selling_price ?? line.solar_item?.selling_price ?? 0);
+      const qty = Number(line.quantity || 1);
+      return sum + price * qty;
+    }, 0);
+  }
+
+  let discountAmount = Number(currentInvoice.discount || 0);
+  if (!discountAmount && currentQuo.discount) {
+    const rawDisc = Number(currentQuo.discount);
+    discountAmount =
+      currentQuo.discount_type === "PERCENTAGE"
+        ? (subtotal * rawDisc) / 100
+        : rawDisc;
+  }
+
+  let taxAmount = Number(currentInvoice.tax || 0);
+  if (!taxAmount && currentQuo.tax) {
+    const taxableAmount = Math.max(0, subtotal - discountAmount);
+    const rawTax = Number(currentQuo.tax);
+    taxAmount =
+      currentQuo.tax_type === "PERCENTAGE"
+        ? (taxableAmount * rawTax) / 100
+        : rawTax;
+  }
+
+  let grandTotal = Number(currentInvoice.total || 0);
+  if (!grandTotal) {
+    grandTotal = Math.max(0, subtotal - discountAmount + taxAmount);
+  }
+
+  let paidAmount = Number(currentInvoice.paid_amount || 0);
+  if (!paidAmount && Array.isArray(currentInvoice.payments) && currentInvoice.payments.length > 0) {
+    paidAmount = currentInvoice.payments
+      .filter((p) => p.status !== "REVOKED")
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  }
+  const balance = Math.max(0, Math.round((grandTotal - paidAmount) * 100) / 100);
 
   // Dates
   const issueDateStr = new Date().toLocaleDateString("en-US", {
@@ -167,22 +201,46 @@ export function generateInvoicePdf({
     doc.text(`Payment Due: ${dueDateStr}`, metaRightX, metaRightY, { align: "right" });
   }
 
-  if (invoice?.payment_status) {
-    const status = invoice.payment_status.toUpperCase();
-    const statusBg = status === "PAID" ? [220, 252, 231] : [254, 243, 199];
-    const statusFg = status === "PAID" ? [21, 128, 61] : [180, 83, 9];
-    const badgeWidth = 26;
-    const badgeHeight = 5.5;
-    const badgeX = metaRightX - badgeWidth;
-    const badgeY = metaRightY + 2.5;
+  // Payment status badge
+  const effectiveStatus = (
+    currentInvoice.payment_status ||
+    (paidAmount >= grandTotal && grandTotal > 0
+      ? "PAID"
+      : paidAmount > 0
+      ? "PARTIAL"
+      : "PENDING")
+  ).toUpperCase();
 
-    doc.setFillColor(statusBg[0], statusBg[1], statusBg[2]);
-    doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(statusFg[0], statusFg[1], statusFg[2]);
-    doc.text(status, badgeX + badgeWidth / 2, badgeY + 3.8, { align: "center" });
+  let statusBg = [254, 243, 199];
+  let statusFg = [180, 83, 9];
+  let statusLabel = "PAYMENT PENDING";
+
+  if (effectiveStatus === "PAID") {
+    statusBg = [220, 252, 231];
+    statusFg = [21, 128, 61];
+    statusLabel = "PAID IN FULL";
+  } else if (effectiveStatus === "PARTIAL") {
+    statusBg = [243, 232, 255];
+    statusFg = [126, 34, 206];
+    statusLabel = "PARTIAL PAYMENT";
+  } else if (effectiveStatus === "ADVANCED") {
+    statusBg = [219, 234, 254];
+    statusFg = [29, 78, 216];
+    statusLabel = "ADVANCE PAYMENT";
   }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  const badgeTextWidth = doc.getTextWidth(statusLabel);
+  const badgeWidth = Math.max(28, badgeTextWidth + 6);
+  const badgeHeight = 5.5;
+  const badgeX = metaRightX - badgeWidth;
+  const badgeY = metaRightY + 2.5;
+
+  doc.setFillColor(statusBg[0], statusBg[1], statusBg[2]);
+  doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 1.5, 1.5, "F");
+  doc.setTextColor(statusFg[0], statusFg[1], statusFg[2]);
+  doc.text(statusLabel, badgeX + badgeWidth / 2, badgeY + 3.8, { align: "center" });
 
   cursorY += 21;
 
@@ -315,10 +373,10 @@ export function generateInvoicePdf({
   const rawChequeNote = paymentDetails?.chequeNote && typeof paymentDetails.chequeNote === "string" ? paymentDetails.chequeNote.trim() : "";
 
   // The bank details box height without cheque note
-  const bankBoxHeight = 31;
-  let summaryBoxHeight = 24;
-  if (discountAmount > 0) summaryBoxHeight += 5;
-  if (taxAmount > 0) summaryBoxHeight += 5;
+  const bankBoxHeight = 35;
+  let summaryBoxHeight = 36;
+  if (discountAmount > 0) summaryBoxHeight += 4.5;
+  if (taxAmount > 0) summaryBoxHeight += 4.5;
   const boxesHeight = Math.max(bankBoxHeight, summaryBoxHeight);
 
   // Dynamic precise calculation of extra height needed for terms, notes, and cheque note below the boxes
@@ -379,16 +437,29 @@ export function generateInvoicePdf({
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
     doc.text(`Payment Reference: ${paymentDetails.paymentReferenceNote}`, margin + 3.5, bottomBlockY + 27.5);
+
+    if (balance <= 0 && grandTotal > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(21, 128, 61); // emerald-700
+      doc.text("• Settlement Status: Paid in Full", margin + 3.5, bottomBlockY + 31.5);
+    } else if (paidAmount > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(0, 139, 215); // blue
+      doc.text(`• Advance/Partial Paid: ${formatPrice(paidAmount)}`, margin + 3.5, bottomBlockY + 31.5);
+    }
   }
 
   // Price Summary Box (Right box)
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
   doc.roundedRect(summaryX, bottomBlockY, summaryWidth, boxesHeight, 2, 2, "FD");
 
-  let summaryY = bottomBlockY + 5;
+  let summaryY = bottomBlockY + 4.8;
 
-  // Subtotal
+  // 1. Subtotal
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
@@ -397,9 +468,9 @@ export function generateInvoicePdf({
   doc.setTextColor(15, 23, 42);
   doc.text(formatPrice(subtotal), summaryX + summaryWidth - 4, summaryY, { align: "right" });
 
-  summaryY += 5;
+  summaryY += 4.5;
 
-  // Discount (only if > 0)
+  // 2. Discount (only if > 0)
   if (discountAmount > 0) {
     const discLabel =
       currentQuo.discount_type === "PERCENTAGE"
@@ -410,10 +481,10 @@ export function generateInvoicePdf({
     doc.text(discLabel, summaryX + 4, summaryY);
     doc.setFont("helvetica", "bold");
     doc.text(`-${formatPrice(discountAmount)}`, summaryX + summaryWidth - 4, summaryY, { align: "right" });
-    summaryY += 5;
+    summaryY += 4.5;
   }
 
-  // Tax (only if > 0)
+  // 3. Tax (only if > 0)
   if (taxAmount > 0) {
     const taxLabel =
       currentQuo.tax_type === "PERCENTAGE"
@@ -424,25 +495,67 @@ export function generateInvoicePdf({
     doc.text(taxLabel, summaryX + 4, summaryY);
     doc.setFont("helvetica", "bold");
     doc.text(`+${formatPrice(taxAmount)}`, summaryX + summaryWidth - 4, summaryY, { align: "right" });
-    summaryY += 5;
+    summaryY += 4.5;
   }
+
+  // 4. Total Invoiced
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(3, 31, 76);
+  doc.text("Total Invoiced:", summaryX + 4, summaryY);
+  doc.setFontSize(8.5);
+  doc.text(formatPrice(grandTotal), summaryX + summaryWidth - 4, summaryY, { align: "right" });
+
+  summaryY += 3.8;
 
   // Divider inside summary
   doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
   doc.line(summaryX + 3, summaryY, summaryX + summaryWidth - 3, summaryY);
-  summaryY += 3.5;
+  summaryY += 4.0;
 
-  // Grand Total Banner
-  const totalBoxHeight = 9.5;
-  doc.setFillColor(3, 31, 76); // Navy accent fill
-  doc.roundedRect(summaryX + 3, summaryY - 1, summaryWidth - 6, totalBoxHeight, 1.5, 1.5, "F");
-
+  // 5. Paid Amount
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Paid Amount:", summaryX + 4, summaryY);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("TOTAL DUE:", summaryX + 6, summaryY + 4.8);
-  doc.setFontSize(9.5);
-  doc.text(formatPrice(grandTotal), summaryX + summaryWidth - 6, summaryY + 4.8, { align: "right" });
+  if (paidAmount > 0) {
+    doc.setTextColor(16, 185, 129); // emerald-600
+  } else {
+    doc.setTextColor(100, 116, 139);
+  }
+  doc.text(formatPrice(paidAmount), summaryX + summaryWidth - 4, summaryY, { align: "right" });
+
+  summaryY += 4.5;
+
+  // 6. Remaining Amount Banner
+  const remainingBoxHeight = 8;
+  const isSettled = balance <= 0 && grandTotal > 0;
+
+  if (isSettled) {
+    doc.setFillColor(240, 253, 244); // emerald-50
+    doc.setDrawColor(187, 247, 208); // emerald-200
+    doc.setLineWidth(0.3);
+    doc.roundedRect(summaryX + 3, summaryY - 0.5, summaryWidth - 6, remainingBoxHeight, 1.5, 1.5, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(21, 128, 61); // emerald-700
+    doc.text("REMAINING AMOUNT:", summaryX + 5.5, summaryY + 4.5);
+    doc.setFontSize(8.5);
+    doc.text(formatPrice(0), summaryX + summaryWidth - 5.5, summaryY + 4.5, { align: "right" });
+  } else {
+    doc.setFillColor(3, 31, 76); // Navy accent #031F4C
+    doc.roundedRect(summaryX + 3, summaryY - 0.5, summaryWidth - 6, remainingBoxHeight, 1.5, 1.5, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text("REMAINING AMOUNT:", summaryX + 5.5, summaryY + 4.5);
+    doc.setFontSize(8.5);
+    doc.text(formatPrice(balance), summaryX + summaryWidth - 5.5, summaryY + 4.5, { align: "right" });
+  }
 
   // 7. Terms & Notes below summary boxes (Strictly dynamic: only displayed when backend data exists)
   let postBoxesY = bottomBlockY + boxesHeight + 4;
