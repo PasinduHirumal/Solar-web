@@ -222,15 +222,47 @@ export default function SendInvoiceModal({
         throw new Error("Unable to initialize invoice reference on backend.");
       }
 
-      // Step B: Send invoice to customer with generated PDF attachment
+      const quoId = quotation.id || quotation.quotation_id || freshInvoice?.quotation_id;
+
+      // Step B: Ensure invoice prices are synchronized and fresh in backend (PUT /invoices/:invoice_id/:quotation_id)
+      if (quoId && invoiceId) {
+        try {
+          await axiosInstance.put(`/invoices/${invoiceId}/${quoId}`);
+        } catch (updateErr) {
+          console.warn("Could not pre-update invoice prices:", updateErr);
+        }
+      }
+
+      // Step C: Send invoice to customer with generated PDF attachment
       const formData = new FormData();
       formData.append("pdf", generatedPdf.file);
 
-      await axiosInstance.post(`/invoices/${invoiceId}/send/email`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      try {
+        await axiosInstance.post(`/invoices/${invoiceId}/send/email`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      } catch (sendErr) {
+        // If failed due to stale prices, update prices and retry send once
+        const msg = sendErr.response?.data?.message;
+        const isStale =
+          sendErr.response?.status === 400 &&
+          (typeof msg === "string" &&
+            (msg.toLowerCase().includes("out of date") ||
+              msg.toLowerCase().includes("update the invoice")));
+
+        if (isStale && quoId) {
+          await axiosInstance.put(`/invoices/${invoiceId}/${quoId}`);
+          await axiosInstance.post(`/invoices/${invoiceId}/send/email`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          });
+        } else {
+          throw sendErr;
+        }
+      }
 
       toast.success(`Invoice sent successfully to ${customerEmail}!`);
 

@@ -90,6 +90,7 @@ export default function ActionButton({
           setIsDetailOpen(false);
           setIsPaymentOpen(true);
         }}
+        onInvoiceUpdated={onUpdateInvoice}
       />
 
       {/* Record Payment & Transactions History Modal */}

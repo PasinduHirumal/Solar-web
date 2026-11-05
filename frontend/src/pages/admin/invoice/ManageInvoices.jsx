@@ -18,6 +18,8 @@ export default function ManageInvoices() {
   // Read URL search params
   const searchTerm = searchParams.get("search") || "";
   const paymentStatusFilter = searchParams.get("payment_status") || "";
+  const lowestBudget = searchParams.get("lowest_budget") || "";
+  const maximumBudget = searchParams.get("maximum_budget") || "";
   const sortBy = searchParams.get("sort_by") || "created_at";
   const sortOrder = searchParams.get("sort") || "DESC";
   const page = parseInt(searchParams.get("page") || "1", 10) || 1;
@@ -109,6 +111,8 @@ export default function ManageInvoices() {
           search_term: searchTerm.trim() || undefined,
           payment_status: paymentStatusFilter || undefined,
           sort_order: sortOrder || "DESC",
+          lowest_budget: lowestBudget ? Number(lowestBudget) : undefined,
+          maximum_budget: maximumBudget ? Number(maximumBudget) : undefined,
         };
 
         const response = await axiosInstance.get("/invoices", { params });
@@ -212,7 +216,7 @@ export default function ManageInvoices() {
     return () => {
       active = false;
     };
-  }, [page, searchTerm, paymentStatusFilter, sortOrder, refreshTrigger]);
+  }, [page, searchTerm, paymentStatusFilter, sortOrder, lowestBudget, maximumBudget, refreshTrigger]);
 
   const handleOpenSendModal = (quotation, invoice) => {
     const targetQuo =
@@ -238,7 +242,7 @@ export default function ManageInvoices() {
   };
 
   const hasActiveFilters = Boolean(
-    paymentStatusFilter || sortOrder !== "DESC"
+    paymentStatusFilter || sortOrder !== "DESC" || lowestBudget || maximumBudget
   );
 
   const getPaymentStatusBadge = (status) => {
@@ -566,6 +570,8 @@ export default function ManageInvoices() {
         <Filters
           paymentStatusFilter={paymentStatusFilter}
           sortOrder={sortOrder}
+          lowestBudget={lowestBudget}
+          maximumBudget={maximumBudget}
           onApply={(filters) => {
             updateParams({
               ...filters,

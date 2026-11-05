@@ -147,6 +147,16 @@ export default function CreateInvoiceModal({
       const response = await axiosInstance.post(`/invoices/${quotation.id}`, payload);
       const newInvoice = response.data?.data || response.data;
 
+      // Initialize price freshness timestamp in database (PUT /invoices/:invoice_id/:quotation_id)
+      if (newInvoice?.id && quotation?.id) {
+        try {
+          await axiosInstance.put(`/invoices/${newInvoice.id}/${quotation.id}`);
+          newInvoice.price_updated_at = new Date().toISOString();
+        } catch (syncErr) {
+          console.warn("Could not set initial price_updated_at:", syncErr);
+        }
+      }
+
       setCreatedInvoice(newInvoice);
       toast.success(
         `Invoice ${newInvoice.invoice_number || ""} created and saved successfully!`

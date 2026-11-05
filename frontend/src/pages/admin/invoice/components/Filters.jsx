@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { currencyType } from "../../../../lib/formatPrice";
 
@@ -15,6 +15,13 @@ export default function Filters({
   const [sortDir, setSortDir] = useState(sortOrder || "DESC");
   const [lowBudget, setLowBudget] = useState(lowestBudget || "");
   const [maxBudget, setMaxBudget] = useState(maximumBudget || "");
+
+  useEffect(() => {
+    setPaymentStatus(paymentStatusFilter || "");
+    setSortDir(sortOrder || "DESC");
+    setLowBudget(lowestBudget || "");
+    setMaxBudget(maximumBudget || "");
+  }, [paymentStatusFilter, sortOrder, lowestBudget, maximumBudget]);
 
   const handleApplyAndClose = () => {
     if (onApply) {

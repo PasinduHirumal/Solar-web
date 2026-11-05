@@ -16,15 +16,18 @@ import {
   User,
   History,
   ShieldAlert,
+  RotateCcw,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
+import { fetchInvoiceWithBreakdown } from "../../../../lib/invoicePdfEnricher";
 
 /**
  * RecordPaymentModal
  * Integrates backend payments.controller.ts:
  * 1. POST /payments/:invoice_id/add/payment - Record an advance, partial, final, or full settlement
  * 2. GET  /payments?invoice_id=:invoice_id  - Retrieve chronological payment history & transaction ledger
+ * 3. PUT  /payments/:invoice_id/:payment_id/revoke - Revoke a recorded payment with mandatory reason
  */
 export default function RecordPaymentModal({
   isOpen,
@@ -40,6 +43,12 @@ export default function RecordPaymentModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [currentInvoiceState, setCurrentInvoiceState] = useState(invoice);
+
+  // Payment Revocation State
+  const [revokingPayment, setRevokingPayment] = useState(null);
+  const [revocationReason, setRevocationReason] = useState("");
+  const [revoking, setRevoking] = useState(false);
+  const [revokeError, setRevokeError] = useState("");
 
   // Sync invoice prop to local state
   useEffect(() => {
@@ -163,7 +172,7 @@ export default function RecordPaymentModal({
       // Re-fetch payment history
       await loadPaymentHistory();
 
-      // Fetch updated invoice from backend: GET /invoices/:quotation_id/:invoice_id
+      // Fetch updated invoice from backend: GET /invoices/:invoice_id (with auto-refresh)
       const quoId = activeInvoice.quotation_id || currentQuotation.id;
       let updatedInvoice = {
         ...activeInvoice,
@@ -176,21 +185,16 @@ export default function RecordPaymentModal({
             : "PARTIAL",
       };
 
-      if (quoId) {
-        try {
-          const invRes = await axiosInstance.get(
-            `/invoices/${quoId}/${activeInvoice.id}`
-          );
-          const fullInv = invRes.data?.data || invRes.data;
-          if (fullInv?.id) {
-            updatedInvoice = {
-              ...updatedInvoice,
-              ...fullInv,
-            };
-          }
-        } catch {
-          // Fallback to locally updated invoice
+      try {
+        const fullInv = await fetchInvoiceWithBreakdown(activeInvoice.id, quoId);
+        if (fullInv?.id) {
+          updatedInvoice = {
+            ...updatedInvoice,
+            ...fullInv,
+          };
         }
+      } catch (invErr) {
+        console.warn("Could not reload invoice from backend:", invErr);
       }
 
       setCurrentInvoiceState(updatedInvoice);
@@ -208,6 +212,93 @@ export default function RecordPaymentModal({
       toast.error(displayMsg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Payment Revocation Handlers (PUT /payments/:invoice_id/:payment_id/revoke)
+  const handleOpenRevoke = (payment) => {
+    setRevokingPayment(payment);
+    setRevocationReason("");
+    setRevokeError("");
+  };
+
+  const handleCancelRevoke = () => {
+    setRevokingPayment(null);
+    setRevocationReason("");
+    setRevokeError("");
+  };
+
+  const handleConfirmRevoke = async (e) => {
+    e?.preventDefault();
+    if (!revokingPayment) return;
+
+    const trimmed = revocationReason.trim();
+    if (trimmed.length < 3) {
+      setRevokeError("Revocation reason must be at least 3 characters long.");
+      return;
+    }
+    if (trimmed.length > 500) {
+      setRevokeError("Revocation reason cannot exceed 500 characters.");
+      return;
+    }
+
+    try {
+      setRevoking(true);
+      setRevokeError("");
+
+      const response = await axiosInstance.put(
+        `/payments/${activeInvoice.id}/${revokingPayment.id}/revoke`,
+        { revoked_reason: trimmed }
+      );
+      const updatedPayment = response.data?.data || response.data;
+
+      toast.success(
+        `Payment of ${formatPrice(revokingPayment.amount)} revoked successfully.`
+      );
+
+      setRevokingPayment(null);
+      setRevocationReason("");
+
+      // Reload payment history
+      await loadPaymentHistory();
+
+      // Reload invoice from backend
+      const quoId = activeInvoice.quotation_id || currentQuotation.id;
+      let updatedInvoice = {
+        ...activeInvoice,
+        paid_amount: Math.max(
+          0,
+          Math.round(((activeInvoice.paid_amount || 0) - revokingPayment.amount) * 100) / 100
+        ),
+      };
+
+      try {
+        const fullInv = await fetchInvoiceWithBreakdown(activeInvoice.id, quoId);
+        if (fullInv?.id) {
+          updatedInvoice = {
+            ...updatedInvoice,
+            ...fullInv,
+          };
+        }
+      } catch (invErr) {
+        console.warn("Could not refetch invoice after payment revoke:", invErr);
+      }
+
+      setCurrentInvoiceState(updatedInvoice);
+
+      if (onPaymentSuccess) {
+        onPaymentSuccess(updatedInvoice, updatedPayment);
+      }
+    } catch (err) {
+      console.error("Revoke payment error:", err);
+      const msg = err.response?.data?.message;
+      const displayMsg = Array.isArray(msg)
+        ? msg.join(", ")
+        : msg || err.message || "Failed to revoke payment";
+      setRevokeError(displayMsg);
+      toast.error(displayMsg);
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -576,46 +667,194 @@ export default function RecordPaymentModal({
             ) : (
               <div className="border border-slate-200/80 rounded-xl overflow-hidden bg-white shadow-2xs divide-y divide-slate-100">
                 {paymentsList.map((p, idx) => {
+                  const isRevoked = p.status === "REVOKED";
                   const badge = getPaymentTypeBadge(p.payment_type);
+                  const isCurrentlyRevoking = revokingPayment?.id === p.id;
+
                   return (
                     <div
                       key={p.id || idx}
-                      className="p-3 flex items-center justify-between gap-2.5 hover:bg-slate-50/60 transition-colors text-xs"
+                      className={`p-3 space-y-2 transition-colors text-xs ${
+                        isRevoked
+                          ? "bg-rose-50/30 hover:bg-rose-50/50"
+                          : "hover:bg-slate-50/60"
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center font-bold text-xs shrink-0">
-                          #{paymentsList.length - idx}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 ${
+                              isRevoked
+                                ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            }`}
+                          >
+                            #{paymentsList.length - idx}
+                          </div>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {isRevoked ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold border bg-rose-50 text-rose-700 border-rose-200 shadow-2xs">
+                                  REVOKED
+                                </span>
+                              ) : (
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.pill}`}
+                                >
+                                  {badge.text}
+                                </span>
+                              )}
+                              <span className="font-mono text-[10px] text-slate-400 truncate">
+                                ID: {p.id?.substring(0, 8)}...
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-400">
+                              {p.authorized_admin && (
+                                <span className="flex items-center gap-1 text-slate-500">
+                                  <User className="w-3 h-3 text-slate-400" />
+                                  <span>
+                                    By:{" "}
+                                    <strong className="text-slate-700">
+                                      {p.authorized_admin.name || p.authorized_admin.email}
+                                    </strong>
+                                  </span>
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span>
+                                  {p.created_at
+                                    ? new Date(p.created_at).toLocaleString()
+                                    : "N/A"}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                          <div className="text-left sm:text-right">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.pill}`}
+                              className={`font-mono font-extrabold text-xs sm:text-sm block ${
+                                isRevoked
+                                  ? "text-slate-400 line-through"
+                                  : "text-emerald-700"
+                              }`}
                             >
-                              {badge.text}
+                              +{formatPrice(p.amount)}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-400 truncate hidden sm:inline">
-                              ID: {p.id?.substring(0, 8)}...
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
-                            <Calendar className="w-3 h-3 text-slate-400" />
-                            <span>
-                              {p.created_at
-                                ? new Date(p.created_at).toLocaleString()
-                                : "N/A"}
+                            <span
+                              className={`text-[10px] uppercase font-semibold block ${
+                                isRevoked ? "text-rose-600" : "text-slate-400"
+                              }`}
+                            >
+                              {isRevoked ? "Revoked" : "Recorded"}
                             </span>
                           </div>
+
+                          {!isRevoked && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRevoke(p)}
+                              className="px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-md text-[11px] font-semibold transition cursor-pointer shadow-2xs flex items-center gap-1 shrink-0"
+                              title="Revoke this payment with mandatory reason (PUT /payments/:invoice_id/:payment_id/revoke)"
+                            >
+                              <RotateCcw className="w-3 h-3 text-rose-500" />
+                              <span>Revoke</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-mono font-extrabold text-emerald-700 text-xs sm:text-sm block">
-                          +{formatPrice(p.amount)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 uppercase font-semibold">
-                          Recorded
-                        </span>
-                      </div>
+                      {/* Revoked reason callout */}
+                      {isRevoked && p.revoked_reason && (
+                        <div className="p-2 rounded-lg bg-rose-50/80 border border-rose-200/70 text-[11px] text-rose-900 flex items-start gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-rose-950">Revocation Reason: </span>
+                            <span className="italic font-medium">"{p.revoked_reason}"</span>
+                            {p.revoked_by_admin && (
+                              <span className="block text-[10px] text-rose-700 mt-0.5">
+                                Revoked by: {p.revoked_by_admin.name || p.revoked_by_admin.email}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Inline Revocation Form */}
+                      {isCurrentlyRevoking && (
+                        <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2 mt-2 animate-fade-in">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-xs font-bold text-rose-950 flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                Revoke Payment #{paymentsList.length - idx} ({formatPrice(p.amount)})
+                              </span>
+                              <p className="text-[11px] text-rose-800 mt-0.5">
+                                Revoking this payment will deduct {formatPrice(p.amount)} from the invoice's paid total and restore the pending balance.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-700">
+                              Revocation Reason <span className="text-rose-500">* (min 3 chars)</span>
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={revocationReason}
+                              onChange={(e) => {
+                                setRevocationReason(e.target.value);
+                                setRevokeError("");
+                              }}
+                              placeholder="e.g., Customer refund issued, duplicate payment entered, cheque returned unpaid..."
+                              maxLength={500}
+                              className="w-full p-2 bg-white border border-rose-200 rounded-lg text-xs text-slate-900 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-2xs resize-none"
+                            />
+                            <div className="flex justify-between text-[10px] text-slate-500">
+                              <span>
+                                {revokeError ? (
+                                  <strong className="text-rose-600">{revokeError}</strong>
+                                ) : (
+                                  "Required by backend UpdatePaymentDto"
+                                )}
+                              </span>
+                              <span>{revocationReason.length} / 500</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleCancelRevoke}
+                              disabled={revoking}
+                              className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleConfirmRevoke}
+                              disabled={revoking || revocationReason.trim().length < 3}
+                              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-rose-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {revoking ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Revoking in Database...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>Confirm Revocation</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -626,17 +865,31 @@ export default function RecordPaymentModal({
 
         {/* Modal Footer */}
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex items-center justify-between gap-3">
-          <div className="text-[11px] text-slate-500">
-            {paymentsList.length > 0 && (
-              <span>
-                Total Recorded:{" "}
-                <strong className="text-slate-900 font-mono">
-                  {formatPrice(
-                    paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+          <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-2">
+            {paymentsList.length > 0 && (() => {
+              const activePayments = paymentsList.filter((p) => p.status !== "REVOKED");
+              const revokedCount = paymentsList.length - activePayments.length;
+              const activeTotal = activePayments.reduce(
+                (sum, p) => sum + (Number(p.amount) || 0),
+                0
+              );
+
+              return (
+                <>
+                  <span>
+                    Total Active Settled:{" "}
+                    <strong className="text-slate-900 font-mono font-bold">
+                      {formatPrice(activeTotal)}
+                    </strong>
+                  </span>
+                  {revokedCount > 0 && (
+                    <span className="text-rose-700 font-semibold text-[10px] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 shadow-2xs">
+                      ({revokedCount} revoked)
+                    </span>
                   )}
-                </strong>
-              </span>
-            )}
+                </>
+              );
+            })()}
           </div>
           <button
             type="button"

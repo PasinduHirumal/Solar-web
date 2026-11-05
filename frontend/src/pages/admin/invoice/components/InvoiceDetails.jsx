@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  FileText, User, Phone, Mail, MapPin, Calendar, Download, Eye, CreditCard, ShieldCheck, Building2, Clock,
+  FileText, User, Phone, Mail, MapPin, Calendar, Download, Eye, CreditCard, ShieldCheck, Building2, Clock, RefreshCw, Loader2,
 } from "lucide-react";
 import { formatPrice } from "../../../../lib/formatPrice";
 import { paymentDetails } from "../../../../data/dataset";
@@ -13,6 +13,8 @@ export default function InvoiceDetails({
   onPreviewPdf,
   onOpenSendModal,
   onOpenPaymentModal,
+  onUpdatePrices,
+  updatingPrices,
 }) {
   if (!invoice) return null;
 
@@ -91,6 +93,13 @@ export default function InvoiceDetails({
                 ? new Date(invoice.due_date).toLocaleDateString()
                 : "N/A"}
             </span>
+            {invoice.price_updated_at && (
+              <span className="flex items-center gap-1 text-slate-500">
+                <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+                Prices Synced:{" "}
+                {new Date(invoice.price_updated_at).toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
 
@@ -381,6 +390,23 @@ export default function InvoiceDetails({
         </div>
 
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 w-full sm:w-auto">
+          {onUpdatePrices && (
+            <button
+              type="button"
+              onClick={onUpdatePrices}
+              disabled={updatingPrices}
+              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              title="Sync latest prices from equipment catalog (PUT /invoices/:invoice_id/:quotation_id)"
+            >
+              {updatingPrices ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              <span>Sync Prices</span>
+            </button>
+          )}
+
           {onPreviewPdf && (
             <button
               type="button"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard } from "lucide-react";
+import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard, RefreshCw } from "lucide-react";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
+import { enrichInvoiceAndQuotation, updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
 import InvoiceDetails from "./InvoiceDetails";
 import { toast } from "react-hot-toast";
 
@@ -12,9 +12,11 @@ export default function InvoiceDetailViewModal({
   quotation,
   onOpenSendModal,
   onOpenPaymentModal,
+  onInvoiceUpdated,
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [updatingPrices, setUpdatingPrices] = useState(false);
 
   // Escape key handler
   useEffect(() => {
@@ -108,6 +110,40 @@ export default function InvoiceDetailViewModal({
     }
   };
 
+  const handleUpdatePrices = async () => {
+    const quoId = currentQuotation?.id || invoice?.quotation_id;
+    if (!invoice?.id || !quoId) {
+      toast.error("Quotation reference missing. Cannot update prices.");
+      return;
+    }
+
+    try {
+      setUpdatingPrices(true);
+      const updated = await updateInvoicePrices(invoice.id, quoId);
+      toast.success("Invoice prices updated to latest catalog prices!");
+
+      const { enrichedInvoice } = await enrichInvoiceAndQuotation(
+        updated || invoice,
+        currentQuotation
+      );
+      setData(enrichedInvoice);
+
+      if (onInvoiceUpdated) {
+        onInvoiceUpdated(enrichedInvoice);
+      }
+    } catch (err) {
+      console.error("Failed to update invoice prices:", err);
+      const msg = err.response?.data?.message;
+      toast.error(
+        Array.isArray(msg)
+          ? msg.join(", ")
+          : msg || err.message || "Failed to update prices"
+      );
+    } finally {
+      setUpdatingPrices(false);
+    }
+  };
+
   return (
     <div
       role="dialog"
@@ -166,6 +202,8 @@ export default function InvoiceDetailViewModal({
             onDownloadPdf={handleDownloadPdf}
             onPreviewPdf={handlePreviewPdf}
             onOpenPaymentModal={onOpenPaymentModal}
+            onUpdatePrices={handleUpdatePrices}
+            updatingPrices={updatingPrices}
             onOpenSendModal={
               onOpenSendModal
                 ? () => {
@@ -180,6 +218,20 @@ export default function InvoiceDetailViewModal({
         {/* Footer */}
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleUpdatePrices}
+              disabled={updatingPrices}
+              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              title="Sync latest prices from equipment catalog (PUT /invoices/:invoice_id/:quotation_id)"
+            >
+              {updatingPrices ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
+              <span>Sync Prices</span>
+            </button>
             <button
               type="button"
               onClick={handlePreviewPdf}
