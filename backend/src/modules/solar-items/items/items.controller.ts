@@ -28,7 +28,7 @@ export class ItemsController {
     }
 
     @Post()
-    @Roles(UserRole.SUPER_ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async createSolarItem(
         @Body() dto: CreateSolarItemDto,
@@ -46,7 +46,7 @@ export class ItemsController {
     }
 
     @Put(':item_id/update/data')
-    @Roles(UserRole.SUPER_ADMIN)
+    @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     async updateSolarItemData(
         @Param('item_id', new ParseUUIDPipe({ version: '4'}), SolarItemExistsPipe) item: SolarItemEntity,

@@ -11,7 +11,7 @@ import { QuotationItemEntity } from './entities/quotation-item.entity';
 import { UpdateQuotationItemData } from './dto/update-quotation-item.dto';
 
 @Controller('quotation-items')
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class QuotationItemsController {
     constructor(
