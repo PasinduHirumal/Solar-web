@@ -16,6 +16,8 @@ export default function InvoiceDetailViewModal({
   onInvoiceUpdated,
 }) {
   const [data, setData] = useState(null);
+  const [paymentsList, setPaymentsList] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
   const [loading, setLoading] = useState(false);
   const [syncStatusText, setSyncStatusText] = useState("");
   const [updatingPrices, setUpdatingPrices] = useState(false);
@@ -31,12 +33,40 @@ export default function InvoiceDetailViewModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Fetch full invoice specifications and price breakdown safely
+  // Fetch full invoice specifications and price breakdown safely, plus payment history by invoice ID
   useEffect(() => {
     if (!isOpen || !invoice?.id) return;
 
     let active = true;
 
+    // 1. Fetch chronological payment history using invoice ID from GET /payments
+    const fetchPayments = async () => {
+      try {
+        setLoadingPayments(true);
+        const res = await axiosInstance.get("/payments", {
+          params: {
+            invoice_id: invoice.id,
+            limit: 50,
+            sort_by: "created_at",
+            sort_order: "DESC",
+          },
+        });
+        const items = res.data?.data?.items || res.data?.items || [];
+        if (active) {
+          setPaymentsList(items);
+        }
+      } catch (err) {
+        console.warn("Could not load payment ledger via GET /payments:", err);
+      } finally {
+        if (active) {
+          setLoadingPayments(false);
+        }
+      }
+    };
+
+    fetchPayments();
+
+    // 2. Fetch full invoice specifications and relations
     const fetchInvoiceDetails = async () => {
       const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
       const isStale =
@@ -66,6 +96,9 @@ export default function InvoiceDetailViewModal({
           const inv = res.data?.data || res.data;
           if (active && inv) {
             setData(inv);
+            if (Array.isArray(inv.payments) && inv.payments.length > 0) {
+              setPaymentsList((prev) => (prev.length > 0 ? prev : inv.payments));
+            }
             if (isStale && onInvoiceUpdated) {
               onInvoiceUpdated(inv);
             }
@@ -120,7 +153,50 @@ export default function InvoiceDetailViewModal({
   const currentQuotation = currentInvoice.quotation || quotation || {};
   const isFinalized = currentQuotation.status === "ACCEPTED" || currentQuotation.status === "REJECTED";
 
-  const handleDownloadPdf = () => {
+  // PDF Preview - Prioritizes official backend cloud PDF if available (from withPdf response)
+  const handlePreviewPdf = () => {
+    if (currentInvoice.invoice_pdf?.url) {
+      window.open(currentInvoice.invoice_pdf.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    try {
+      const result = generateInvoicePdf({
+        invoice: currentInvoice,
+      });
+
+      window.open(result.url, "_blank");
+    } catch (err) {
+      console.error("Preview PDF error", err);
+      toast.error("Failed to preview invoice PDF.");
+    }
+  };
+
+  // PDF Download - Prioritizes official backend cloud PDF if available (from withPdf response)
+  const handleDownloadPdf = async () => {
+    if (currentInvoice.invoice_pdf?.url) {
+      try {
+        toast.loading("Downloading official PDF...", { id: "pdf-dl" });
+        const res = await fetch(currentInvoice.invoice_pdf.url);
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `${currentInvoice.invoice_number || "Invoice"}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+        toast.success("Official invoice PDF downloaded successfully!", { id: "pdf-dl" });
+        return;
+      } catch (err) {
+        console.warn("Direct blob download failed, opening direct URL in new tab:", err);
+        window.open(currentInvoice.invoice_pdf.url, "_blank");
+        toast.dismiss("pdf-dl");
+        return;
+      }
+    }
+
     try {
       const result = generateInvoicePdf({
         invoice: currentInvoice,
@@ -136,19 +212,6 @@ export default function InvoiceDetailViewModal({
     } catch (err) {
       console.error("Download PDF error", err);
       toast.error("Failed to generate PDF download.");
-    }
-  };
-
-  const handlePreviewPdf = () => {
-    try {
-      const result = generateInvoicePdf({
-        invoice: currentInvoice,
-      });
-
-      window.open(result.url, "_blank");
-    } catch (err) {
-      console.error("Preview PDF error", err);
-      toast.error("Failed to preview invoice PDF.");
     }
   };
 
@@ -236,6 +299,8 @@ export default function InvoiceDetailViewModal({
           <InvoiceDetails
             invoice={currentInvoice}
             quotation={currentQuotation}
+            payments={paymentsList.length > 0 ? paymentsList : (currentInvoice.payments || [])}
+            loadingPayments={loadingPayments}
             onDownloadPdf={handleDownloadPdf}
             onPreviewPdf={handlePreviewPdf}
             onOpenPaymentModal={onOpenPaymentModal}
