@@ -22,6 +22,7 @@ export default function InvoiceDetails({
   const customer = currentQuo.customer || {};
   const items = currentQuo.items || [];
   const isFinalized = currentQuo.status === "ACCEPTED" || currentQuo.status === "REJECTED";
+  const isRejected = currentQuo.status === "REJECTED";
 
   const subtotal = invoice.subtotal || 0;
   const discount = invoice.discount || 0;
@@ -416,7 +417,7 @@ export default function InvoiceDetails({
             </button>
           )}
 
-          {onOpenSendModal && !isFinalized && (
+          {onOpenSendModal && !isRejected && (
             <button
               type="button"
               onClick={onOpenSendModal}

@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { formatPrice } from "../../../lib/formatPrice";
-import { updateInvoicePrices } from "../../../lib/invoicePdfEnricher";
 import AdminFilterMenu from "../../../common/AdminFilterMenu";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
@@ -33,7 +32,6 @@ export default function ManageInvoices() {
   const [totalItems, setTotalItems] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [syncingInvoiceId, setSyncingInvoiceId] = useState(null);
 
   // Detail Modal state (lifted to prevent unmounting/closing during price updates)
   const [detailModalInvoice, setDetailModalInvoice] = useState(null);
@@ -191,34 +189,6 @@ export default function ManageInvoices() {
     }
   }, []);
 
-  // Sync latest equipment prices for a specific invoice row from backend PUT /invoices/:id/:quoId
-  const handleSyncRowPrices = async (inv) => {
-    const quoId = inv.quotation_id || inv.quotation?.id;
-    if (!inv.id || !quoId) {
-      toast.error("Quotation reference missing. Cannot sync prices.");
-      return;
-    }
-
-    try {
-      setSyncingInvoiceId(inv.id);
-      const updatedInv = await updateInvoicePrices(inv.id, quoId);
-
-      // Immediately update row data without refreshing the entire table
-      handleInvoiceUpdated(updatedInv);
-      toast.success(`Prices synchronized for ${inv.invoice_number}`);
-    } catch (err) {
-      console.error("Failed to sync row prices:", err);
-      const msg = err.response?.data?.message;
-      toast.error(
-        Array.isArray(msg)
-          ? msg.join(", ")
-          : msg || err.message || "Failed to sync prices"
-      );
-    } finally {
-      setSyncingInvoiceId(null);
-    }
-  };
-
   const hasActiveFilters = Boolean(
     paymentStatusFilter || sortOrder !== "DESC" || lowestBudget || maximumBudget
   );
@@ -366,7 +336,6 @@ export default function ManageInvoices() {
                   const quotation = inv.quotation || {};
                   const customer = inv.customer || quotation.customer || {};
                   const badge = getPaymentStatusBadge(inv.payment_status);
-                  const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
 
                   return (
                     <tr
@@ -455,57 +424,34 @@ export default function ManageInvoices() {
 
                       {/* Financials */}
                       <td className="py-3 px-4">
-                        <div className="flex items-center justify-between gap-2 max-w-[190px]">
-                          <div className="flex flex-col gap-0.5 text-xs min-w-0">
-                            <span className="font-mono font-bold text-slate-900">
-                              {formatPrice(inv.total)}
-                            </span>
-                            <span className="text-[10px] text-slate-500">
-                              Paid:{" "}
-                              <strong className="text-emerald-700 font-mono">
-                                {formatPrice(inv.paid_amount || 0)}
-                              </strong>
-                            </span>
-                            {Number(inv.total) > 0 && (
-                              <div className="w-24 bg-slate-100 rounded-full h-1 overflow-hidden mt-0.5">
-                                <div
-                                  className={`h-1 rounded-full ${
-                                    inv.payment_status === "PAID"
-                                      ? "bg-emerald-600"
-                                      : "bg-blue-600"
-                                  }`}
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      Math.round(
-                                        ((inv.paid_amount || 0) / Number(inv.total)) * 100
-                                      )
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Row Price Sync Button (Financials Column - Available when quotation is not finalized) */}
-                          {!isFinalized && (
-                            <button
-                              type="button"
-                              onClick={() => handleSyncRowPrices(inv)}
-                              disabled={syncingInvoiceId === inv.id}
-                              className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
-                                syncingInvoiceId === inv.id
-                                  ? "bg-blue-50 text-blue-600 border-blue-200 shadow-2xs"
-                                  : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 border-slate-200/60 hover:border-blue-200/80 shadow-2xs"
-                              }`}
-                              title="Sync latest equipment catalog prices"
-                            >
-                              <RefreshCw
-                                className={`w-3.5 h-3.5 ${
-                                  syncingInvoiceId === inv.id ? "animate-spin text-blue-600" : ""
+                        <div className="flex flex-col gap-0.5 text-xs min-w-0">
+                          <span className="font-mono font-bold text-slate-900">
+                            {formatPrice(inv.total)}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            Paid:{" "}
+                            <strong className="text-emerald-700 font-mono">
+                              {formatPrice(inv.paid_amount || 0)}
+                            </strong>
+                          </span>
+                          {Number(inv.total) > 0 && (
+                            <div className="w-24 bg-slate-100 rounded-full h-1 overflow-hidden mt-0.5">
+                              <div
+                                className={`h-1 rounded-full ${
+                                  inv.payment_status === "PAID"
+                                    ? "bg-emerald-600"
+                                    : "bg-blue-600"
                                 }`}
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.round(
+                                      ((inv.paid_amount || 0) / Number(inv.total)) * 100
+                                    )
+                                  )}%`,
+                                }}
                               />
-                            </button>
+                            </div>
                           )}
                         </div>
                       </td>

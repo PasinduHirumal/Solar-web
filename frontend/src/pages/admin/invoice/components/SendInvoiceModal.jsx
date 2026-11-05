@@ -151,7 +151,7 @@ export default function SendInvoiceModal({
   const customer = fullQuotation?.customer || quotation.customer || {};
   const items = fullQuotation?.items || quotation.items || [];
   const customerEmail = customer.email;
-  const isFinalized = fullQuotation?.status === "ACCEPTED" || fullQuotation?.status === "REJECTED";
+  const isRejected = fullQuotation?.status === "REJECTED";
 
   // Calculate pricing
   const subtotal = items.reduce((sum, line) => {
@@ -391,11 +391,11 @@ export default function SendInvoiceModal({
             </div>
           )}
 
-          {isFinalized && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2 shadow-2xs">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+          {isRejected && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2 shadow-2xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>
-                Quotation status is already <strong>{fullQuotation?.status}</strong>. Invoices can only be transmitted when quotation is in Draft or Sent status.
+                Quotation status is <strong>REJECTED</strong>. Invoices cannot be transmitted for rejected quotations.
               </span>
             </div>
           )}
@@ -587,7 +587,7 @@ export default function SendInvoiceModal({
           <button
             type="button"
             onClick={handleSendInvoice}
-            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isFinalized}
+            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isRejected}
             className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-[0.98] text-center"
           >
             {sendingEmail ? (
