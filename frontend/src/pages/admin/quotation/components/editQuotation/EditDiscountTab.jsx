@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import { Percent, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { axiosInstance } from "../../../../../lib/axiosInstance";
 import { currencyType, formatPrice } from "../../../../../lib/formatPrice";
+import { syncInvoiceForQuotation } from "../../../../../lib/invoicePdfEnricher";
 
 export default function EditDiscountTab({
   quotation,
@@ -79,6 +80,9 @@ export default function EditDiscountTab({
     try {
       // Endpoint: PUT /quotations/:quotation_id/discount
       await axiosInstance.put(`/quotations/${quotation.id}/discount`, payload);
+
+      // Automatically sync invoice prices if an invoice exists for this quotation
+      await syncInvoiceForQuotation(quotation.id, quotation.invoice_id);
 
       toast.success("Discount updated successfully");
 

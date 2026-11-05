@@ -86,11 +86,6 @@ export default function ActionButton({
         invoice={invoice}
         quotation={quotation}
         onOpenSendModal={onOpenSendModal}
-        onOpenPaymentModal={() => {
-          setIsDetailOpen(false);
-          setIsPaymentOpen(true);
-        }}
-        onInvoiceUpdated={onUpdateInvoice}
       />
 
       {/* Record Payment & Transactions History Modal */}
