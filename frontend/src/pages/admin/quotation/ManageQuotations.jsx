@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin
+  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin, Copy, Check
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { isAdmin, isSuperAdmin } from "../../../lib/roles";
@@ -32,6 +32,44 @@ export default function ManageQuotations() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const fallbackCopy = (text, copySuccess) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      copySuccess();
+    } catch {
+      toast.error("Failed to copy quotation number");
+    }
+  };
+
+  const handleCopyQuotationNumber = (number, id) => {
+    if (!number) return;
+    const copySuccess = () => {
+      setCopiedId(id);
+      toast.success(`Copied "${number}" to clipboard!`);
+      setTimeout(() => {
+        setCopiedId((current) => (current === id ? null : current));
+      }, 2000);
+    };
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(number)
+        .then(copySuccess)
+        .catch(() => fallbackCopy(number, copySuccess));
+    } else {
+      fallbackCopy(number, copySuccess);
+    }
+  };
 
   const { user: currentUser } = useAuthStore();
 
@@ -326,9 +364,32 @@ export default function ManageQuotations() {
                       {/* Quotation Number & Date */}
                       <td className="py-3 px-4 sm:px-5">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
-                            {quo.quotation_number}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
+                              {quo.quotation_number}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyQuotationNumber(quo.quotation_number, quo.id);
+                              }}
+                              className={`p-1 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                                copiedId === quo.id
+                                  ? "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-2xs"
+                                  : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 border-slate-200/60 hover:border-blue-200 shadow-2xs"
+                              }`}
+                              title={copiedId === quo.id ? "Copied!" : "Copy quotation number"}
+                              aria-label="Copy quotation number"
+                            >
+                              {copiedId === quo.id ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
                             <Clock className="w-3 h-3" />
                             <span>

@@ -20,6 +20,9 @@ export default function ManageInvoices() {
   // Read URL search params
   const searchTerm = searchParams.get("search") || "";
   const paymentStatusFilter = searchParams.get("payment_status") || "";
+  const quotationStatusFilter = searchParams.get("quotation_status") || "";
+  const startDate = searchParams.get("start_date") || "";
+  const endDate = searchParams.get("end_date") || "";
   const lowestBudget = searchParams.get("lowest_budget") || "";
   const maximumBudget = searchParams.get("maximum_budget") || "";
   const sortOrder = searchParams.get("sort") || "DESC";
@@ -116,6 +119,9 @@ export default function ManageInvoices() {
           limit: 10,
           search_term: searchTerm.trim() || undefined,
           payment_status: paymentStatusFilter || undefined,
+          quotation_status: quotationStatusFilter || undefined,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
           sort_order: sortOrder || "DESC",
           lowest_budget: lowestBudget ? Number(lowestBudget) : undefined,
           maximum_budget: maximumBudget ? Number(maximumBudget) : undefined,
@@ -149,7 +155,7 @@ export default function ManageInvoices() {
     return () => {
       active = false;
     };
-  }, [page, searchTerm, paymentStatusFilter, sortOrder, lowestBudget, maximumBudget, refreshTrigger]);
+  }, [page, searchTerm, paymentStatusFilter, quotationStatusFilter, startDate, endDate, sortOrder, lowestBudget, maximumBudget, refreshTrigger]);
 
   const handleOpenDetailModal = (invoice, quotation) => {
     setDetailModalInvoice(invoice);
@@ -220,7 +226,7 @@ export default function ManageInvoices() {
   };
 
   const hasActiveFilters = Boolean(
-    paymentStatusFilter || sortOrder !== "DESC" || lowestBudget || maximumBudget
+    paymentStatusFilter || quotationStatusFilter || startDate || endDate || sortOrder !== "DESC" || lowestBudget || maximumBudget
   );
 
   const getPaymentStatusBadge = (status) => {
@@ -310,11 +316,11 @@ export default function ManageInvoices() {
 
         {/* Search & Actions */}
         <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <div className="relative flex-1 sm:flex-initial sm:w-64 md:w-72">
+          <div className="relative flex-1 sm:flex-initial sm:w-72 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by invoice # or customer..."
+              placeholder="Search by invoice #, quote # or customer..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-9 pr-8 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 placeholder:text-slate-400 transition-all text-xs h-10"
@@ -356,6 +362,96 @@ export default function ManageInvoices() {
           </button>
         </div>
       </div>
+
+      {/* Active Filters Bar */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold text-slate-500">Active filters:</span>
+          {paymentStatusFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+              <span>Payment: <strong className="font-semibold">{paymentStatusFilter}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ payment_status: undefined, page: 1 })}
+                className="p-0.5 hover:bg-blue-100 rounded-md transition text-blue-500 hover:text-blue-800 cursor-pointer"
+                title="Remove payment status filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {quotationStatusFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-2xs">
+              <span>Quotation: <strong className="font-semibold">{quotationStatusFilter}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ quotation_status: undefined, page: 1 })}
+                className="p-0.5 hover:bg-indigo-100 rounded-md transition text-indigo-500 hover:text-indigo-800 cursor-pointer"
+                title="Remove quotation status filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {(startDate || endDate) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
+              <span>Date: <strong className="font-semibold">{startDate || "Any"} → {endDate || "Any"}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ start_date: undefined, end_date: undefined, page: 1 })}
+                className="p-0.5 hover:bg-slate-200 rounded-md transition text-slate-500 hover:text-slate-800 cursor-pointer"
+                title="Remove date range filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {(lowestBudget || maximumBudget) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">
+              <span>Total: <strong className="font-semibold">{lowestBudget ? formatPrice(Number(lowestBudget)) : "Min"} – {maximumBudget ? formatPrice(Number(maximumBudget)) : "Max"}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ lowest_budget: undefined, maximum_budget: undefined, page: 1 })}
+                className="p-0.5 hover:bg-emerald-100 rounded-md transition text-emerald-500 hover:text-emerald-800 cursor-pointer"
+                title="Remove budget filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {sortOrder === "ASC" && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200/60 shadow-2xs">
+              <span>Sort: <strong className="font-semibold">Oldest First</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ sort: "DESC", page: 1 })}
+                className="p-0.5 hover:bg-purple-100 rounded-md transition text-purple-500 hover:text-purple-800 cursor-pointer"
+                title="Reset to newest first"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              updateParams({
+                payment_status: undefined,
+                quotation_status: undefined,
+                start_date: undefined,
+                end_date: undefined,
+                sort: "DESC",
+                lowest_budget: undefined,
+                maximum_budget: undefined,
+                page: 1,
+              })
+            }
+            className="text-xs text-rose-600 hover:text-rose-700 font-semibold hover:underline ml-1 cursor-pointer transition"
+          >
+            Clear all filters
+          </button>
+        </div>
+      )}
 
       {/* Main Table Card */}
       <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
@@ -616,10 +712,13 @@ export default function ManageInvoices() {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         title="Filter Invoices"
-        subtitle="Narrow invoices by settlement status, sorting order, or budget thresholds"
+        subtitle="Narrow invoices by settlement, quotation status, dates, or total amount"
       >
         <Filters
           paymentStatusFilter={paymentStatusFilter}
+          quotationStatusFilter={quotationStatusFilter}
+          startDate={startDate}
+          endDate={endDate}
           sortOrder={sortOrder}
           lowestBudget={lowestBudget}
           maximumBudget={maximumBudget}
@@ -633,6 +732,9 @@ export default function ManageInvoices() {
           onReset={() => {
             updateParams({
               payment_status: undefined,
+              quotation_status: undefined,
+              start_date: undefined,
+              end_date: undefined,
               sort: "DESC",
               lowest_budget: undefined,
               maximum_budget: undefined,
