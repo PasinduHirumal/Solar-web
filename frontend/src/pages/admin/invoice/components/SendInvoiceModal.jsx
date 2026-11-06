@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import {
-  X, FileText, Mail, Send, Loader2, Calendar, Eye, Download, Receipt, FileCheck, RefreshCw,
+  X, FileText, Mail, Send, Loader2, Calendar, Eye, Download, Receipt, FileCheck, RefreshCw, AlertCircle,
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation } from "../../../../lib/invoicePdfEnricher";
 
 export default function SendInvoiceModal({
   isOpen,
@@ -76,22 +75,65 @@ export default function SendInvoiceModal({
       try {
         setLoadingInitial(true);
 
-        const { enrichedInvoice, enrichedQuotation } =
-          await enrichInvoiceAndQuotation(propInvoice || existingInvoice, quotation);
+        let inv = propInvoice || existingInvoice;
+        if (inv?.id) {
+          const isStale =
+            !inv.price_updated_at ||
+            Date.now() - new Date(inv.price_updated_at).getTime() > 50000;
 
-        if (active) {
-          if (enrichedQuotation && enrichedQuotation.id) {
-            setFullQuotation(enrichedQuotation);
+          let canFetchDirectly = !isStale;
+
+          // Proactively synchronize prices before calling GET /invoices/:id to avoid backend 400 error
+          if (isStale && quoId) {
+            try {
+              await axiosInstance.put(`/invoices/${inv.id}/${quoId}`);
+              canFetchDirectly = true;
+            } catch (syncErr) {
+              console.warn("Could not pre-sync prices in SendInvoiceModal:", syncErr);
+              canFetchDirectly = false;
+            }
           }
-          if (enrichedInvoice && enrichedInvoice.id) {
-            setExistingInvoice(enrichedInvoice);
-            if (enrichedInvoice.due_date) {
-              setDueDate(new Date(enrichedInvoice.due_date).toISOString().split("T")[0]);
+
+          if (canFetchDirectly) {
+            try {
+              const invRes = await axiosInstance.get(`/invoices/${inv.id}`);
+              const freshInv = invRes.data?.data || invRes.data;
+              if (active && freshInv?.id) {
+                inv = freshInv;
+                setExistingInvoice(freshInv);
+                if (freshInv.due_date) {
+                  setDueDate(new Date(freshInv.due_date).toISOString().split("T")[0]);
+                }
+                if (freshInv.quotation) {
+                  setFullQuotation(freshInv.quotation);
+                }
+                if (isStale && onQuotationUpdated) {
+                  onQuotationUpdated(freshInv);
+                }
+              }
+            } catch (e) {
+              console.warn("Could not load invoice by id:", e);
             }
           }
         }
+
+        if (active && (!inv?.quotation?.items || inv.quotation.items.length === 0)) {
+          try {
+            const quoRes = await axiosInstance.get(`/quotations/${quoId}`);
+            const loadedQuo =
+              quoRes.data?.data?.quotation ||
+              quoRes.data?.quotation ||
+              quoRes.data?.data ||
+              quoRes.data;
+            if (active && loadedQuo?.id) {
+              setFullQuotation(loadedQuo);
+            }
+          } catch (e) {
+            console.warn("Could not load quotation by id:", e);
+          }
+        }
       } catch (err) {
-        console.error("Failed to load full quotation and invoice", err);
+        console.error("Failed to load invoice and quotation", err);
       } finally {
         if (active) setLoadingInitial(false);
       }
@@ -102,13 +144,14 @@ export default function SendInvoiceModal({
     return () => {
       active = false;
     };
-  }, [isOpen, quotation?.id, propInvoice?.id, propInvoice?.quotation_id]);
+  }, [isOpen, quotation?.id, propInvoice?.id, propInvoice?.quotation_id, propInvoice?.price_updated_at]);
 
   if (!isOpen || !quotation) return null;
 
   const customer = fullQuotation?.customer || quotation.customer || {};
   const items = fullQuotation?.items || quotation.items || [];
   const customerEmail = customer.email;
+  const isRejected = fullQuotation?.status === "REJECTED";
 
   // Calculate pricing
   const subtotal = items.reduce((sum, line) => {
@@ -145,18 +188,19 @@ export default function SendInvoiceModal({
     try {
       setGeneratingPdf(true);
 
-      const result = generateInvoicePdf({
+      const targetInvoice = existingInvoice || {
         quotation: fullQuotation,
-        invoice: existingInvoice,
-        customer,
-        items,
-        priceBreakdown: {
-          subtotal,
-          discount: discountAmount,
-          tax: taxAmount,
-          total: grandTotal,
-        },
-        dueDate,
+        due_date: dueDate,
+        subtotal,
+        discount: discountAmount,
+        tax: taxAmount,
+        total: grandTotal,
+        paid_amount: Number(existingInvoice?.paid_amount || 0),
+      };
+
+      const result = generateInvoicePdf({
+        invoice: targetInvoice,
+        quotation: fullQuotation,
       });
 
       setGeneratedPdf(result);
@@ -193,7 +237,7 @@ export default function SendInvoiceModal({
           const createRes = await axiosInstance.post(
             `/invoices/${quotation.id}`,
             {
-              due_date: new Date(dueDate).toISOString(),
+              due_date: new Date(`${dueDate}T12:00:00`).toISOString(),
             }
           );
           freshInvoice = createRes.data?.data || createRes.data;
@@ -203,10 +247,15 @@ export default function SendInvoiceModal({
           // If already exists, retrieve it
           if (createErr.response?.status === 409) {
             const listRes = await axiosInstance.get("/invoices", {
-              params: { limit: 100 },
+              params: {
+                search_term: quotation.quotation_number,
+                limit: 5,
+              },
             });
             const all = listRes.data?.data?.items || listRes.data?.items || [];
-            const found = all.find((i) => i.quotation_id === quotation.id);
+            const found = all.find(
+              (i) => i.quotation_id === quotation.id || i.quotation?.id === quotation.id
+            );
             if (found) {
               invoiceId = found.id;
               freshInvoice = found;
@@ -339,6 +388,15 @@ export default function SendInvoiceModal({
             <div className="flex items-center justify-center gap-2 py-3 text-xs font-medium text-blue-600 bg-blue-50/50 rounded-xl border border-blue-100">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Loading quotation details and invoice metadata...</span>
+            </div>
+          )}
+
+          {isRejected && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2 shadow-2xs">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>
+                Quotation status is <strong>REJECTED</strong>. Invoices cannot be transmitted for rejected quotations.
+              </span>
             </div>
           )}
 
@@ -529,7 +587,7 @@ export default function SendInvoiceModal({
           <button
             type="button"
             onClick={handleSendInvoice}
-            disabled={!generatedPdf?.file || sendingEmail || !customerEmail}
+            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isRejected}
             className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-[0.98] text-center"
           >
             {sendingEmail ? (

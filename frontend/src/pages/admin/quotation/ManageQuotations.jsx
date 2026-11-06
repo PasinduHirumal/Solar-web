@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
   Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
-import { isAdmin } from "../../../lib/roles";
+import { isAdmin, isSuperAdmin } from "../../../lib/roles";
 import useAuthStore from "../../../lib/authStore";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
@@ -32,9 +32,6 @@ export default function ManageQuotations() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  // Client-side cache to persist resolved customer profiles by customer_id
-  const customerCache = useRef({});
 
   const { user: currentUser } = useAuthStore();
 
@@ -111,62 +108,10 @@ export default function ManageQuotations() {
 
         if (active) {
           const data = response.data?.data || response.data;
-          const rawItems = data.items || [];
-
-          // Immediately attach any previously cached customer profiles
-          const initialItems = rawItems.map((q) => {
-            if (q.customer?.name) return q;
-            if (q.customer_id && customerCache.current[q.customer_id]) {
-              return { ...q, customer: customerCache.current[q.customer_id] };
-            }
-            return q;
-          });
-
-          setQuotations(initialItems);
+          setQuotations(data.items || []);
           setTotalPages(data.meta?.totalPages || 1);
           setTotalItems(data.meta?.totalItems || 0);
           setLoading(false);
-
-          // Asynchronously enrich customer details for rows on the active page
-          const itemsNeedingCustomer = initialItems.filter(
-            (q) => !q.customer?.name && q.id
-          );
-
-          if (itemsNeedingCustomer.length > 0) {
-            Promise.allSettled(
-              itemsNeedingCustomer.map((q) =>
-                axiosInstance.get(`/quotations/${q.id}`)
-              )
-            ).then((results) => {
-              if (!active) return;
-              const freshMap = {};
-              results.forEach((res) => {
-                if (res.status === "fulfilled") {
-                  const fullQuo =
-                    res.value.data?.data?.quotation || res.value.data?.quotation;
-                  if (fullQuo?.id && fullQuo?.customer) {
-                    freshMap[fullQuo.id] = fullQuo.customer;
-                    if (fullQuo.customer_id) {
-                      customerCache.current[fullQuo.customer_id] = fullQuo.customer;
-                    }
-                  }
-                }
-              });
-
-              if (Object.keys(freshMap).length > 0) {
-                setQuotations((prev) =>
-                  prev.map((q) => {
-                    const resolvedCustomer =
-                      freshMap[q.id] ||
-                      (q.customer_id ? customerCache.current[q.customer_id] : null);
-                    return resolvedCustomer
-                      ? { ...q, customer: resolvedCustomer }
-                      : q;
-                  })
-                );
-              }
-            });
-          }
         }
       } catch (error) {
         if (active) {
@@ -189,9 +134,6 @@ export default function ManageQuotations() {
   }, [page, searchTerm, statusFilter, sortBy, sortOrder, refreshTrigger]);
 
   const handleUpdateQuotationRow = (updatedQuotation) => {
-    if (updatedQuotation.customer && updatedQuotation.customer_id) {
-      customerCache.current[updatedQuotation.customer_id] = updatedQuotation.customer;
-    }
     setQuotations((prev) =>
       prev.map((q) => (q.id === updatedQuotation.id ? { ...q, ...updatedQuotation } : q))
     );
@@ -204,9 +146,6 @@ export default function ManageQuotations() {
 
   const handleQuotationCreated = (newQuotation) => {
     if (newQuotation && newQuotation.id) {
-      if (newQuotation.customer && newQuotation.customer_id) {
-        customerCache.current[newQuotation.customer_id] = newQuotation.customer;
-      }
       setQuotations((prev) => [newQuotation, ...prev.filter((q) => q.id !== newQuotation.id)]);
       setTotalItems((prev) => prev + 1);
     }
@@ -217,8 +156,8 @@ export default function ManageQuotations() {
     statusFilter || sortBy !== "created_at" || sortOrder !== "DESC"
   );
 
-  // POST /quotations has @Roles(UserRole.ADMIN) only in quotations.controller.ts
-  const canCreate = isAdmin(currentUser?.role);
+  // POST /quotations has @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN) in quotations.controller.ts
+  const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
 
   const getStatusBadge = (status) => {
     switch (status) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { X, Receipt, Loader2, Download, Eye, Mail, CreditCard, RefreshCw } from "lucide-react";
+import { X, Receipt, Loader2 } from "lucide-react";
+import { axiosInstance } from "../../../../lib/axiosInstance";
 import { generateInvoicePdf } from "../../../../lib/generateInvoicePdf";
-import { enrichInvoiceAndQuotation, updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
+import { updateInvoicePrices } from "../../../../lib/invoicePdfEnricher";
 import InvoiceDetails from "./InvoiceDetails";
 import { toast } from "react-hot-toast";
 
@@ -16,6 +17,7 @@ export default function InvoiceDetailViewModal({
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState("");
   const [updatingPrices, setUpdatingPrices] = useState(false);
 
   // Escape key handler
@@ -29,32 +31,79 @@ export default function InvoiceDetailViewModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Fetch full invoice with price breakdown, enriched line items, and solar item categories
+  // Fetch full invoice specifications and price breakdown safely
   useEffect(() => {
-    if (!isOpen || !invoice?.id) {
-      setData(null);
-      return;
-    }
+    if (!isOpen || !invoice?.id) return;
 
     let active = true;
 
     const fetchInvoiceDetails = async () => {
+      const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
+      const isStale =
+        !invoice.price_updated_at ||
+        Date.now() - new Date(invoice.price_updated_at).getTime() > 50000;
+
       try {
         setLoading(true);
 
-        const { enrichedInvoice } = await enrichInvoiceAndQuotation(
-          invoice,
-          quotation || invoice.quotation
-        );
+        let canFetchDirectly = !isStale;
 
-        if (active) {
-          setData(enrichedInvoice);
+        // Proactively synchronize prices before calling GET /invoices/:id to avoid backend 400 BadRequestException
+        if (isStale && quoId) {
+          try {
+            setSyncStatusText("Synchronizing latest price breakdown with catalog...");
+            await axiosInstance.put(`/invoices/${invoice.id}/${quoId}`);
+            canFetchDirectly = true;
+          } catch (syncErr) {
+            console.warn("Could not pre-sync prices via PUT /invoices/:id/:quoId:", syncErr);
+            canFetchDirectly = false;
+          }
         }
+
+        if (canFetchDirectly) {
+          setSyncStatusText("Loading invoice specifications and price breakdown...");
+          const res = await axiosInstance.get(`/invoices/${invoice.id}`);
+          const inv = res.data?.data || res.data;
+          if (active && inv) {
+            setData(inv);
+            if (isStale && onInvoiceUpdated) {
+              onInvoiceUpdated(inv);
+            }
+            return;
+          }
+        }
+
+        // If prices were stale and could not be pre-synced, do NOT call GET /invoices/:id (prevents backend 400).
+        // Instead, load quotation details to ensure line items and customer information are available.
+        if (active && quoId) {
+          try {
+            const quoRes = await axiosInstance.get(`/quotations/${quoId}`);
+            const quo =
+              quoRes.data?.data?.quotation ||
+              quoRes.data?.quotation ||
+              quoRes.data?.data ||
+              quoRes.data;
+            if (active && quo) {
+              setData({
+                ...invoice,
+                quotation: quo,
+              });
+              return;
+            }
+          } catch (quoErr) {
+            console.warn("Could not load quotation details:", quoErr);
+          }
+        }
+
+        if (active) setData(invoice);
       } catch (err) {
-        console.error("Failed to load invoice details", err);
+        console.error("Failed to load invoice details:", err);
         if (active) setData(invoice);
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setSyncStatusText("");
+        }
       }
     };
 
@@ -63,21 +112,18 @@ export default function InvoiceDetailViewModal({
     return () => {
       active = false;
     };
-  }, [isOpen, invoice, quotation]);
+  }, [isOpen, invoice?.id, invoice?.price_updated_at]);
 
   if (!isOpen || !invoice) return null;
 
   const currentInvoice = data || invoice;
   const currentQuotation = currentInvoice.quotation || quotation || {};
+  const isFinalized = currentQuotation.status === "ACCEPTED" || currentQuotation.status === "REJECTED";
 
   const handleDownloadPdf = () => {
     try {
       const result = generateInvoicePdf({
         invoice: currentInvoice,
-        quotation: currentQuotation,
-        customer: currentQuotation.customer,
-        items: currentQuotation.items || [],
-        dueDate: currentInvoice.due_date,
       });
 
       const a = document.createElement("a");
@@ -97,10 +143,6 @@ export default function InvoiceDetailViewModal({
     try {
       const result = generateInvoicePdf({
         invoice: currentInvoice,
-        quotation: currentQuotation,
-        customer: currentQuotation.customer,
-        items: currentQuotation.items || [],
-        dueDate: currentInvoice.due_date,
       });
 
       window.open(result.url, "_blank");
@@ -119,17 +161,12 @@ export default function InvoiceDetailViewModal({
 
     try {
       setUpdatingPrices(true);
-      const updated = await updateInvoicePrices(invoice.id, quoId);
+      const freshInv = await updateInvoicePrices(invoice.id, quoId);
       toast.success("Invoice prices updated to latest catalog prices!");
-
-      const { enrichedInvoice } = await enrichInvoiceAndQuotation(
-        updated || invoice,
-        currentQuotation
-      );
-      setData(enrichedInvoice);
+      setData(freshInv);
 
       if (onInvoiceUpdated) {
-        onInvoiceUpdated(enrichedInvoice);
+        onInvoiceUpdated(freshInv);
       }
     } catch (err) {
       console.error("Failed to update invoice prices:", err);
@@ -153,7 +190,7 @@ export default function InvoiceDetailViewModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl sm:max-w-3xl w-full border border-slate-200/90 overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]"
       >
         {/* Header - Fixed */}
         <div className="flex items-start justify-between px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 bg-slate-50/70 shrink-0 gap-2">
@@ -192,7 +229,7 @@ export default function InvoiceDetailViewModal({
           {loading && (
             <div className="flex items-center justify-center gap-2 py-3 text-xs font-medium text-blue-600 bg-blue-50/50 rounded-xl border border-blue-100">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading invoice specifications and price breakdown...</span>
+              <span>{syncStatusText || "Loading invoice specifications and price breakdown..."}</span>
             </div>
           )}
 
@@ -215,64 +252,8 @@ export default function InvoiceDetailViewModal({
           />
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={handleUpdatePrices}
-              disabled={updatingPrices}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-              title="Sync latest prices from equipment catalog (PUT /invoices/:invoice_id/:quotation_id)"
-            >
-              {updatingPrices ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
-              )}
-              <span>Sync Prices</span>
-            </button>
-            <button
-              type="button"
-              onClick={handlePreviewPdf}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Preview PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-            </button>
-            {onOpenPaymentModal && (
-              <button
-                type="button"
-                onClick={onOpenPaymentModal}
-                className="flex-1 sm:flex-initial text-center justify-center px-3 py-2 sm:py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Record Payment</span>
-              </button>
-            )}
-            {onOpenSendModal && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenSendModal(currentQuotation, currentInvoice);
-                }}
-                className="w-full sm:w-auto text-center justify-center px-3.5 py-2 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                <span>Send Email</span>
-              </button>
-            )}
-          </div>
-
+        {/* Sticky Footer */}
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 bg-slate-50/80 border-t border-slate-100 shrink-0 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}

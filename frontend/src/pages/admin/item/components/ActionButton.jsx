@@ -28,6 +28,7 @@ export default function ActionButton({
 
   const canEdit = isSuperAdmin(currentUser?.role);
   const canUpdatePrice = isSuperAdmin(currentUser?.role);
+  const canToggle = isSuperAdmin(currentUser?.role);
   const canDelete = isSuperAdmin(currentUser?.role);
 
   const handleToggleStatus = async () => {
@@ -125,7 +126,7 @@ export default function ActionButton({
         )}
 
         {/* Toggle Status Button */}
-        {canEdit && (
+        {canToggle && (
           <button
             onClick={handleToggleStatus}
             disabled={statusLoading}

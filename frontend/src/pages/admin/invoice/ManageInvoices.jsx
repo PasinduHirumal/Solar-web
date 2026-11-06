@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search, Filter, X, Receipt, Clock, Calendar, Mail, Phone, RefreshCw, FileText,
+  Search, Filter, X, Receipt, Clock, Mail, Phone, RefreshCw,
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { formatPrice } from "../../../lib/formatPrice";
-import useAuthStore from "../../../lib/authStore";
+import { updateInvoicePrices } from "../../../lib/invoicePdfEnricher";
 import AdminFilterMenu from "../../../common/AdminFilterMenu";
 import ActionButton from "./components/ActionButton";
 import Filters from "./components/Filters";
 import SendInvoiceModal from "./components/SendInvoiceModal";
+import InvoiceDetailViewModal from "./components/InvoiceDetailViewModal";
+import RecordPaymentModal from "./components/RecordPaymentModal";
 
 export default function ManageInvoices() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,7 +22,6 @@ export default function ManageInvoices() {
   const paymentStatusFilter = searchParams.get("payment_status") || "";
   const lowestBudget = searchParams.get("lowest_budget") || "";
   const maximumBudget = searchParams.get("maximum_budget") || "";
-  const sortBy = searchParams.get("sort_by") || "created_at";
   const sortOrder = searchParams.get("sort") || "DESC";
   const page = parseInt(searchParams.get("page") || "1", 10) || 1;
 
@@ -32,17 +33,22 @@ export default function ManageInvoices() {
   const [totalItems, setTotalItems] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [syncingInvoiceId, setSyncingInvoiceId] = useState(null);
 
-  // Client-side cache to persist resolved customer & quotation profiles by quotation_id
-  const customerCache = useRef({});
-  const quotationCache = useRef({});
+  // Detail Modal state (lifted to prevent unmounting/closing during price updates)
+  const [detailModalInvoice, setDetailModalInvoice] = useState(null);
+  const [detailModalQuotation, setDetailModalQuotation] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Payment Modal state
+  const [paymentModalInvoice, setPaymentModalInvoice] = useState(null);
+  const [paymentModalQuotation, setPaymentModalQuotation] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Send Invoice Modal state
   const [sendModalQuotation, setSendModalQuotation] = useState(null);
   const [sendModalInvoice, setSendModalInvoice] = useState(null);
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-
-  const currentUser = useAuthStore((s) => s.user);
 
   const refetchInvoices = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
@@ -119,85 +125,12 @@ export default function ManageInvoices() {
 
         if (active) {
           const data = response.data?.data || response.data;
-          const rawItems = data.items || [];
-
-          // Immediately attach any previously cached quotation & customer profiles
-          const initialItems = rawItems.map((inv) => {
-            const cachedQuo = inv.quotation_id ? quotationCache.current[inv.quotation_id] : null;
-            const cachedCust =
-              inv.customer?.name
-                ? inv.customer
-                : inv.quotation_id && customerCache.current[inv.quotation_id]
-                  ? customerCache.current[inv.quotation_id]
-                  : cachedQuo?.customer;
-
-            return {
-              ...inv,
-              quotation: cachedQuo || inv.quotation,
-              customer: cachedCust || inv.customer,
-            };
-          });
-
-          setInvoices(initialItems);
+          setInvoices(data.items || []);
           setTotalPages(data.meta?.totalPages || 1);
           setTotalItems(data.meta?.totalItems || 0);
           setLoading(false);
-
-          // Asynchronously enrich full customer and quotation details for rows on active page
-          const itemsNeedingDetails = initialItems.filter(
-            (inv) => (!inv.customer?.name || !inv.quotation?.quotation_number) && inv.quotation_id
-          );
-          const uniqueQuoIds = [...new Set(itemsNeedingDetails.map((inv) => inv.quotation_id))];
-
-          if (uniqueQuoIds.length > 0) {
-            Promise.allSettled(
-              uniqueQuoIds.map((quoId) => axiosInstance.get(`/quotations/${quoId}`))
-            ).then((results) => {
-              if (!active) return;
-              const freshMap = {};
-              results.forEach((res) => {
-                if (res.status === "fulfilled") {
-                  const fullQuo =
-                    res.value.data?.data?.quotation ||
-                    res.value.data?.data ||
-                    res.value.data?.quotation ||
-                    res.value.data;
-
-                  if (fullQuo?.id) {
-                    quotationCache.current[fullQuo.id] = fullQuo;
-                    if (fullQuo.customer) {
-                      freshMap[fullQuo.id] = fullQuo;
-                      customerCache.current[fullQuo.id] = fullQuo.customer;
-                      if (fullQuo.customer_id) {
-                        customerCache.current[fullQuo.customer_id] = fullQuo.customer;
-                      }
-                    }
-                  }
-                }
-              });
-
-              if (Object.keys(freshMap).length > 0) {
-                setInvoices((prev) =>
-                  prev.map((inv) => {
-                    const resolvedQuo =
-                      freshMap[inv.quotation_id] || quotationCache.current[inv.quotation_id];
-                    const resolvedCust =
-                      resolvedQuo?.customer ||
-                      (inv.quotation_id ? customerCache.current[inv.quotation_id] : null);
-
-                    return resolvedQuo || resolvedCust
-                      ? {
-                        ...inv,
-                        quotation: resolvedQuo || inv.quotation,
-                        customer: resolvedCust || inv.customer,
-                      }
-                      : inv;
-                  })
-                );
-              }
-            });
-          }
         }
+
       } catch (error) {
         if (active) {
           const msg = error.response?.data?.message;
@@ -218,9 +151,20 @@ export default function ManageInvoices() {
     };
   }, [page, searchTerm, paymentStatusFilter, sortOrder, lowestBudget, maximumBudget, refreshTrigger]);
 
+  const handleOpenDetailModal = (invoice, quotation) => {
+    setDetailModalInvoice(invoice);
+    setDetailModalQuotation(quotation || invoice?.quotation || null);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleOpenPaymentModal = (invoice, quotation) => {
+    setPaymentModalInvoice(invoice);
+    setPaymentModalQuotation(quotation || invoice?.quotation || null);
+    setIsPaymentModalOpen(true);
+  };
+
   const handleOpenSendModal = (quotation, invoice) => {
-    const targetQuo =
-      quotation || (invoice?.quotation_id ? quotationCache.current[invoice.quotation_id] : null);
+    const targetQuo = quotation || invoice?.quotation || null;
     if (!targetQuo) {
       toast.error("Could not locate quotation associated with this invoice.");
       return;
@@ -230,15 +174,49 @@ export default function ManageInvoices() {
     setIsSendModalOpen(true);
   };
 
-  const handleInvoiceUpdated = (updatedInv) => {
+  // Immediate row update without refreshing full table (prevents closing modal & table reloading flicker)
+  const handleInvoiceUpdated = useCallback((updatedInv) => {
     if (updatedInv?.id) {
       setInvoices((prev) =>
         prev.map((i) =>
           i.id === updatedInv.id ? { ...i, ...updatedInv } : i
         )
       );
+      setDetailModalInvoice((prev) =>
+        prev?.id === updatedInv.id ? { ...prev, ...updatedInv } : prev
+      );
+      setPaymentModalInvoice((prev) =>
+        prev?.id === updatedInv.id ? { ...prev, ...updatedInv } : prev
+      );
     }
-    refetchInvoices();
+  }, []);
+
+  // Sync latest equipment prices for a specific invoice row from backend PUT /invoices/:id/:quoId
+  const handleSyncRowPrices = async (inv) => {
+    const quoId = inv.quotation_id || inv.quotation?.id;
+    if (!inv.id || !quoId) {
+      toast.error("Quotation reference missing. Cannot sync prices.");
+      return;
+    }
+
+    try {
+      setSyncingInvoiceId(inv.id);
+      const updatedInv = await updateInvoicePrices(inv.id, quoId);
+
+      // Immediately update row data without refreshing the entire table
+      handleInvoiceUpdated(updatedInv);
+      toast.success(`Prices synchronized for ${inv.invoice_number}`);
+    } catch (err) {
+      console.error("Failed to sync row prices:", err);
+      const msg = err.response?.data?.message;
+      toast.error(
+        Array.isArray(msg)
+          ? msg.join(", ")
+          : msg || err.message || "Failed to sync prices"
+      );
+    } finally {
+      setSyncingInvoiceId(null);
+    }
   };
 
   const hasActiveFilters = Boolean(
@@ -385,14 +363,10 @@ export default function ManageInvoices() {
                 </tr>
               ) : (
                 invoices.map((inv) => {
-                  const quotation =
-                    inv.quotation || (inv.quotation_id ? quotationCache.current[inv.quotation_id] : null) || {};
-                  const customer =
-                    inv.customer ||
-                    quotation.customer ||
-                    (inv.quotation_id ? customerCache.current[inv.quotation_id] : null) ||
-                    {};
+                  const quotation = inv.quotation || {};
+                  const customer = inv.customer || quotation.customer || {};
                   const badge = getPaymentStatusBadge(inv.payment_status);
+                  const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
 
                   return (
                     <tr
@@ -481,34 +455,57 @@ export default function ManageInvoices() {
 
                       {/* Financials */}
                       <td className="py-3 px-4">
-                        <div className="flex flex-col gap-0.5 text-xs">
-                          <span className="font-mono font-bold text-slate-900">
-                            {formatPrice(inv.total)}
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            Paid:{" "}
-                            <strong className="text-emerald-700 font-mono">
-                              {formatPrice(inv.paid_amount || 0)}
-                            </strong>
-                          </span>
-                          {Number(inv.total) > 0 && (
-                            <div className="w-24 bg-slate-100 rounded-full h-1 overflow-hidden mt-0.5">
-                              <div
-                                className={`h-1 rounded-full ${
-                                  inv.payment_status === "PAID"
-                                    ? "bg-emerald-600"
-                                    : "bg-blue-600"
+                        <div className="flex items-center justify-between gap-2 max-w-[190px]">
+                          <div className="flex flex-col gap-0.5 text-xs min-w-0">
+                            <span className="font-mono font-bold text-slate-900">
+                              {formatPrice(inv.total)}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              Paid:{" "}
+                              <strong className="text-emerald-700 font-mono">
+                                {formatPrice(inv.paid_amount || 0)}
+                              </strong>
+                            </span>
+                            {Number(inv.total) > 0 && (
+                              <div className="w-24 bg-slate-100 rounded-full h-1 overflow-hidden mt-0.5">
+                                <div
+                                  className={`h-1 rounded-full ${
+                                    inv.payment_status === "PAID"
+                                      ? "bg-emerald-600"
+                                      : "bg-blue-600"
+                                  }`}
+                                  style={{
+                                    width: `${Math.min(
+                                      100,
+                                      Math.round(
+                                        ((inv.paid_amount || 0) / Number(inv.total)) * 100
+                                      )
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Row Price Sync Button (Financials Column - Available when quotation is not finalized) */}
+                          {!isFinalized && (
+                            <button
+                              type="button"
+                              onClick={() => handleSyncRowPrices(inv)}
+                              disabled={syncingInvoiceId === inv.id}
+                              className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                                syncingInvoiceId === inv.id
+                                  ? "bg-blue-50 text-blue-600 border-blue-200 shadow-2xs"
+                                  : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 border-slate-200/60 hover:border-blue-200/80 shadow-2xs"
+                              }`}
+                              title="Sync latest equipment catalog prices"
+                            >
+                              <RefreshCw
+                                className={`w-3.5 h-3.5 ${
+                                  syncingInvoiceId === inv.id ? "animate-spin text-blue-600" : ""
                                 }`}
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.round(
-                                      ((inv.paid_amount || 0) / Number(inv.total)) * 100
-                                    )
-                                  )}%`,
-                                }}
                               />
-                            </div>
+                            </button>
                           )}
                         </div>
                       </td>
@@ -518,6 +515,8 @@ export default function ManageInvoices() {
                         <ActionButton
                           invoice={inv}
                           quotation={quotation}
+                          onOpenDetailModal={handleOpenDetailModal}
+                          onOpenPaymentModal={handleOpenPaymentModal}
                           onOpenSendModal={handleOpenSendModal}
                           onUpdateInvoice={handleInvoiceUpdated}
                         />
@@ -605,6 +604,47 @@ export default function ManageInvoices() {
           quotation={sendModalQuotation}
           invoice={sendModalInvoice}
           onQuotationUpdated={handleInvoiceUpdated}
+        />
+      )}
+
+      {/* Invoice Detail View Modal (Lifted to page level - Never closes during row price sync) */}
+      {isDetailModalOpen && detailModalInvoice && (
+        <InvoiceDetailViewModal
+          key={detailModalInvoice.id}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setDetailModalInvoice(null);
+            setDetailModalQuotation(null);
+          }}
+          invoice={detailModalInvoice}
+          quotation={detailModalQuotation}
+          onOpenSendModal={handleOpenSendModal}
+          onOpenPaymentModal={() => {
+            const curInv = detailModalInvoice;
+            const curQuo = detailModalQuotation;
+            setIsDetailModalOpen(false);
+            handleOpenPaymentModal(curInv, curQuo);
+          }}
+          onInvoiceUpdated={handleInvoiceUpdated}
+        />
+      )}
+
+      {/* Record Payment & Transactions History Modal */}
+      {isPaymentModalOpen && paymentModalInvoice && (
+        <RecordPaymentModal
+          key={paymentModalInvoice.id}
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setPaymentModalInvoice(null);
+            setPaymentModalQuotation(null);
+          }}
+          invoice={paymentModalInvoice}
+          quotation={paymentModalQuotation}
+          onPaymentSuccess={(updatedInv) => {
+            handleInvoiceUpdated(updatedInv);
+          }}
         />
       )}
     </div>

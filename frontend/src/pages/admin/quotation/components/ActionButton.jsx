@@ -38,7 +38,10 @@ export default function ActionButton({
   const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
 
   // Create Invoice in Database (POST /invoices/:quotation_id - ADMIN, SUPER_ADMIN)
-  const canCreateInvoice = (isAdm || isSuper) && quotation.status !== "REJECTED";
+  const canCreateInvoice =
+    (isAdm || isSuper) &&
+    quotation.status !== "REJECTED" &&
+    !quotation.invoice_id;
 
   /*
    * Role & status validation according to backend quotations.service.ts & quotations.controller.ts:
@@ -51,10 +54,10 @@ export default function ActionButton({
 
   /*
    * - Edit button:
-   * ADMIN can edit when DRAFT (all tabs) or SENT (items tab)
-   * SUPER_ADMIN can edit when DRAFT (discount, tax, notes)
+   * Both ADMIN and SUPER_ADMIN can edit when DRAFT (all tabs: discount, tax, items, notes)
+   * or SENT (quotation line items tab - @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN))
    */
-  const canEdit = isAdm ? (isDraft || isSent) : (isSuper && isDraft);
+  const canEdit = (isAdm || isSuper) && (isDraft || isSent);
 
   // - Delete button: DELETE /quotations/:id is allowed for ADMIN & SUPER_ADMIN when status is DRAFT
   const canDelete = (isAdm || isSuper) && isDraft;

@@ -134,7 +134,7 @@ export default function ManageCategories() {
     };
 
     const hasActiveFilters = Boolean(statusFilter || sortBy !== "created_at" || sortOrder !== "DESC");
-    const canCreate = isSuperAdmin(currentUser?.role);
+    const canCreate = isAdmin(currentUser?.role) || isSuperAdmin(currentUser?.role);
 
     return (
         <div className="max-w-7xl mx-auto w-full space-y-4">

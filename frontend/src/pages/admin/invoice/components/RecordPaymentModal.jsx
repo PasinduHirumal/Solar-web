@@ -9,10 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
-  Clock,
   ArrowRight,
-  TrendingUp,
-  Receipt,
   User,
   History,
   ShieldAlert,
@@ -20,7 +17,6 @@ import {
 } from "lucide-react";
 import { axiosInstance } from "../../../../lib/axiosInstance";
 import { formatPrice } from "../../../../lib/formatPrice";
-import { fetchInvoiceWithBreakdown } from "../../../../lib/invoicePdfEnricher";
 
 /**
  * RecordPaymentModal
@@ -56,8 +52,41 @@ export default function RecordPaymentModal({
   }, [invoice]);
 
   const activeInvoice = currentInvoiceState || invoice;
+  const [quotationDetails, setQuotationDetails] = useState(null);
+
+  // Synchronize full quotation details (including status and customer) from backend
+  const targetQuoId =
+    activeInvoice?.quotation_id ||
+    activeInvoice?.quotation?.id ||
+    fallbackQuotation?.id;
+
+  useEffect(() => {
+    let active = true;
+    if (isOpen && targetQuoId) {
+      axiosInstance
+        .get(`/quotations/${targetQuoId}`)
+        .then((res) => {
+          if (!active) return;
+          const quo =
+            res.data?.data?.quotation ||
+            res.data?.quotation ||
+            res.data?.data ||
+            res.data;
+          if (quo?.id) {
+            setQuotationDetails(quo);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not fetch quotation details:", err);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [isOpen, targetQuoId]);
+
   const currentQuotation =
-    activeInvoice?.quotation || fallbackQuotation || {};
+    quotationDetails || activeInvoice?.quotation || fallbackQuotation || {};
   const customer = currentQuotation.customer || activeInvoice?.customer || {};
 
   const total = Number(activeInvoice?.total || 0);
@@ -68,9 +97,9 @@ export default function RecordPaymentModal({
   const isQuotationAccepted = currentQuotation.status === "ACCEPTED";
   const isFullySettled = balance <= 0 || activeInvoice?.payment_status === "PAID";
 
-  // Fetch chronological payment history
+  // Fetch chronological payment history and update invoice state directly from GET /payments
   const loadPaymentHistory = useCallback(async () => {
-    if (!activeInvoice?.id) return;
+    if (!activeInvoice?.id) return { invoice: activeInvoice, payments: [] };
     try {
       setLoadingHistory(true);
       const res = await axiosInstance.get("/payments", {
@@ -81,13 +110,40 @@ export default function RecordPaymentModal({
         },
       });
       const data = res.data?.data || res.data;
-      setPaymentsList(data.items || []);
+      const list = data.items || [];
+      setPaymentsList(list);
+
+      let freshInv = activeInvoice;
+      if (activeInvoice.invoice_number) {
+        try {
+          const invRes = await axiosInstance.get("/invoices", {
+            params: {
+              search_term: activeInvoice.invoice_number,
+              limit: 1,
+            },
+          });
+          const items = invRes.data?.data?.items || invRes.data?.items || [];
+          const found = items.find((i) => i.id === activeInvoice.id);
+          if (found) {
+            freshInv = found;
+            setCurrentInvoiceState((prev) => ({
+              ...(prev || {}),
+              ...found,
+            }));
+          }
+        } catch (invErr) {
+          console.warn("Could not reload invoice status:", invErr);
+        }
+      }
+
+      return { invoice: freshInv, payments: list };
     } catch (err) {
       console.warn("Could not load payment history", err);
+      return { invoice: activeInvoice, payments: [] };
     } finally {
       setLoadingHistory(false);
     }
-  }, [activeInvoice?.id]);
+  }, [activeInvoice?.id, activeInvoice?.invoice_number]);
 
   // Reset state on open and load payments
   useEffect(() => {
@@ -169,35 +225,8 @@ export default function RecordPaymentModal({
 
       setAmount("");
 
-      // Re-fetch payment history
-      await loadPaymentHistory();
-
-      // Fetch updated invoice from backend: GET /invoices/:invoice_id (with auto-refresh)
-      const quoId = activeInvoice.quotation_id || currentQuotation.id;
-      let updatedInvoice = {
-        ...activeInvoice,
-        paid_amount: Math.round((paid + numAmount) * 100) / 100,
-        payment_status:
-          numAmount >= balance
-            ? "PAID"
-            : paid === 0
-            ? "ADVANCED"
-            : "PARTIAL",
-      };
-
-      try {
-        const fullInv = await fetchInvoiceWithBreakdown(activeInvoice.id, quoId);
-        if (fullInv?.id) {
-          updatedInvoice = {
-            ...updatedInvoice,
-            ...fullInv,
-          };
-        }
-      } catch (invErr) {
-        console.warn("Could not reload invoice from backend:", invErr);
-      }
-
-      setCurrentInvoiceState(updatedInvoice);
+      // Re-fetch payment history and fresh invoice state in one unified fetch
+      const { invoice: updatedInvoice } = await loadPaymentHistory();
 
       if (onPaymentSuccess) {
         onPaymentSuccess(updatedInvoice, createdPayment);
@@ -259,32 +288,8 @@ export default function RecordPaymentModal({
       setRevokingPayment(null);
       setRevocationReason("");
 
-      // Reload payment history
-      await loadPaymentHistory();
-
-      // Reload invoice from backend
-      const quoId = activeInvoice.quotation_id || currentQuotation.id;
-      let updatedInvoice = {
-        ...activeInvoice,
-        paid_amount: Math.max(
-          0,
-          Math.round(((activeInvoice.paid_amount || 0) - revokingPayment.amount) * 100) / 100
-        ),
-      };
-
-      try {
-        const fullInv = await fetchInvoiceWithBreakdown(activeInvoice.id, quoId);
-        if (fullInv?.id) {
-          updatedInvoice = {
-            ...updatedInvoice,
-            ...fullInv,
-          };
-        }
-      } catch (invErr) {
-        console.warn("Could not refetch invoice after payment revoke:", invErr);
-      }
-
-      setCurrentInvoiceState(updatedInvoice);
+      // Reload payment history and fresh invoice state in one unified fetch
+      const { invoice: updatedInvoice } = await loadPaymentHistory();
 
       if (onPaymentSuccess) {
         onPaymentSuccess(updatedInvoice, updatedPayment);

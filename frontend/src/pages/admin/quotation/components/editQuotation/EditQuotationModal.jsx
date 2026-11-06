@@ -57,8 +57,8 @@ export default function EditQuotationModal({
     }
 
     // 3. Line Items: /quotation-items/:quotation_id
-    // Role: ADMIN only (@Roles(UserRole.ADMIN)) | Status: DRAFT or SENT
-    if (isAdm && (isDraft || isSent)) {
+    // Role: ADMIN, SUPER_ADMIN (@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)) | Status: DRAFT or SENT
+    if ((isAdm || isSuper) && (isDraft || isSent)) {
       tabs.push({
         id: "items",
         label: "Quotation Items",

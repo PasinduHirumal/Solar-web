@@ -75,7 +75,7 @@ export default function CreateInvoiceModal({
     return () => {
       active = false;
     };
-  }, [isOpen, quotation]);
+  }, [isOpen]);
 
   // Escape key handler
   useEffect(() => {
@@ -140,22 +140,13 @@ export default function CreateInvoiceModal({
       setErrorMessage("");
 
       // Endpoint: POST /invoices/:quotation_id
+      // Send selected dueDate with midday anchor to prevent timezone day-shift
       const payload = {
-        due_date: new Date(dueDate).toISOString(),
+        due_date: new Date(`${dueDate}T12:00:00`).toISOString(),
       };
 
       const response = await axiosInstance.post(`/invoices/${quotation.id}`, payload);
       const newInvoice = response.data?.data || response.data;
-
-      // Initialize price freshness timestamp in database (PUT /invoices/:invoice_id/:quotation_id)
-      if (newInvoice?.id && quotation?.id) {
-        try {
-          await axiosInstance.put(`/invoices/${newInvoice.id}/${quotation.id}`);
-          newInvoice.price_updated_at = new Date().toISOString();
-        } catch (syncErr) {
-          console.warn("Could not set initial price_updated_at:", syncErr);
-        }
-      }
 
       setCreatedInvoice(newInvoice);
       toast.success(
@@ -379,19 +370,6 @@ export default function CreateInvoiceModal({
                 <p className="text-[11px] text-slate-400">
                   Required by backend DTO. Stored as invoice due timestamp in database.
                 </p>
-              </div>
-
-              {/* Informational Notice */}
-              <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-[11px] text-slate-600 flex items-start gap-2">
-                <Receipt className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-slate-800">
-                    Database Snapshots & Freezing
-                  </p>
-                  <p className="text-slate-500 mt-0.5">
-                    Executing this action saves an immutable invoice row in the database, locks the equipment snapshots, and generates an official invoice number.
-                  </p>
-                </div>
               </div>
             </>
           )}
