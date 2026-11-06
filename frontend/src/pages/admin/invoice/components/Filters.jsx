@@ -1,5 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Check, ChevronDown, AlertCircle, Calendar, X } from "lucide-react";
+import React, { useState } from "react";
+import {
+  CreditCard,
+  FileText,
+  Calendar,
+  Receipt,
+  ArrowDownUp,
+  ChevronDown,
+  Check,
+  X,
+  AlertCircle,
+} from "lucide-react";
 import { currencyType } from "../../../../lib/formatPrice";
 
 export default function Filters({
@@ -14,6 +24,16 @@ export default function Filters({
   onReset,
   onClose,
 }) {
+  const [prevProps, setPrevProps] = useState({
+    paymentStatusFilter,
+    quotationStatusFilter,
+    startDate,
+    endDate,
+    lowestBudget,
+    maximumBudget,
+    sortOrder,
+  });
+
   const [paymentStatus, setPaymentStatus] = useState(paymentStatusFilter || "");
   const [quotationStatus, setQuotationStatus] = useState(quotationStatusFilter || "");
   const [start, setStart] = useState(startDate || "");
@@ -23,7 +43,25 @@ export default function Filters({
   const [sortDir, setSortDir] = useState(sortOrder || "DESC");
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
+  // Adjust state during render when props change externally (React official pattern like ManageUsers)
+  if (
+    prevProps.paymentStatusFilter !== paymentStatusFilter ||
+    prevProps.quotationStatusFilter !== quotationStatusFilter ||
+    prevProps.startDate !== startDate ||
+    prevProps.endDate !== endDate ||
+    prevProps.lowestBudget !== lowestBudget ||
+    prevProps.maximumBudget !== maximumBudget ||
+    prevProps.sortOrder !== sortOrder
+  ) {
+    setPrevProps({
+      paymentStatusFilter,
+      quotationStatusFilter,
+      startDate,
+      endDate,
+      lowestBudget,
+      maximumBudget,
+      sortOrder,
+    });
     setPaymentStatus(paymentStatusFilter || "");
     setQuotationStatus(quotationStatusFilter || "");
     setStart(startDate || "");
@@ -32,15 +70,102 @@ export default function Filters({
     setMaxBudget(maximumBudget || "");
     setSortDir(sortOrder || "DESC");
     setErrorMessage("");
-  }, [
-    paymentStatusFilter,
-    quotationStatusFilter,
-    startDate,
-    endDate,
-    lowestBudget,
-    maximumBudget,
-    sortOrder,
-  ]);
+  }
+
+  const handlePaymentStatusChange = (val) => {
+    setPaymentStatus(val);
+    setErrorMessage("");
+    if (onApply) {
+      onApply({
+        payment_status: val,
+        quotation_status: quotationStatus,
+        start_date: start,
+        end_date: end,
+        lowest_budget: lowBudget,
+        maximum_budget: maxBudget,
+        sort: sortDir,
+      });
+    }
+  };
+
+  const handleQuotationStatusChange = (val) => {
+    setQuotationStatus(val);
+    setErrorMessage("");
+    if (onApply) {
+      onApply({
+        payment_status: paymentStatus,
+        quotation_status: val,
+        start_date: start,
+        end_date: end,
+        lowest_budget: lowBudget,
+        maximum_budget: maxBudget,
+        sort: sortDir,
+      });
+    }
+  };
+
+  const handleSortDirChange = (val) => {
+    setSortDir(val);
+    setErrorMessage("");
+    if (onApply) {
+      onApply({
+        payment_status: paymentStatus,
+        quotation_status: quotationStatus,
+        start_date: start,
+        end_date: end,
+        lowest_budget: lowBudget,
+        maximum_budget: maxBudget,
+        sort: val,
+      });
+    }
+  };
+
+  const handleClearDates = () => {
+    setStart("");
+    setEnd("");
+    setErrorMessage("");
+    if (onApply) {
+      onApply({
+        payment_status: paymentStatus,
+        quotation_status: quotationStatus,
+        start_date: undefined,
+        end_date: undefined,
+        lowest_budget: lowBudget,
+        maximum_budget: maxBudget,
+        sort: sortDir,
+      });
+    }
+  };
+
+  const handleClearBudgets = () => {
+    setLowBudget("");
+    setMaxBudget("");
+    setErrorMessage("");
+    if (onApply) {
+      onApply({
+        payment_status: paymentStatus,
+        quotation_status: quotationStatus,
+        start_date: start,
+        end_date: end,
+        lowest_budget: undefined,
+        maximum_budget: undefined,
+        sort: sortDir,
+      });
+    }
+  };
+
+  const handleResetAll = () => {
+    setPaymentStatus("");
+    setQuotationStatus("");
+    setStart("");
+    setEnd("");
+    setLowBudget("");
+    setMaxBudget("");
+    setSortDir("DESC");
+    setErrorMessage("");
+    if (onReset) onReset();
+    if (onClose) onClose();
+  };
 
   const handleApplyAndClose = () => {
     // Validate Date Range if both provided
@@ -69,47 +194,33 @@ export default function Filters({
 
     if (onApply) {
       onApply({
-        payment_status: paymentStatus || undefined,
-        quotation_status: quotationStatus || undefined,
-        start_date: start || undefined,
-        end_date: end || undefined,
-        lowest_budget: numLow !== null ? numLow : undefined,
-        maximum_budget: numMax !== null ? numMax : undefined,
+        payment_status: paymentStatus,
+        quotation_status: quotationStatus,
+        start_date: start,
+        end_date: end,
+        lowest_budget: lowBudget,
+        maximum_budget: maxBudget,
         sort: sortDir,
       });
     }
     if (onClose) onClose();
   };
 
-  const handleResetAll = () => {
-    setPaymentStatus("");
-    setQuotationStatus("");
-    setStart("");
-    setEnd("");
-    setLowBudget("");
-    setMaxBudget("");
-    setSortDir("DESC");
-    setErrorMessage("");
-    if (onReset) onReset();
-    if (onClose) onClose();
-  };
-
   return (
-    <div className="space-y-4 text-left">
-      <div className="space-y-4">
+    <div className="flex flex-col h-full justify-between">
+      {/* SELECTS LIST */}
+      <div className="space-y-4 flex-1">
         {/* PAYMENT STATUS FILTER */}
         <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <CreditCard className="w-3.5 h-3.5 text-blue-600" />
             Payment Status
           </label>
           <div className="relative">
             <select
               value={paymentStatus}
-              onChange={(e) => {
-                setPaymentStatus(e.target.value);
-                setErrorMessage("");
-              }}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-medium"
+              onChange={(e) => handlePaymentStatusChange(e.target.value)}
+              className="w-full pl-3.5 pr-8 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-semibold"
             >
               <option value="">All Payment Statuses</option>
               <option value="PENDING">Pending Payment</option>
@@ -117,23 +228,21 @@ export default function Filters({
               <option value="PARTIAL">Partial Payment</option>
               <option value="PAID">Paid in Full</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
         {/* QUOTATION STATUS FILTER */}
         <div className="space-y-1.5">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <FileText className="w-3.5 h-3.5 text-indigo-600" />
             Quotation Status
           </label>
           <div className="relative">
             <select
               value={quotationStatus}
-              onChange={(e) => {
-                setQuotationStatus(e.target.value);
-                setErrorMessage("");
-              }}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-medium"
+              onChange={(e) => handleQuotationStatusChange(e.target.value)}
+              className="w-full pl-3.5 pr-8 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-semibold"
             >
               <option value="">All Quotation Statuses</option>
               <option value="DRAFT">Draft</option>
@@ -141,24 +250,21 @@ export default function Filters({
               <option value="ACCEPTED">Accepted</option>
               <option value="REJECTED">Rejected</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
         {/* DATE RANGE (CREATED AT) */}
-        <div className="space-y-1.5 pt-0.5">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
               Created Date Range
             </label>
             {(start || end) && (
               <button
                 type="button"
-                onClick={() => {
-                  setStart("");
-                  setEnd("");
-                  setErrorMessage("");
-                }}
+                onClick={handleClearDates}
                 className="text-[11px] text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer"
                 title="Clear dates"
               >
@@ -170,52 +276,45 @@ export default function Filters({
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="block text-[10px] text-slate-400 mb-1">From Date</span>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={start}
-                  onChange={(e) => {
-                    setStart(e.target.value);
-                    setErrorMessage("");
-                  }}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-medium cursor-pointer"
-                />
-              </div>
+              <input
+                type="date"
+                value={start}
+                onChange={(e) => {
+                  setStart(e.target.value);
+                  setErrorMessage("");
+                }}
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs shadow-2xs transition-all font-medium cursor-pointer"
+              />
             </div>
             <div>
               <span className="block text-[10px] text-slate-400 mb-1">To Date</span>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={end}
-                  min={start || undefined}
-                  onChange={(e) => {
-                    setEnd(e.target.value);
-                    setErrorMessage("");
-                  }}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-medium cursor-pointer"
-                />
-              </div>
+              <input
+                type="date"
+                value={end}
+                min={start || undefined}
+                onChange={(e) => {
+                  setEnd(e.target.value);
+                  setErrorMessage("");
+                }}
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs shadow-2xs transition-all font-medium cursor-pointer"
+              />
             </div>
           </div>
         </div>
 
         {/* BUDGET RANGE */}
-        <div className="space-y-1.5 pt-0.5">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              <Receipt className="w-3.5 h-3.5 text-amber-600" />
               Invoice Total Range ({currencyType})
             </label>
             {(lowBudget || maxBudget) && (
               <button
                 type="button"
-                onClick={() => {
-                  setLowBudget("");
-                  setMaxBudget("");
-                  setErrorMessage("");
-                }}
+                onClick={handleClearBudgets}
                 className="text-[11px] text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer"
-                title="Clear range"
+                title="Clear total range"
               >
                 <X size={12} />
                 <span>Clear</span>
@@ -235,7 +334,7 @@ export default function Filters({
                   setLowBudget(e.target.value);
                   setErrorMessage("");
                 }}
-                className="w-full px-2.5 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-medium"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs shadow-2xs transition-all font-medium"
               />
             </div>
             <div>
@@ -250,33 +349,34 @@ export default function Filters({
                   setMaxBudget(e.target.value);
                   setErrorMessage("");
                 }}
-                className="w-full px-2.5 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 font-medium"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs shadow-2xs transition-all font-medium"
               />
             </div>
           </div>
         </div>
 
         {/* SORT ORDER */}
-        <div className="space-y-1.5 pt-0.5">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <ArrowDownUp className="w-3.5 h-3.5 text-blue-600" />
             Sort Order
           </label>
           <div className="relative">
             <select
               value={sortDir}
-              onChange={(e) => setSortDir(e.target.value)}
-              className="w-full pl-3 pr-8 py-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-medium"
+              onChange={(e) => handleSortDirChange(e.target.value)}
+              className="w-full pl-3.5 pr-8 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 outline-none text-slate-900 text-xs appearance-none shadow-2xs cursor-pointer transition-all font-semibold"
             >
               <option value="DESC">Descending / Newest</option>
               <option value="ASC">Ascending / Oldest</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
 
         {/* ERROR MESSAGE */}
         {errorMessage && (
-          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200/80 text-rose-700 text-xs">
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
             <span>{errorMessage}</span>
           </div>
@@ -284,18 +384,18 @@ export default function Filters({
       </div>
 
       {/* ACTION FOOTER BUTTONS */}
-      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
+      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2.5">
         <button
           onClick={handleResetAll}
           type="button"
-          className="flex-1 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs active:scale-[0.98] cursor-pointer"
+          className="flex-1 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition shadow-2xs cursor-pointer"
         >
           Reset All
         </button>
         <button
           onClick={handleApplyAndClose}
           type="button"
-          className="flex-1 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-2xs shadow-blue-500/20 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+          className="flex-1 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-sm shadow-blue-500/20 cursor-pointer flex items-center justify-center gap-1.5"
         >
           <Check className="w-3.5 h-3.5" />
           <span>Apply</span>

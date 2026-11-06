@@ -75,6 +75,7 @@ export default function ManageInvoices() {
               val === "" ||
               (key === "sort_by" && val === "created_at") ||
               (key === "sort" && val === "DESC") ||
+              (key === "sort_order" && val === "DESC") ||
               (key === "page" && Number(val) <= 1)
             ) {
               next.delete(key);
@@ -712,36 +713,28 @@ export default function ManageInvoices() {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         title="Filter Invoices"
-        subtitle="Narrow invoices by settlement, quotation status, dates, or total amount"
       >
         <Filters
           paymentStatusFilter={paymentStatusFilter}
           quotationStatusFilter={quotationStatusFilter}
           startDate={startDate}
           endDate={endDate}
-          sortOrder={sortOrder}
           lowestBudget={lowestBudget}
           maximumBudget={maximumBudget}
-          onApply={(filters) => {
-            updateParams({
-              ...filters,
-              page: 1,
-            });
-            setIsFilterOpen(false);
-          }}
-          onReset={() => {
+          sortOrder={sortOrder}
+          onApply={(newFilters) => updateParams({ ...newFilters, page: 1 })}
+          onReset={() =>
             updateParams({
               payment_status: undefined,
               quotation_status: undefined,
               start_date: undefined,
               end_date: undefined,
-              sort: "DESC",
+              sort: undefined,
               lowest_budget: undefined,
               maximum_budget: undefined,
               page: 1,
-            });
-            setIsFilterOpen(false);
-          }}
+            })
+          }
           onClose={() => setIsFilterOpen(false)}
         />
       </AdminFilterMenu>

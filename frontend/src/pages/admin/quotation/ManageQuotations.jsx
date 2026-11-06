@@ -94,6 +94,7 @@ export default function ManageQuotations() {
               val === "" ||
               (key === "sort_by" && val === "created_at") ||
               (key === "sort" && val === "DESC") ||
+              (key === "sort_order" && val === "DESC") ||
               (key === "page" && Number(val) <= 1)
             ) {
               next.delete(key);
