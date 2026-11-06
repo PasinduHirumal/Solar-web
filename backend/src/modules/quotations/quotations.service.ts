@@ -78,7 +78,20 @@ export class QuotationsService {
             throw new NotFoundException(`Solar items not found: ${missingIds.join(', ')}`);
         }
 
+        const admin = await this.authService.findEntityByEmail(dto.email);
+        if (admin) {
+            throw new BadRequestException(`${admin.name} is an ${admin.role}, Cannot add ${admin.role} as customer`);
+        }
+
         let customer = await this.authService.findEntityByEmailAndPhone(dto.email, dto.phone);
+
+        if (customer && customer.role !== UserRole.USER) {
+            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
+        }
+
+        if (customer && (customer.phone !== dto.phone || customer.address !== dto.address)) {
+            customer = await this.userService.updateUserData(customer, { phone: dto.phone, address: dto.address });
+        }
 
         if (!customer) {
             customer = await this.authService.createUserBySystem(
@@ -95,14 +108,6 @@ export class QuotationsService {
                     mustChangePassword: true,
                 }
             );
-        }
-
-        if (customer && customer.role !== UserRole.USER) {
-            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
-        }
-
-        if (customer && (customer.phone !== dto.phone || customer.address !== dto.address)) {
-            customer = await this.userService.updateUserData(customer, { phone: dto.phone, address: dto.address });
         }
 
         const quotationNumber = await this.generateQuotationNumber(customer.name);
