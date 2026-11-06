@@ -18,6 +18,7 @@ import { FILE_LOG_MESSAGES } from '../files/constants/file-errors.constants';
 import { FILE_FIELDS } from '../files/constants/file-fields.constants';
 
 const INVOICE_ALIAS = 'invoice';
+const QUOTATION_ALIAS = 'quotation';
 
 const FRESHNESS_WINDOW_MS = 60_000;
 
@@ -64,7 +65,7 @@ export class InvoicesService {
 
     async updateToLatestPrices(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<void> {
         if (quotation.status === QuotationStatus.ACCEPTED || quotation.status === QuotationStatus.REJECTED) {
-            throw new BadRequestException(`Quotation ${quotation.quotation_number} already ${quotation.status}`);
+            return;
         }
         await this.quotationService.updateSnapQuotation(quotation.id);
         await this.updatePriceBreakdown(quotation, invoice.id);
@@ -82,9 +83,13 @@ export class InvoicesService {
         if (!invoice) throw new NotFoundException(`Invoice Not Found`);
 
         if (is_latest) {
-            const isStale =
+            let isStale =
                 !invoice.price_updated_at ||
                 Date.now() - invoice.price_updated_at.getTime() > FRESHNESS_WINDOW_MS;
+
+            if (invoice.price_updated_at && invoice.quotation.status === QuotationStatus.ACCEPTED) {
+                isStale = false;
+            }
 
             if (isStale) {
                 throw new BadRequestException('Invoice prices are out of date. Please update the invoice before continuing');
@@ -219,7 +224,34 @@ export class InvoicesService {
 
         try {
             await this.invoiceRepo.manager.transaction(async (manager: EntityManager) => {
-                await manager.update(InvoiceEntity, invoice.id, { invoice_pdf_id: uploadedFile.id });
+                const lockedInvoice = await manager
+                    .getRepository(InvoiceEntity)
+                    .createQueryBuilder(INVOICE_ALIAS)
+                    .setLock('pessimistic_write')
+                    .where(`${INVOICE_ALIAS}.id = :id`, { id: invoice.id })
+                    .getOne();
+
+                if (!lockedInvoice) throw new NotFoundException(`Invoice with ID ${invoice.id} not found`);
+
+                const lockedQuotation = await manager
+                    .getRepository(QuotationEntity)
+                    .createQueryBuilder(QUOTATION_ALIAS)
+                    .setLock('pessimistic_write')
+                    .where(`${QUOTATION_ALIAS}.id = :id`, { id: invoice.quotation_id })
+                    .getOne();
+    
+                if (!lockedQuotation) throw new NotFoundException(`Quotation with ID ${invoice.quotation_id} not found`);
+
+                if (lockedQuotation.status === QuotationStatus.REJECTED) {
+                    throw new BadRequestException(`Cannot sent quotation in status: ${lockedQuotation.status} `);
+                }
+
+                await manager.update(InvoiceEntity, lockedInvoice.id, { invoice_pdf_id: uploadedFile.id });
+
+                if (lockedQuotation.status !== QuotationStatus.SENT) {
+                    await manager.update(QuotationEntity, lockedQuotation.id, { status: QuotationStatus.SENT });
+                }
+
             });
         } catch (error) {
             try {
@@ -251,8 +283,6 @@ export class InvoicesService {
             invoice.invoice_number,
             pdf,
         );
-
-        await this.quotationService.sentQuotation(invoice.quotation_id);
     }
 
 

@@ -252,6 +252,42 @@ export default function ManageInvoices() {
     }
   };
 
+  // Quotation status badge (adjust cases to match your quotation status enum)
+  const getQuotationStatusBadge = (status) => {
+    switch (status) {
+      case "ACCEPTED":
+        return {
+          pill: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+          dot: "bg-emerald-500",
+          text: "Accepted",
+        };
+      case "REJECTED":
+        return {
+          pill: "bg-red-50 text-red-700 border-red-200/60",
+          dot: "bg-red-500",
+          text: "Rejected",
+        };
+      case "SENT":
+        return {
+          pill: "bg-blue-50 text-blue-700 border-blue-200/60",
+          dot: "bg-blue-500",
+          text: "Sent",
+        };
+      case "DRAFT":
+        return {
+          pill: "bg-slate-100 text-slate-600 border-slate-200/80",
+          dot: "bg-slate-400",
+          text: "Draft",
+        };
+      default:
+        return {
+          pill: "bg-slate-100 text-slate-500 border-slate-200/80",
+          dot: "bg-slate-300",
+          text: status || "Unknown",
+        };
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto w-full space-y-4 font-sans">
       {/* Header Toolbar - Identical to Manage Quotations */}
@@ -324,21 +360,22 @@ export default function ManageInvoices() {
       {/* Main Table Card */}
       <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse text-xs min-w-[720px]">
+          <table className="w-full text-left border-collapse text-xs min-w-205">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                 <th className="py-3 px-4 sm:px-5">Invoice #</th>
                 <th className="py-3 px-4">Quotation Ref</th>
+                <th className="py-3 px-4">Quotation Status</th>
                 <th className="py-3 px-4">Customer</th>
                 <th className="py-3 px-4">Payment Status</th>
-                <th className="py-3 px-4">Financials</th>
+                <th className="py-3 px-4">Financial</th>
                 <th className="py-3 px-4 sm:px-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
+                  <td colSpan="7" className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       <span className="text-xs font-semibold">Loading invoices...</span>
@@ -347,7 +384,7 @@ export default function ManageInvoices() {
                 </tr>
               ) : invoices.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-500">
+                  <td colSpan="7" className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
                         <Receipt className="w-6 h-6" />
@@ -366,6 +403,7 @@ export default function ManageInvoices() {
                   const quotation = inv.quotation || {};
                   const customer = inv.customer || quotation.customer || {};
                   const badge = getPaymentStatusBadge(inv.payment_status);
+                  const quotationBadge = getQuotationStatusBadge(quotation.status);
                   const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
 
                   return (
@@ -404,6 +442,20 @@ export default function ManageInvoices() {
                         </div>
                       </td>
 
+                      {/* Quotation Status */}
+                      <td className="py-3 px-4">
+                        {quotation.status ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border shadow-2xs ${quotationBadge.pill}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${quotationBadge.dot}`} />
+                            {quotationBadge.text}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+
                       {/* Customer Info - Exactly matching Manage Quotations */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -414,7 +466,7 @@ export default function ManageInvoices() {
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span
-                              className="font-bold text-slate-900 text-xs truncate max-w-[220px]"
+                              className="font-bold text-slate-900 text-xs truncate max-w-55"
                               title={customer.name || (inv.quotation_id ? `Customer ID: ${inv.quotation_id}` : "Customer")}
                             >
                               {customer.name || (
@@ -426,7 +478,7 @@ export default function ManageInvoices() {
                             </span>
                             {customer.email && (
                               <span
-                                className="text-[11px] text-slate-500 truncate max-w-[220px] flex items-center gap-1 mt-0.5"
+                                className="text-[11px] text-slate-500 truncate max-w-55 flex items-center gap-1 mt-0.5"
                                 title={customer.email}
                               >
                                 <Mail className="w-3 h-3 text-slate-400 shrink-0" />
@@ -453,9 +505,9 @@ export default function ManageInvoices() {
                         </span>
                       </td>
 
-                      {/* Financials */}
+                      {/* Financial */}
                       <td className="py-3 px-4">
-                        <div className="flex items-center justify-between gap-2 max-w-[190px]">
+                        <div className="flex items-center justify-between gap-2 max-w-47.5">
                           <div className="flex flex-col gap-0.5 text-xs min-w-0">
                             <span className="font-mono font-bold text-slate-900">
                               {formatPrice(inv.total)}
@@ -487,7 +539,7 @@ export default function ManageInvoices() {
                             )}
                           </div>
 
-                          {/* Row Price Sync Button (Financials Column - Available when quotation is not finalized) */}
+                          {/* Row Price Sync Button (Financial Column - Available when quotation is not finalized) */}
                           {!isFinalized && (
                             <button
                               type="button"

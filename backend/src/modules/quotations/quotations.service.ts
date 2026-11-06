@@ -331,8 +331,12 @@ export class QuotationsService {
 
             if (!locked) throw new NotFoundException(`Quotation with ID ${quotation_id} not found`);
 
-            if (locked.status !== QuotationStatus.DRAFT && locked.status !== QuotationStatus.SENT) {
+            if (locked.status === QuotationStatus.REJECTED) {
                 throw new BadRequestException(`Cannot sent quotation in status: ${locked.status} `);
+            }
+
+            if (locked.status === QuotationStatus.SENT) {
+                return locked;
             }
 
             await manager.update(QuotationEntity, locked.id, { status: QuotationStatus.SENT });
