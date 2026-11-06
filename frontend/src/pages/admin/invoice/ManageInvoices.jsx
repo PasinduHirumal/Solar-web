@@ -499,6 +499,8 @@ export default function ManageInvoices() {
                 invoices.map((inv) => {
                   const quotation = inv.quotation || {};
                   const customer = inv.customer || quotation.customer || {};
+                  const customerPhone = inv.snap_customer_phone || quotation.snap_customer_phone || customer.phone;
+                  const customerAddress = inv.snap_customer_address || quotation.snap_customer_address || customer.address;
                   const badge = getPaymentStatusBadge(inv.payment_status);
                   const quotationBadge = getQuotationStatusBadge(quotation.status);
                   const isFinalized = quotation.status === "ACCEPTED" || quotation.status === "REJECTED";
@@ -582,10 +584,10 @@ export default function ManageInvoices() {
                                 <span className="truncate">{customer.email}</span>
                               </span>
                             )}
-                            {customer.phone && (
+                            {customerPhone && (
                               <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
                                 <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                <span>{customer.phone}</span>
+                                <span>{customerPhone}</span>
                               </span>
                             )}
                           </div>

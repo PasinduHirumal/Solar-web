@@ -28,6 +28,7 @@ export default function ActionButton({
 
   const quoStatus = invoice.quotation?.status || quotation?.status;
   const isQuoAccepted = quoStatus === "ACCEPTED";
+  const isQuoRejected = quoStatus === "REJECTED";
 
   const isPaidInFull =
     invoice.payment_status === "PAID" ||
@@ -71,7 +72,13 @@ export default function ActionButton({
           type="button"
           onClick={handleSendEmail}
           className="w-7 h-7 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all rounded-lg border border-indigo-200/60 shadow-2xs cursor-pointer flex items-center justify-center"
-          title="Send / Resend Invoice to Customer Email"
+          title={
+            isPaidInFull
+              ? "Send / Resend Invoice Email (Notice: Fully paid)"
+              : isQuoRejected
+              ? "Cannot send invoice: Quotation is rejected"
+              : "Send / Resend Invoice to Customer Email"
+          }
         >
           <Mail className="w-3.5 h-3.5" />
         </button>

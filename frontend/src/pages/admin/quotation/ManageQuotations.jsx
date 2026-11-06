@@ -316,6 +316,46 @@ export default function ManageQuotations() {
         </div>
       </div>
 
+      {/* Active Filters Bar */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold text-slate-500">Active filters:</span>
+          {statusFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+              <span>Status: <strong className="font-semibold">{statusFilter}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ status: undefined, page: 1 })}
+                className="p-0.5 hover:bg-blue-100 rounded-md transition text-blue-500 hover:text-blue-800 cursor-pointer"
+                title="Remove status filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {sortOrder !== "DESC" && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
+              <span>Sort: <strong className="font-semibold">{sortOrder === "ASC" ? "Oldest First" : sortOrder}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ sort: undefined, page: 1 })}
+                className="p-0.5 hover:bg-slate-200 rounded-md transition text-slate-500 hover:text-slate-800 cursor-pointer"
+                title="Reset sort order"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => updateParams({ status: undefined, sort: undefined, sort_by: undefined, page: 1 })}
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline px-1 cursor-pointer transition"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
       {/* Main Table Card */}
       <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
         <div className="overflow-x-auto">
@@ -357,6 +397,8 @@ export default function ManageQuotations() {
                 </tr>
               ) : (
                 quotations.map((quo) => {
+                  const customer = quo.customer || {};
+                  const customerPhone = quo.snap_customer_phone || customer.phone;
                   return (
                     <tr
                       key={quo.id}
@@ -429,10 +471,10 @@ export default function ManageQuotations() {
                                 <span className="truncate">{quo.customer.email}</span>
                               </span>
                             )}
-                            {quo.customer?.phone && (
+                            {customerPhone && (
                               <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
                                 <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                <span>{quo.customer.phone}</span>
+                                <span>{customerPhone}</span>
                               </span>
                             )}
                           </div>

@@ -61,6 +61,8 @@ export default function ViewQuotationModal({
 
   const currentQuo = data?.quotation || targetQuotation || {};
   const customer = currentQuo.customer || {};
+  const customerPhone = currentQuo.snap_customer_phone || customer.phone;
+  const customerAddress = currentQuo.snap_customer_address || customer.address;
   const items = currentQuo.items || [];
 
   // Robust price breakdown calculation
@@ -223,13 +225,13 @@ export default function ViewQuotationModal({
               <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
                 <Phone className="w-3.5 h-3.5" />
               </div>
-              <span className="font-mono text-slate-700 truncate">{customer.phone || "N/A"}</span>
+              <span className="font-mono text-slate-700 truncate">{customerPhone || "N/A"}</span>
             </div>
             <div className="flex items-center gap-2.5 text-slate-700 min-w-0">
               <div className="w-6 h-6 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
                 <MapPin className="w-3.5 h-3.5" />
               </div>
-              <span className="truncate text-slate-600" title={customer.address}>{customer.address || "N/A"}</span>
+              <span className="truncate text-slate-600" title={customerAddress}>{customerAddress || "N/A"}</span>
             </div>
           </div>
 

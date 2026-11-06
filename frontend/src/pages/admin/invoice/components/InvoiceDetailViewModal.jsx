@@ -39,9 +39,12 @@ export default function InvoiceDetailViewModal({
 
     const fetchInvoiceDetails = async () => {
       const quoId = invoice.quotation_id || invoice.quotation?.id || quotation?.id;
+      const quoStatus = invoice.quotation?.status || quotation?.status;
+      const isFinalized = quoStatus === "ACCEPTED" || quoStatus === "REJECTED";
       const isStale =
-        !invoice.price_updated_at ||
-        Date.now() - new Date(invoice.price_updated_at).getTime() > 50000;
+        !isFinalized &&
+        (!invoice.price_updated_at ||
+          Date.now() - new Date(invoice.price_updated_at).getTime() > 50000);
 
       try {
         setLoading(true);
@@ -87,6 +90,9 @@ export default function InvoiceDetailViewModal({
               setData({
                 ...invoice,
                 quotation: quo,
+                customer: invoice.customer || quo.customer,
+                snap_customer_phone: invoice.snap_customer_phone || quo.snap_customer_phone,
+                snap_customer_address: invoice.snap_customer_address || quo.snap_customer_address,
               });
               return;
             }
