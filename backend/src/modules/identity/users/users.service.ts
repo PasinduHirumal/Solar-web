@@ -1,8 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { UserRole } from '../enums/user.enum';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Not, Repository } from 'typeorm';
 import { AuthHelperService } from '../auth/helpers/auth-helper.service';
 import { PasswordService } from '../../../shared/services/password.service';
 import { CommunicationService } from '../../../integrations/communication/communication.service';
@@ -12,6 +12,7 @@ import { PaginatedResponse } from '../../../common/interfaces/paginated-response
 import { UpdateUserRoleDto } from './dto/user-update.dto';
 import { RequestEmailDto, ResetPasswordDto } from './dto/reset-password.dto';
 import * as crypto from 'crypto';
+import { UpdateUserDataDto } from './dto/update-user-data.dto';
 
 const USER_ALIAS = 'user';
 
@@ -167,6 +168,31 @@ export class UsersService {
         } catch (error) {
             throw new BadRequestException(`Cannot delete user "${user.name}" — it is still assigned to one or more records`);
         }
+    }
+
+
+    // helper methods
+    async updateUserData(user: UserEntity, dto: UpdateUserDataDto): Promise<UserEntity> {
+        return await this.userRepo.manager.transaction(async (manager: EntityManager) => {
+            if (user.role !== UserRole.USER) {
+                return user;
+            }
+
+            if (dto.phone) {
+                const exists = await manager.existsBy(UserEntity, { 
+                    phone: dto.phone,
+                    id: Not(user.id),
+                });
+
+                if (exists) throw new ConflictException(`Phone number already in use`);
+            }
+
+            await manager.update(UserEntity, user.id, dto);
+
+            return await manager.findOneOrFail(UserEntity, { 
+                where: { id: user.id }
+            });
+        })
     }
 
 

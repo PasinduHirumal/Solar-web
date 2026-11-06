@@ -23,6 +23,7 @@ import { PriceBreakdown } from './interfaces/price-breakdown.interface';
 import { UpdateQuotationDataDto } from './dto/update-quotation-data.dto';
 import { QUOTATION_ITEM_FIELDS } from './quotation-items/constants/quotation-item-fields.constants';
 import { round } from '../../utils/math.round.util';
+import { UsersService } from '../identity/users/users.service';
 
 const QUOTATION_ALIAS = 'quotation';
 
@@ -37,6 +38,7 @@ export class QuotationsService {
         private readonly quotationRepo: Repository<QuotationEntity>,
 
         private readonly authService: AuthHelperService,
+        private readonly userService: UsersService,
         private readonly itemsService: ItemsService,
     ) {}
 
@@ -78,11 +80,7 @@ export class QuotationsService {
 
         let customer = await this.authService.findEntityByEmailAndPhone(dto.email, dto.phone);
 
-        if (customer && customer.role !== UserRole.USER) {
-            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
-        }
-
-        if (!customer || customer.email !== dto.email || customer.phone !== dto.phone) {
+        if (!customer) {
             customer = await this.authService.createUserBySystem(
                 {
                     email: dto.email,
@@ -99,6 +97,14 @@ export class QuotationsService {
             );
         }
 
+        if (customer && customer.role !== UserRole.USER) {
+            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
+        }
+
+        if (customer && (customer.phone !== dto.phone || customer.address !== dto.address)) {
+            customer = await this.userService.updateUserData(customer, { phone: dto.phone, address: dto.address });
+        }
+
         const quotationNumber = await this.generateQuotationNumber(customer.name);
 
         const { email, name, phone, address, item_ids, ...restDto } = dto;
@@ -107,6 +113,8 @@ export class QuotationsService {
             const quotation = manager.create(QuotationEntity, {
                 ...restDto,
                 customer_id: customer.id,
+                snap_customer_phone: customer.phone,
+                snap_customer_address: customer.address,
                 quotation_number: quotationNumber,
                 status: QuotationStatus.DRAFT,
                 items: item_ids.map((i) => manager.create(QuotationItemEntity, { 

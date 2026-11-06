@@ -53,6 +53,8 @@ export class InvoicesService {
                 invoice_number: invoiceNumber,
                 quotation_id: quotation.id,
                 customer_id: quotation.customer.id,
+                snap_customer_phone: quotation.snap_customer_phone,
+                snap_customer_address: quotation.snap_customer_address,
                 subtotal: priceBreakdown.subtotal,
                 discount: priceBreakdown.discount,
                 tax: priceBreakdown.tax,
@@ -356,6 +358,7 @@ export class InvoicesService {
     private detailQueryBuilder() {
         let qb = this.invoiceRepo.createQueryBuilder(INVOICE_ALIAS);
         qb = this.withQuotationDetails(qb);
+        qb = this.withCustomer(qb);
         qb = this.withPayments(qb);
         qb = this.withPdf(qb);
 
@@ -366,8 +369,6 @@ export class InvoicesService {
         return qb
             .innerJoin(`${INVOICE_ALIAS}.quotation`, 'quotation')
             .addSelect(pick('quotation', QUOTATION_DETAIL_FIELDS))
-            .innerJoin('quotation.customer', 'customer')
-            .addSelect(pick('customer', USER_FIELDS))
             .leftJoin(`quotation.items`, `quo_item`)
             .addSelect(pick('quo_item', QUOTATION_ITEM_SNAP_FIELDS));
     }

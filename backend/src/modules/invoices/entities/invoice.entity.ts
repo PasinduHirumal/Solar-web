@@ -35,6 +35,12 @@ export class InvoiceEntity {
     @Column({ name: 'customer_id', type: 'uuid' })
     customer_id!: string;
 
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    snap_customer_phone!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    snap_customer_address!: string | null;
+
     @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
     payment_status!: PaymentStatus;
 
