@@ -78,20 +78,17 @@ export class QuotationsService {
             throw new NotFoundException(`Solar items not found: ${missingIds.join(', ')}`);
         }
 
-        const admin = await this.authService.findEntityByEmail(dto.email);
-        if (admin) {
-            throw new BadRequestException(`${admin.name} is an ${admin.role}, Cannot add ${admin.role} as customer`);
-        }
-
-        let customer = await this.authService.findEntityByEmailAndPhone(dto.email, dto.phone);
+        let customer = await this.authService.findEntityByEmail(dto.email);
 
         if (customer && customer.role !== UserRole.USER) {
-            throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
+            throw new BadRequestException(`${customer.name} is an Admin-User, Cannot add Admin as customer`);
         }
 
         if (customer && (customer.phone !== dto.phone || customer.address !== dto.address)) {
             customer = await this.userService.updateUserData(customer, { phone: dto.phone, address: dto.address });
         }
+
+        customer = await this.authService.findEntityByEmailAndPhone(dto.email, dto.phone);
 
         if (!customer) {
             customer = await this.authService.createUserBySystem(
