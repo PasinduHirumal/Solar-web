@@ -24,6 +24,7 @@ const FRESHNESS_WINDOW_MS = 60_000;
 
 const EXACT_FILTER_MAP: Partial<Record<keyof FindInvoicesQueryDto, string>> = {
     payment_status:     `${INVOICE_ALIAS}.payment_status`,
+    quotation_status:   `${QUOTATION_ALIAS}.status`,
 };
 
 @Injectable()
@@ -109,19 +110,22 @@ export class InvoicesService {
             .addSelect(`${INVOICE_ALIAS}.${sort_by}`)
             .distinct(true);
 
+        if (query.quotation_status != null || search_term) {
+            idQueryBuilder.innerJoin(`${INVOICE_ALIAS}.quotation`, `quotation`);
+        }
+
         if (search_term) {
             const escaped = search_term.replace(/[\\%_]/g, '\\$&');
 
             idQueryBuilder
-                .innerJoin(`${INVOICE_ALIAS}.quotation`, `quotation`)
-                .innerJoin(`quotation.customer`, `customer`)
+                .innerJoin(`${INVOICE_ALIAS}.customer`, `customer`)
                 .andWhere(
                 `(
-                    ${INVOICE_ALIAS}.invoice_number     LIKE :search OR
-                    quotation.quotation_number          LIKE :search OR
-                    customer.email                      LIKE :search OR
-                    customer.name                       LIKE :search OR
-                    customer.phone                      LIKE :search
+                    ${INVOICE_ALIAS}.invoice_number         LIKE :search OR
+                    ${QUOTATION_ALIAS}.quotation_number     LIKE :search OR
+                    customer.email                          LIKE :search OR
+                    customer.name                           LIKE :search OR
+                    customer.phone                          LIKE :search
                 )`, 
                 { search: `%${escaped}%` }
             );

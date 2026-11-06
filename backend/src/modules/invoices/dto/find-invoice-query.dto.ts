@@ -6,6 +6,7 @@ import { PaymentStatus } from "../entities/invoice.entity";
 import { IsEnum, IsOptional } from "class-validator";
 import { WithBudgetRange } from "../../../common/dto/mixins/budget-range.dto";
 import { WithDateRange } from "../../../common/dto/mixins/date-range.dto";
+import { QuotationStatus } from "../../quotations/entities/quotation.entity";
 
 export class FindInvoicesQueryDto extends IntersectionType(
     PaginationQueryDto,
@@ -17,4 +18,8 @@ export class FindInvoicesQueryDto extends IntersectionType(
     @IsOptional()
     @IsEnum(PaymentStatus)
     readonly payment_status?: PaymentStatus;
+
+    @IsOptional()
+    @IsEnum(QuotationStatus)
+    readonly quotation_status?: QuotationStatus;
 }
