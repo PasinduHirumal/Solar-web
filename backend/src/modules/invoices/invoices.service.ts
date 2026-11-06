@@ -194,7 +194,7 @@ export class InvoicesService {
 
     async sendToCustomer(invoice: InvoiceEntity, pdf: Express.Multer.File): Promise<void> {
         const quotation = invoice.quotation;
-        const customer = quotation?.customer;
+        const customer = invoice.customer;
 
         if (!quotation) {
             throw new BadRequestException('Quotation not found for this invoice');
