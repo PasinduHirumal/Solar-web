@@ -148,10 +148,13 @@ export default function SendInvoiceModal({
 
   if (!isOpen || !quotation) return null;
 
-  const customer = fullQuotation?.customer || quotation.customer || {};
+  const customer = propInvoice?.customer || fullQuotation?.customer || quotation.customer || {};
   const items = fullQuotation?.items || quotation.items || [];
   const customerEmail = customer.email;
+  const customerPhone = propInvoice?.snap_customer_phone || fullQuotation?.snap_customer_phone || customer.phone;
+  const customerAddress = propInvoice?.snap_customer_address || fullQuotation?.snap_customer_address || customer.address;
   const isRejected = fullQuotation?.status === "REJECTED";
+  const isPaid = existingInvoice?.payment_status === "PAID" || propInvoice?.payment_status === "PAID";
 
   // Calculate pricing
   const subtotal = items.reduce((sum, line) => {
@@ -196,11 +199,18 @@ export default function SendInvoiceModal({
         tax: taxAmount,
         total: grandTotal,
         paid_amount: Number(existingInvoice?.paid_amount || 0),
+        snap_customer_phone: customerPhone,
+        snap_customer_address: customerAddress,
       };
 
       const result = generateInvoicePdf({
         invoice: targetInvoice,
         quotation: fullQuotation,
+        customer: {
+          ...customer,
+          phone: customerPhone,
+          address: customerAddress,
+        },
       });
 
       setGeneratedPdf(result);
@@ -400,6 +410,15 @@ export default function SendInvoiceModal({
             </div>
           )}
 
+          {isPaid && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2 shadow-2xs">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                Invoice payment status is <strong>PAID IN FULL</strong>. Backend does not permit sending invoices for fully settled payments.
+              </span>
+            </div>
+          )}
+
           {/* Customer & Quotation Summary Card */}
           <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
@@ -419,6 +438,11 @@ export default function SendInvoiceModal({
                     </p>
                   ) : (
                     <p className="text-[11px] text-amber-600 italic mt-0.5">No email on file</p>
+                  )}
+                  {customerPhone && (
+                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                      Phone: <span className="text-slate-700 font-semibold">{customerPhone}</span>
+                    </p>
                   )}
                 </div>
               </div>
@@ -587,7 +611,7 @@ export default function SendInvoiceModal({
           <button
             type="button"
             onClick={handleSendInvoice}
-            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isRejected}
+            disabled={!generatedPdf?.file || sendingEmail || !customerEmail || isRejected || isPaid}
             className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs shadow-blue-500/20 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-[0.98] text-center"
           >
             {sendingEmail ? (

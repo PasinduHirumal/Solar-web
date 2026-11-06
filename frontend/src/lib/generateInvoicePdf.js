@@ -24,7 +24,7 @@ export function generateInvoicePdf({
 }) {
   const currentInvoice = invoice || {};
   const currentQuo = currentInvoice.quotation || fallbackQuotation || {};
-  const currentCustomer = overrideCustomer || currentQuo.customer || currentInvoice.customer || {};
+  const currentCustomer = overrideCustomer || currentInvoice.customer || currentQuo.customer || {};
   const currentItems = overrideItems || currentQuo.items || [];
 
   // Generate or determine invoice number
@@ -247,8 +247,8 @@ export function generateInvoicePdf({
   // 4. Billed To (Customer Card) - Only display if actual customer data received from backend!
   const custName = currentCustomer.name?.trim();
   const custEmail = currentCustomer.email?.trim();
-  const custPhone = currentCustomer.phone?.trim();
-  const custAddress = currentCustomer.address?.trim();
+  const custPhone = (overrideCustomer?.phone || currentInvoice.snap_customer_phone || currentQuo.snap_customer_phone || currentCustomer.phone)?.trim();
+  const custAddress = (overrideCustomer?.address || currentInvoice.snap_customer_address || currentQuo.snap_customer_address || currentCustomer.address)?.trim();
   const hasCustomerInfo = Boolean(custName || custEmail || custPhone || custAddress);
 
   if (hasCustomerInfo) {

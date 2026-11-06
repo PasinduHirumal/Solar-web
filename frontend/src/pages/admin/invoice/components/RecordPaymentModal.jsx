@@ -87,7 +87,9 @@ export default function RecordPaymentModal({
 
   const currentQuotation =
     quotationDetails || activeInvoice?.quotation || fallbackQuotation || {};
-  const customer = currentQuotation.customer || activeInvoice?.customer || {};
+  const customer = activeInvoice?.customer || currentQuotation.customer || {};
+  const customerPhone = activeInvoice?.snap_customer_phone || currentQuotation.snap_customer_phone || customer.phone;
+  const customerAddress = activeInvoice?.snap_customer_address || currentQuotation.snap_customer_address || customer.address;
 
   const total = Number(activeInvoice?.total || 0);
   const paid = Number(activeInvoice?.paid_amount || 0);

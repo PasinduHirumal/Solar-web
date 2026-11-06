@@ -21,7 +21,10 @@ export async function fetchInvoiceById(
 
   // Proactive freshness check if invoiceObj is provided
   if (invoiceObj?.price_updated_at && quotationId) {
+    const quoStatus = invoiceObj.quotation?.status;
+    const isFinalized = quoStatus === "ACCEPTED" || quoStatus === "REJECTED";
     const isStale =
+      !isFinalized &&
       Date.now() - new Date(invoiceObj.price_updated_at).getTime() > 50000;
     if (isStale) {
       try {

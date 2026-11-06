@@ -92,6 +92,8 @@ export default function CreateInvoiceModal({
 
   const resolvedQuotation = quotationDetails?.quotation || quotation;
   const customer = resolvedQuotation.customer || quotation.customer || {};
+  const customerPhone = resolvedQuotation.snap_customer_phone || quotation.snap_customer_phone || customer.phone;
+  const customerAddress = resolvedQuotation.snap_customer_address || quotation.snap_customer_address || customer.address;
   const items = resolvedQuotation.items || quotation.items || [];
 
   // Determine grand total from server breakdown or calculate fallback
@@ -318,6 +320,11 @@ export default function CreateInvoiceModal({
                       ) : (
                         <p className="text-[11px] text-amber-600 italic mt-0.5">
                           No email on file
+                        </p>
+                      )}
+                      {customerPhone && (
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          Phone: <span className="text-slate-700 font-semibold">{customerPhone}</span>
                         </p>
                       )}
                     </div>

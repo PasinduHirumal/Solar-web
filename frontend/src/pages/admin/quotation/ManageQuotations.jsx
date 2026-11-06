@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
-  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin
+  Search, Filter, Plus, X, FileText, Clock, Mail, Phone, MapPin, Copy, Check
 } from "lucide-react";
 import { axiosInstance } from "../../../lib/axiosInstance";
 import { isAdmin, isSuperAdmin } from "../../../lib/roles";
@@ -32,6 +32,44 @@ export default function ManageQuotations() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const fallbackCopy = (text, copySuccess) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      copySuccess();
+    } catch {
+      toast.error("Failed to copy quotation number");
+    }
+  };
+
+  const handleCopyQuotationNumber = (number, id) => {
+    if (!number) return;
+    const copySuccess = () => {
+      setCopiedId(id);
+      toast.success(`Copied "${number}" to clipboard!`);
+      setTimeout(() => {
+        setCopiedId((current) => (current === id ? null : current));
+      }, 2000);
+    };
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(number)
+        .then(copySuccess)
+        .catch(() => fallbackCopy(number, copySuccess));
+    } else {
+      fallbackCopy(number, copySuccess);
+    }
+  };
 
   const { user: currentUser } = useAuthStore();
 
@@ -56,6 +94,7 @@ export default function ManageQuotations() {
               val === "" ||
               (key === "sort_by" && val === "created_at") ||
               (key === "sort" && val === "DESC") ||
+              (key === "sort_order" && val === "DESC") ||
               (key === "page" && Number(val) <= 1)
             ) {
               next.delete(key);
@@ -277,6 +316,46 @@ export default function ManageQuotations() {
         </div>
       </div>
 
+      {/* Active Filters Bar */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold text-slate-500">Active filters:</span>
+          {statusFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+              <span>Status: <strong className="font-semibold">{statusFilter}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ status: undefined, page: 1 })}
+                className="p-0.5 hover:bg-blue-100 rounded-md transition text-blue-500 hover:text-blue-800 cursor-pointer"
+                title="Remove status filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          {sortOrder !== "DESC" && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
+              <span>Sort: <strong className="font-semibold">{sortOrder === "ASC" ? "Oldest First" : sortOrder}</strong></span>
+              <button
+                type="button"
+                onClick={() => updateParams({ sort: undefined, page: 1 })}
+                className="p-0.5 hover:bg-slate-200 rounded-md transition text-slate-500 hover:text-slate-800 cursor-pointer"
+                title="Reset sort order"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => updateParams({ status: undefined, sort: undefined, sort_by: undefined, page: 1 })}
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline px-1 cursor-pointer transition"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
       {/* Main Table Card */}
       <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.03)] border border-slate-200/90 overflow-hidden">
         <div className="overflow-x-auto">
@@ -318,6 +397,8 @@ export default function ManageQuotations() {
                 </tr>
               ) : (
                 quotations.map((quo) => {
+                  const customer = quo.customer || {};
+                  const customerPhone = quo.snap_customer_phone || customer.phone;
                   return (
                     <tr
                       key={quo.id}
@@ -326,9 +407,32 @@ export default function ManageQuotations() {
                       {/* Quotation Number & Date */}
                       <td className="py-3 px-4 sm:px-5">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
-                            {quo.quotation_number}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md text-xs w-fit">
+                              {quo.quotation_number}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyQuotationNumber(quo.quotation_number, quo.id);
+                              }}
+                              className={`p-1 rounded-md border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                                copiedId === quo.id
+                                  ? "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-2xs"
+                                  : "text-slate-400 hover:text-blue-600 hover:bg-blue-50/80 border-slate-200/60 hover:border-blue-200 shadow-2xs"
+                              }`}
+                              title={copiedId === quo.id ? "Copied!" : "Copy quotation number"}
+                              aria-label="Copy quotation number"
+                            >
+                              {copiedId === quo.id ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
                             <Clock className="w-3 h-3" />
                             <span>
@@ -367,10 +471,10 @@ export default function ManageQuotations() {
                                 <span className="truncate">{quo.customer.email}</span>
                               </span>
                             )}
-                            {quo.customer?.phone && (
+                            {customerPhone && (
                               <span className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
                                 <Phone className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
-                                <span>{quo.customer.phone}</span>
+                                <span>{customerPhone}</span>
                               </span>
                             )}
                           </div>
