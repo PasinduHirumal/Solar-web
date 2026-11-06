@@ -76,13 +76,13 @@ export class QuotationsService {
             throw new NotFoundException(`Solar items not found: ${missingIds.join(', ')}`);
         }
 
-        let customer = await this.authService.findEntityByEmail(dto.email);
+        let customer = await this.authService.findEntityByEmailAndPhone(dto.email, dto.phone);
 
         if (customer && customer.role !== UserRole.USER) {
             throw new BadRequestException(`${customer.name} is an ${customer.role}, Cannot add ${customer.role} as customer`);
         }
 
-        if (!customer || !customer.phone || customer.phone !== dto.phone) {
+        if (!customer || customer.email !== dto.email || customer.phone !== dto.phone) {
             customer = await this.authService.createUserBySystem(
                 {
                     email: dto.email,

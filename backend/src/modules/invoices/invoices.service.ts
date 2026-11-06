@@ -63,6 +63,9 @@ export class InvoicesService {
     }
 
     async updateToLatestPrices(quotation: QuotationEntity, invoice: InvoiceEntity): Promise<void> {
+        if (quotation.status === QuotationStatus.ACCEPTED || quotation.status === QuotationStatus.REJECTED) {
+            throw new BadRequestException(`Quotation ${quotation.quotation_number} already ${quotation.status}`);
+        }
         await this.quotationService.updateSnapQuotation(quotation.id);
         await this.updatePriceBreakdown(quotation, invoice.id);
 
@@ -109,10 +112,11 @@ export class InvoicesService {
                 .innerJoin(`quotation.customer`, `customer`)
                 .andWhere(
                 `(
-                    ${INVOICE_ALIAS}.invoice_number       LIKE :search OR
-                    customer.email      LIKE :search OR
-                    customer.name       LIKE :search OR
-                    customer.phone      LIKE :search
+                    ${INVOICE_ALIAS}.invoice_number     LIKE :search OR
+                    quotation.quotation_number          LIKE :search OR
+                    customer.email                      LIKE :search OR
+                    customer.name                       LIKE :search OR
+                    customer.phone                      LIKE :search
                 )`, 
                 { search: `%${escaped}%` }
             );
@@ -190,11 +194,11 @@ export class InvoicesService {
         }
 
         if (quotation.status === QuotationStatus.REJECTED) {
-            throw new BadRequestException(`Cannot send invoice: the quotation is ${invoice.quotation.status}`);
+            throw new BadRequestException(`Cannot send invoice: ${invoice.invoice_number}, the quotation is ${invoice.quotation.status}`);
         }
 
         if (invoice.payment_status === PaymentStatus.PAID) {
-            throw new BadRequestException(`${invoice.invoice_number} have completed full payment)}`);
+            throw new BadRequestException(`Invoice: ${invoice.invoice_number} have completed full payment)}`);
         }
 
         let isStale =

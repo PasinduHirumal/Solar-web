@@ -1,7 +1,7 @@
 import { ConflictException, HttpException, Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserEntity } from "../../entities/user.entity";
-import { QueryFailedError, Repository } from "typeorm";
+import { EntityManager, QueryFailedError, Repository } from "typeorm";
 import { PasswordService } from "../../../../shared/services/password.service";
 import { TokenService } from "../../../../shared/services/token.service";
 import { RegisterUserAnonymous, RegisterUserDto } from "../dto/user-register.dto";
@@ -29,13 +29,22 @@ export class AuthHelperService {
     async findEntityByEmail(email: string): Promise<UserEntity | null> {
         return await this.authRepo.findOne({
             where: { email: email }
-        });;
+        });
     }
 
     async findEntityByPhone(phone: string): Promise<UserEntity | null> {
         return await this.authRepo.findOne({
             where: { phone: phone }
-        });;
+        });
+    }
+
+    async findEntityByEmailAndPhone(email: string, phone: string): Promise<UserEntity | null> {
+        return await this.authRepo.findOne({
+            where: { 
+                email: email,
+                phone: phone,
+            }
+        });
     }
 
     async createUserBySystem(dto: RegisterUserDto | RegisterUserAnonymous, options: CreateUserOptions): Promise<UserEntity> {
@@ -45,9 +54,7 @@ export class AuthHelperService {
         
         const exists = await this.authRepo.existsBy({ email: dto.email });
         if (exists) {
-            throw new ConflictException(
-                `Email already in use, if you forgot your password or don't know, click 'Forgot password' and reset your password`
-            );
+            throw new ConflictException(`Email already in use`);
         }
 
         if (phone) {
@@ -61,7 +68,7 @@ export class AuthHelperService {
         const hashedPassword = await this.passwordService.hash(password);
 
         try {
-            return await this.authRepo.manager.transaction(async (manager) => {
+            return await this.authRepo.manager.transaction(async (manager: EntityManager) => {
                 const newUser = manager.create( UserEntity, {
                     email: dto.email,
                     name: dto.name,
